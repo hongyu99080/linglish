@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function () {
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function (...args) {
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            // Check if it's an error object
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function (...args) {
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev?.reason;
+            // Check message
+            const msg = reason?.message || reason?.toString?.() || reason;
+            if (matchMsg(String(msg || ''))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if from extension
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch (_) { }
+        });
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = ev?.message || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if error is from extension
+            if (ev?.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              return;
+            }
+            // Check filename for extension patterns
+            const filename = ev?.filename || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch (_) { }
+        }, true);
+      } catch (_) { }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>实战练习场 - Linglish | AI口语对话与场景模拟</title>
+  <meta name="description" content="在Linglish实战场进行AI对话练习，模拟真实场景对话，提升口语表达能力。AI实时反馈，发音评测，角色扮演练习，让你在实战中快速提升英语口语。">
+  <meta name="keywords" content="英语口语练习,AI对话,场景模拟,口语评测,实战练习,speaking practice">
+  <meta name="author" content="Linglish">
+  <meta name="google-site-verification" content="google5a3b03e17f3c3f2c">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://example.com/mobile-arena.html">
+  <meta property="og:title" content="实战练习场 - Linglish">
+  <meta property="og:description" content="AI对话练习，真实场景模拟，快速提升英语口语">
+  <meta property="og:image" content="https://example.com/og-image-arena.jpg">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://example.com/mobile-arena.html">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <meta name="view-transition" content="same-origin">
+
+  <link rel="stylesheet" href="./styles/tokens.css?v=1">
+  <link rel="stylesheet" href="./mobile-styles.css">
+  <script src="./mobile-auth.js"></script>
+  <script src="./guest-check.js"></script>
+  <script src="./auth-helpers.js"></script>
+  <script src="./i18n.js?v=20250114e"></script>
+  <script src="./js/ai-roleplay-entrypoints.js?v=20260821"></script>
+  <style>
+    /* Premium Theme Variables */
+    :root {
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.5);
+      --glass-blur: blur(16px);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+      --primary-gradient: linear-gradient(135deg, #0ea5e9 0%, #2dd4bf 100%);
+      --accent-gradient: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    body {
+      background-color: var(--lx-paper, #f8fafc);
+      font-family: var(--lx-font-body, 'Manrope', system-ui, -apple-system, sans-serif);
+    }
+
+    /* VIP Badge Styles */
+    .mobile-user-info {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+
+    .mobile-vip-badge {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      padding: 2px 0 !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      text-decoration: none !important;
+    }
+
+    .mobile-vip-badge:active {
+      transform: scale(0.95) !important;
+    }
+
+    .mobile-vip-badge.family .vip-text {
+      background: linear-gradient(135deg, #0d9488 0%, #c2410c 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      color: #c2410c !important;
+    }
+
+    .vip-icon {
+      font-size: 16px !important;
+      line-height: 1 !important;
+      display: inline-block !important;
+    }
+
+    .vip-text {
+      font-size: 14px !important;
+      font-weight: 800 !important;
+      font-style: italic !important;
+      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      color: #D97706 !important;
+      letter-spacing: 0.5px !important;
+      text-shadow: none !important;
+      display: inline-block !important;
+    }
+
+    .mobile-user-name {
+      display: block !important;
+      font-size: 13px !important;
+      color: #1e293b !important;
+      /* Darker for better contrast on light header */
+      font-weight: 600 !important;
+      max-width: 80px !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+
+    /* Header Glassmorphism */
+    .mobile-header.arena-header {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* Scenarios Grid Layout */
+    .scenarios-section {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      padding: 0 16px 20px 16px;
+    }
+
+    /* 小屏幕单列布局 */
+    @media (max-width: 374px) {
+      .scenarios-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 大屏幕三列布局 */
+    @media (min-width: 768px) {
+      .scenarios-section {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding: 0 24px 24px 24px;
+      }
+    }
+
+    /* 超大屏幕四列布局 */
+    @media (min-width: 1200px) {
+      .scenarios-section {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        padding: 0 32px 32px 32px;
+      }
+    }
+
+    /* Scenario Card Premium Style */
+    .scenario-card {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .scenario-card:active {
+      transform: scale(0.98);
+    }
+
+    .scenario-image {
+      position: relative;
+      height: 160px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #f59e0b 0%, #0ea5e9 100%);
+      border-radius: 20px 20px 0 0;
+    }
+
+    .scenario-image-fallback {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .scenario-image img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+      z-index: 2;
+    }
+
+    .scenario-card:hover .scenario-image img {
+      transform: scale(1.05);
+    }
+
+    .video-duration-overlay {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      z-index: 10;
+    }
+
+    .scenario-info {
+      padding: 16px;
+    }
+
+    .scenario-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 12px 0;
+      line-height: 1.4;
+    }
+
+    /* Progress Bar in Card */
+    .scenario-progress {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress-bar-scenario {
+      flex: 1;
+      height: 6px;
+      background: #f1f5f9;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill-scenario {
+      height: 100%;
+      background: var(--primary-gradient);
+      border-radius: 3px;
+    }
+
+    .progress-label-scenario {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .ai-missions-section,
+    .legacy-roleplay-section {
+      margin-top: 22px;
+    }
+
+    .ai-missions-section {
+      padding: 18px 16px 20px;
+      border: 1px solid var(--lx-line, #e2e8f0);
+      border-radius: var(--lx-radius-xl, 24px);
+      background: var(--lx-surface, #ffffff);
+      box-shadow: var(--lx-shadow-sm, 0 6px 18px rgba(15, 23, 42, 0.06));
+    }
+
+    .ai-missions-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .ai-missions-head h3,
+    .legacy-roleplay-head h3 {
+      margin: 0;
+      color: var(--lx-ink-900, #0f172a);
+      font-size: 19px;
+      font-weight: 800;
+    }
+
+    .ai-missions-head p,
+    .legacy-roleplay-head p,
+    .ai-scenario-status {
+      margin: 5px 0 0;
+      color: var(--lx-ink-500, #64748b);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .ai-scenario-status {
+      flex: 0 0 auto;
+      margin: 2px 0 0;
+      padding: 5px 9px;
+      border-radius: var(--lx-radius-pill, 999px);
+      background: var(--lx-soft-sky, #f0f9ff);
+      color: var(--lx-sky-strong, #0284c7);
+      font-weight: 700;
+    }
+
+    .ai-scenario-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .ai-mission-card {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid var(--lx-line, #e2e8f0);
+      border-radius: var(--lx-radius-lg, 16px);
+      color: inherit;
+      background: var(--lx-soft-teal, #f0fdfa);
+      text-decoration: none;
+      box-shadow: 0 3px 0 rgba(15, 118, 110, 0.16);
+    }
+
+    .ai-mission-card:focus-visible {
+      outline: 3px solid rgba(14, 165, 233, 0.35);
+      outline-offset: 3px;
+    }
+
+    .ai-mission-card__meta,
+    .ai-mission-card__status {
+      color: var(--lx-ink-500, #64748b);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .ai-mission-card__title {
+      margin: 0;
+      color: var(--lx-ink-900, #0f172a);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .ai-mission-card__goal {
+      margin: 0;
+      color: var(--lx-ink-700, #334155);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .ai-mission-card__action {
+      color: var(--lx-primary-strong, #0b5f59);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .ai-scenario-empty {
+      grid-column: 1 / -1;
+      margin: 0;
+      padding: 14px;
+      border: 1px dashed var(--lx-line, #e2e8f0);
+      border-radius: var(--lx-radius-md, 12px);
+      color: var(--lx-ink-500, #64748b);
+      background: var(--lx-paper, #f8fafc);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .ai-scenario-state {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ai-scenario-state .ai-scenario-empty {
+      flex: 1 1 220px;
+    }
+
+    .ai-scenario-state__action {
+      appearance: none;
+      min-height: 40px;
+      padding: 9px 14px;
+      border: 1px solid var(--lx-primary, #0f766e);
+      border-radius: var(--lx-radius-pill, 999px);
+      color: var(--lx-primary-strong, #0b5f59);
+      background: var(--lx-surface, #fff);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .ai-scenario-state__action:focus-visible {
+      outline: 3px solid rgba(14, 165, 233, 0.35);
+      outline-offset: 3px;
+    }
+
+    .legacy-roleplay-head {
+      padding: 0 16px 10px;
+    }
+
+    @media (max-width: 420px) {
+      .ai-missions-head {
+        display: grid;
+      }
+
+      .ai-scenario-status {
+        justify-self: start;
+      }
+
+      .ai-scenario-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Bottom Navigation (Glassmorphism) */
+    .bottom-nav {
+      background: rgba(255, 255, 255, 0.9) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+      padding-bottom: env(safe-area-inset-bottom) !important;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      z-index: 1000;
+    }
+
+    .nav-item {
+      color: #94a3b8 !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .nav-item.active {
+      color: #0ea5e9 !important;
+    }
+
+    .nav-item.active .nav-icon {
+      transform: translateY(-2px);
+      filter: drop-shadow(0 4px 8px rgba(14, 165, 233, 0.3));
+    }
+
+    /* Category Pills */
+    .category-pills {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .pill-btn {
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: none;
+      background: #f1f5f9;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .pill-btn.active {
+      background: var(--primary-gradient);
+      color: white;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+
+    .my-videos-section,
+    .all-videos-wrapper {
+      margin-top: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .my-videos-placeholder,
+    .my-videos-empty {
+      background: #f8fafc;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      color: #64748b;
+      font-size: 14px;
+      border: 2px dashed #e2e8f0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* League Preview Section */
+    .league-preview-section {
+      padding: 0 16px;
+      margin-bottom: 20px;
+    }
+
+    .league-preview-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(14, 165, 233, 0.1);
+    }
+
+    .league-preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .league-tier-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tier-icon {
+      font-size: 36px;
+    }
+
+    .tier-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tier-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .tier-rank {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .league-xp {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .league-xp .xp-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0ea5e9;
+    }
+
+    .league-xp .xp-label {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+
+    .league-preview-progress {
+      position: relative;
+      height: 24px;
+      display: flex;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .progress-zones {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    .zone-indicator {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .zone-indicator.promotion {
+      background: linear-gradient(90deg, #10b981, #34d399);
+      width: 20%;
+    }
+
+    .zone-indicator.safe {
+      background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+      width: 60%;
+    }
+
+    .zone-indicator.demotion {
+      background: linear-gradient(90deg, #f87171, #ef4444);
+      width: 20%;
+    }
+
+    .progress-marker {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #1e293b;
+      border: 2px solid white;
+      border-radius: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      left: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: left 0.5s ease;
+    }
+
+    .league-preview-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .season-timer {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .view-league-btn {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0ea5e9;
+      text-decoration: none;
+    }
+
+    .view-league-btn:active {
+      opacity: 0.7;
+    }
+
+    /* Skeleton Styles */
+    .skeleton {
+      background: #f1f5f9;
+      background-image: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+
+    .skeleton-card {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .skeleton-image {
+      height: 160px;
+      width: 100%;
+      border-radius: 20px 20px 0 0;
+    }
+
+    .skeleton-content {
+      padding: 16px;
+    }
+
+    .skeleton-title {
+      height: 20px;
+      width: 70%;
+      margin-bottom: 12px;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    /* Pull to Refresh */
+    .pull-indicator {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 0;
+      overflow: hidden;
+      transition: height 0.2s ease;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 500;
+      gap: 8px;
+    }
+
+    .pull-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #cbd5e1;
+      border-top-color: #0ea5e9;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+
+    .pull-indicator.loading .pull-spinner {
+      display: block;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="mobile-header arena-header" style="padding: 12px 16px 10px;">
+    <div class="brand-section" style="gap: 8px;">
+      <div class="brand-icon" style="width: 36px; height: 36px; font-size: 18px;">🎪</div>
+    </div>
+    <div class="header-actions" style="gap: 18px !important;">
+      <!-- User Info -->
+      <div id="mobile-user-info" class="mobile-user-info" style="display: none;">
+        <span id="mobile-user-name" class="mobile-user-name"></span>
+        <a href="./membership.html" id="mobile-vip-badge" class="mobile-vip-badge" style="display: none;">
+          <span class="vip-icon">👑</span>
+          <span class="vip-text">VIP</span>
+        </a>
+      </div>
+      <button class="icon-btn history-btn" title="历史" aria-label="历史">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="mobile-content arena-content">
+    <!-- Pull to Refresh Indicator -->
+    <div class="pull-indicator" id="pull-indicator">
+      <div class="pull-spinner"></div>
+      <span class="pull-text">下拉刷新</span>
+    </div>
+
+    <!-- Arena Info Banner -->
+    <div class="arena-banner">
+      <div class="arena-title-section">
+        <h2>🎯 <span data-i18n="mobile.arena.banner.title">角色扮演练习</span></h2>
+        <p data-i18n="mobile.arena.banner.subtitle">选择场景，身临其境地练习英语对话</p>
+      </div>
+    </div>
+
+    <div class="arena-actions">
+      <a class="arena-link-btn" href="mobile-stats.html">
+        📊 <span data-i18n="mobile.arena.view_stats">查看我的战绩</span>
+      </a>
+    </div>
+
+    <!-- League Status Section -->
+    <section class="league-preview-section" id="league-preview">
+      <div class="league-preview-card">
+        <div class="league-preview-header">
+          <div class="league-tier-info">
+            <div class="tier-icon" id="tier-icon">🏆</div>
+            <div class="tier-details">
+              <span class="tier-name" id="tier-name">青铜联赛</span>
+              <span class="tier-rank" id="tier-rank">排名: --</span>
+            </div>
+          </div>
+          <div class="league-xp">
+            <span class="xp-value" id="weekly-xp">0</span>
+            <span class="xp-label">本周XP</span>
+          </div>
+        </div>
+        <div class="league-preview-progress">
+          <div class="progress-zones">
+            <div class="zone-indicator promotion" id="zone-promotion"></div>
+            <div class="zone-indicator safe" id="zone-safe"></div>
+            <div class="zone-indicator demotion" id="zone-demotion"></div>
+          </div>
+          <div class="progress-marker" id="rank-marker"></div>
+        </div>
+        <div class="league-preview-footer">
+          <span class="season-timer" id="season-timer">赛季剩余: --</span>
+          <a href="mobile-league.html" class="view-league-btn">查看完整排行 →</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="ai-missions-section" aria-labelledby="ai-missions-title">
+      <div class="ai-missions-head">
+        <div>
+          <h3 id="ai-missions-title">AI 场景任务</h3>
+          <p>选择一个明确目标，在 4–8 轮真实应答中完成任务。</p>
+        </div>
+        <p class="ai-scenario-status" id="ai-scenario-status" aria-live="polite">登录后查看场景记录</p>
+      </div>
+      <div class="ai-scenario-list" id="ai-scenario-list" aria-live="polite" aria-busy="false">
+        <p class="ai-scenario-empty">正在检查可用场景...</p>
+      </div>
+    </section>
+
+    <section class="legacy-roleplay-section" id="legacy-video-roleplay" aria-labelledby="legacy-roleplay-title">
+      <div class="legacy-roleplay-head">
+        <h3 id="legacy-roleplay-title">视频模仿练习</h3>
+        <p>沿用原视频台词进行模仿、跟读和角色练习。</p>
+      </div>
+
+      <section class="scenario-categories" aria-label="筛选视频模仿练习">
+        <h3 class="section-title">筛选视频</h3>
+        <div class="category-pills">
+          <button class="pill-btn active" data-filter="all" data-i18n="mobile.arena.filter.all">全部</button>
+          <button class="pill-btn" data-filter="mine" data-i18n="mobile.arena.filter.my_videos">我的视频</button>
+        </div>
+      </section>
+
+      <section class="my-videos-section">
+        <div class="section-header">
+          <h3 class="section-title">我的视频练习</h3>
+          <span class="section-subtitle">自己上传的视频素材</span>
+        </div>
+        <div class="my-videos-placeholder" id="my-videos-placeholder">正在加载我的视频...</div>
+
+        <div class="scenarios-skeleton hidden" id="my-videos-skeleton">
+          <div class="skeleton-card">
+            <div class="skeleton-image skeleton"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-title skeleton"></div>
+              <div class="skeleton-progress skeleton" style="height: 6px; width: 100%; margin-top: 8px;"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-image skeleton"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-title skeleton"></div>
+              <div class="skeleton-progress skeleton" style="height: 6px; width: 100%; margin-top: 8px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="my-videos-empty hidden" id="my-videos-empty">登录后可查看「我的视频」。</div>
+        <div class="scenarios-section" id="my-video-list"></div>
+      </section>
+
+      <section class="all-videos-wrapper">
+        <div class="section-header">
+          <h3 class="section-title">社区视频练习</h3>
+          <span class="section-subtitle">可继续使用的共享视频素材</span>
+        </div>
+        <div class="scenarios-section general-scenarios" id="all-videos-section">
+          <!-- Videos will be loaded dynamically from API -->
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="mobile-today.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">🎯</span>
+      </div>
+      <span>今日</span>
+    </a>
+    <a href="mobile-explore.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">🌍</span>
+      </div>
+      <span data-i18n="mobile.explore.title">探索世界</span>
+    </a>
+    <a href="mobile-power.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">⚡</span>
+      </div>
+      <span data-i18n="mobile.power.title">能量站</span>
+    </a>
+    <a href="mobile-arena.html" class="nav-item active">
+      <div class="nav-icon">
+        <span class="nav-emoji">🎪</span>
+      </div>
+      <span data-i18n="mobile.arena.title">实战场</span>
+    </a>
+    <a href="mobile-treasure.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">🪴</span>
+      </div>
+      <span data-i18n="mobile.treasure.title">成长中心</span>
+    </a>
+  </nav>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // User Info Logic
+      try {
+        const userInfoEl = document.getElementById('mobile-user-info');
+        const userNameEl = document.getElementById('mobile-user-name');
+        const vipBadgeEl = document.getElementById('mobile-vip-badge');
+
+        if (userInfoEl && authManager && authManager.isAuthenticated()) {
+          // Fetch fresh user data
+          const token = authManager.getToken();
+          const API_BASE = window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.port === '4000'
+            ? 'http://localhost:4000'
+            : '';
+
+          try {
+            const res = await fetch(`${API_BASE}/users/me`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+              const user = await res.json();
+
+              // Display Name
+              let displayName = 'User';
+              if (user.username) {
+                displayName = user.username;
+              } else if (user.email) {
+                displayName = user.email.split('@')[0];
+              }
+              if (userNameEl) userNameEl.textContent = displayName;
+
+              // VIP Status
+              if (vipBadgeEl && user.membership_type && user.membership_type !== 'free') {
+                vipBadgeEl.style.display = 'inline-flex';
+                const isFamily = user.membership_type === 'family';
+                vipBadgeEl.classList.toggle('family', isFamily);
+                const vipText = vipBadgeEl.querySelector('.vip-text');
+                if (vipText) vipText.textContent = isFamily ? 'Family' : 'VIP';
+              }
+
+              userInfoEl.style.display = 'flex';
+            }
+          } catch (err) {
+            console.warn('Failed to fetch user profile:', err);
+            // Fallback to authManager data if fetch fails
+            const user = authManager.getUserInfo();
+            if (user) {
+              let displayName = user.username || user.email?.split('@')[0] || 'User';
+              if (userNameEl) userNameEl.textContent = displayName;
+              userInfoEl.style.display = 'flex';
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to update user info:', e);
+      }
+
+      const API_BASE = '';
+      const pillButtons = document.querySelectorAll('.category-pills .pill-btn');
+      const myVideosSection = document.querySelector('.my-videos-section');
+      const myVideosList = document.getElementById('my-video-list');
+      const loadingPlaceholder = document.getElementById('my-videos-placeholder');
+      const emptyState = document.getElementById('my-videos-empty');
+      const allVideosWrapper = document.querySelector('.all-videos-wrapper');
+      const allVideosSection = document.getElementById('all-videos-section');
+      const aiScenarioList = document.getElementById('ai-scenario-list');
+      const aiScenarioStatus = document.getElementById('ai-scenario-status');
+
+      const getArenaToken = () => {
+        try {
+          if (typeof authManager !== 'undefined' && typeof authManager.getToken === 'function') {
+            return authManager.getToken() || '';
+          }
+        } catch (_) { }
+        return localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+          || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token') || '';
+      };
+
+      const detectArenaGuest = () => LinglishRoleplayEntrypoints.detectGuest({
+        authManager: typeof authManager !== 'undefined' ? authManager : null,
+        guestCheck: window.GuestCheck,
+        localStorage,
+        sessionStorage,
+      });
+
+      const state = {
+        token: getArenaToken(),
+        isGuest: detectArenaGuest(),
+        userId: null,
+        videos: [],
+        scenarios: [],
+        currentDifficulty: null, // 难度筛选: null/'beginner'/'intermediate'/'advanced'
+      };
+
+      // 从 localStorage 初始化用户等级
+      function initLevelFromStorage() {
+        try {
+          const activeLevel = localStorage.getItem('linglish_active_level');
+          if (activeLevel && ['beginner', 'intermediate', 'advanced'].includes(activeLevel)) {
+            state.currentDifficulty = activeLevel;
+            console.log('[Arena] Initialized level from localStorage:', activeLevel);
+          }
+        } catch (e) {
+          console.warn('[Arena] Failed to init level from storage:', e);
+        }
+      }
+      initLevelFromStorage();
+
+      // 根据难度等级过滤视频
+      function filterVideosByDifficulty(videos) {
+        if (!state.currentDifficulty) return videos;
+        return videos.filter(v => v.difficulty_level === state.currentDifficulty);
+      }
+
+      function escapeHtml(str = '') {
+        return String(str).replace(/[&<>"']/g, (char) => {
+          const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+          return map[char] || char;
+        });
+      }
+
+      function truncateDescription(text, maxLength = 100) {
+        if (!text) return '';
+        const str = String(text).trim();
+        if (str.length <= maxLength) return str;
+        return str.substring(0, maxLength).trim() + '...';
+      }
+
+      const incomingScenarioTheme = new URLSearchParams(window.location.search).get('theme') || '';
+
+      function clearArenaAuth() {
+        try {
+          if (window.AuthManager && typeof window.AuthManager.clearToken === 'function') {
+            window.AuthManager.clearToken();
+            return;
+          }
+          if (typeof authManager !== 'undefined' && typeof authManager.safeRemove === 'function') {
+            ['authToken', 'linglish_token'].forEach((key) => {
+              authManager.safeRemove(localStorage, key);
+              authManager.safeRemove(sessionStorage, key);
+            });
+            if (typeof authManager.clearGuestFlags === 'function') authManager.clearGuestFlags();
+            authManager.authToken = null;
+            return;
+          }
+        } catch (_) { }
+        ['authToken', 'linglish_token'].forEach((key) => {
+          try { localStorage.removeItem(key); } catch (_) { }
+          try { sessionStorage.removeItem(key); } catch (_) { }
+        });
+      }
+
+      const aiCatalogController = LinglishRoleplayEntrypoints.createCatalogController({
+        request: (token) => fetch(`${API_BASE}/ai-roleplay/scenarios?limit=12`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        getToken: getArenaToken,
+        isGuest: detectArenaGuest,
+        clearAuth: clearArenaAuth,
+        onState: (catalogState) => {
+          state.token = getArenaToken();
+          state.isGuest = Boolean(catalogState.isGuest);
+          state.scenarios = Array.isArray(catalogState.scenarios) ? catalogState.scenarios : [];
+          LinglishRoleplayEntrypoints.renderCatalogState({
+            document,
+            listElement: aiScenarioList,
+            statusElement: aiScenarioStatus,
+            state: catalogState,
+            theme: incomingScenarioTheme,
+            onRetry: () => aiCatalogController.retry(),
+          });
+        },
+      });
+
+      function loadAIScenarios() {
+        if (!aiScenarioList || !aiScenarioStatus) return Promise.resolve();
+        return aiCatalogController.load();
+      }
+
+      function formatDuration(seconds) {
+        if (!Number.isFinite(seconds) || seconds <= 0) {
+          return '00:00';
+        }
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+
+      function formatDurationText(seconds) {
+        if (!Number.isFinite(seconds) || seconds <= 0) {
+          return (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.arena.card.duration_unknown') : '时长未知';
+        }
+        if (seconds < 60) {
+          const unit = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.arena.card.seconds') : '秒';
+          return `${Math.max(1, Math.round(seconds))} ${unit}`;
+        }
+        const mins = Math.max(1, Math.round(seconds / 60));
+        const unit = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.arena.card.minutes') : '分钟';
+        return `${mins} ${unit}`;
+      }
+
+      function estimateWordCount(transcript = '') {
+        const normalized = String(transcript).replace(/\s+/g, ' ').trim();
+        if (!normalized) {
+          return 0;
+        }
+        const parts = normalized.split(' ').filter(Boolean);
+        if (parts.length > 1) {
+          return parts.length;
+        }
+        return Math.min(normalized.length, 2000);
+      }
+
+      function mapStatus(status) {
+        const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+        switch (status) {
+          case 'ready':
+            return { label: `✅ ${t('mobile.arena.video.status.ready', '可练习')}`, width: '100%' };
+          case 'processing':
+            return { label: `⏳ ${t('mobile.arena.video.status.processing', '视频处理中')}`, width: '35%' };
+          case 'failed':
+            return { label: `⚠️ ${t('mobile.arena.video.status.failed', '处理失败')}`, width: '0%' };
+          default:
+            return { label: `📥 ${t('mobile.arena.video.status.uploaded', '已上传')}`, width: '15%' };
+        }
+      }
+
+      function resolveThumbnail(video) {
+        // 优先使用YouTube缩略图（如果是YouTube视频）
+        if (video && video.youtube_video_id) {
+          console.log('[Thumbnail] Using YouTube thumbnail for:', video.youtube_video_id);
+          return `https://img.youtube.com/vi/${video.youtube_video_id}/hqdefault.jpg`;
+        }
+
+        const candidate = video?.thumbnail_url || video?.thumbnail_path;
+        if (candidate) {
+          const needsBase = !/^https?:\/\//i.test(candidate);
+          const url = needsBase ? `${API_BASE}${candidate}` : candidate;
+          console.log('[Thumbnail] Using stored thumbnail:', url);
+          return url;
+        }
+
+        // 使用简化的SVG占位符
+        const videoId = video?.id || '';
+        console.log('[Thumbnail] Using SVG fallback for video:', videoId);
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:rgb(102,126,234)"/><stop offset="100%" style="stop-color:rgb(118,75,162)"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="72" fill="white">🎬</text></svg>`)}`;
+      }
+
+      function showPlaceholder(text) {
+        const skeleton = document.getElementById('my-videos-skeleton');
+        const placeholder = document.getElementById('my-videos-placeholder');
+
+        if (skeleton) {
+          skeleton.classList.remove('hidden');
+          if (placeholder) placeholder.classList.add('hidden');
+        } else if (loadingPlaceholder) {
+          loadingPlaceholder.textContent = text;
+          loadingPlaceholder.classList.remove('hidden');
+        }
+      }
+
+      function hidePlaceholder() {
+        const skeleton = document.getElementById('my-videos-skeleton');
+        const placeholder = document.getElementById('my-videos-placeholder');
+
+        if (skeleton) skeleton.classList.add('hidden');
+        if (loadingPlaceholder) loadingPlaceholder.classList.add('hidden');
+      }
+
+      function showEmpty(message) {
+        if (!emptyState) return;
+        const defaultMsg = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.arena.empty_videos') : '暂时没有可用视频。';
+        emptyState.textContent = message || defaultMsg;
+        emptyState.classList.remove('hidden');
+      }
+
+      function hideEmpty() {
+        if (!emptyState) return;
+        emptyState.classList.add('hidden');
+      }
+
+      function scheduleLogout() {
+        if (typeof authManager !== 'undefined' && authManager && typeof authManager.logout === 'function') {
+          setTimeout(() => authManager.logout(), 1200);
+        }
+      }
+
+      function renderMyVideos(videos) {
+        if (!myVideosList) return;
+        myVideosList.innerHTML = '';
+
+        if (!Array.isArray(videos) || videos.length === 0) {
+          const msg = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.arena.my_videos.no_uploads') : '还没有上传过练习视频。';
+          showEmpty(msg);
+          return;
+        }
+
+        hideEmpty();
+        const fragment = document.createDocumentFragment();
+
+        videos.forEach((video) => {
+          const card = document.createElement('div');
+          card.className = 'scenario-card my-video-card';
+          card.dataset.category = 'mine';
+
+          const videoId = video?.id;
+          const videoLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('vocab.detail.video_fallback') : '视频 #';
+          const title = video?.title || video?.original_filename || `${videoLabel}${videoId || ''}`;
+          const langLabel = video?.language ? `${video.language}` : '';
+          const customPractice = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.arena.video.custom_practice') : '自制练习场景';
+          const rawDescription = video?.description || (langLabel || customPractice);
+          const description = truncateDescription(rawDescription, 100);
+          const durationSec = Number(video?.duration_sec) || 0;
+          const durationLabel = formatDuration(durationSec);
+          const durationText = formatDurationText(durationSec);
+          const wordCount = estimateWordCount(video?.transcript);
+          const statusInfo = mapStatus(video?.status);
+          const thumbnailUrl = resolveThumbnail(video);
+          const targetUrl = videoId != null && videoId !== ''
+            ? `practice-session.html?videoId=${encodeURIComponent(String(videoId))}&mode=arena`
+            : 'practice-session.html?mode=arena';
+
+          card.innerHTML = `
+            <div class="current-badge personal">🎬 我的作品</div>
+            <div class="scenario-image">
+              <img src="${thumbnailUrl}" alt="${escapeHtml(title)}" onerror="this.style.opacity='0';">
+              <div class="scenario-image-fallback">🎬</div>
+              <div class="scenario-difficulty easy">⭐ <span data-i18n="mobile.arena.difficulty.custom">自制</span></div>
+              <div class="video-duration-overlay">${durationLabel}</div>
+            </div>
+            <div class="scenario-info">
+              <h4 class="scenario-title">${escapeHtml(title)}</h4>
+              <div class="scenario-progress">
+                <div class="progress-bar-scenario">
+                  <div class="progress-fill-scenario" style="width: ${statusInfo.width};"></div>
+                </div>
+                <span class="progress-label-scenario">${statusInfo.label}</span>
+              </div>
+            </div>
+          `;
+
+          card.addEventListener('click', () => {
+            window.location.href = targetUrl;
+          });
+
+          fragment.appendChild(card);
+        });
+
+        myVideosList.appendChild(fragment);
+      }
+
+      function renderAllVideos(videos) {
+        if (!allVideosSection) return;
+        allVideosSection.innerHTML = '';
+
+        if (!Array.isArray(videos) || videos.length === 0) {
+          allVideosSection.innerHTML = '<div class="my-videos-empty">暂无视频</div>';
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        videos.forEach((video) => {
+          const card = document.createElement('div');
+          card.className = 'scenario-card';
+          card.dataset.category = 'all';
+
+          const videoId = video?.id;
+          const videoLabel = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('vocab.detail.video_fallback') : '视频 #';
+          const title = video?.title || video?.original_filename || `${videoLabel}${videoId || ''}`;
+          const durationSec = Number(video?.duration_sec) || 0;
+          const durationLabel = formatDuration(durationSec);
+          const statusInfo = mapStatus(video?.status);
+          const thumbnailUrl = resolveThumbnail(video);
+          const targetUrl = videoId != null && videoId !== ''
+            ? `practice-session.html?videoId=${encodeURIComponent(String(videoId))}&mode=arena`
+            : 'practice-session.html?mode=arena';
+
+          // Check if this is user's own video
+          const isMyVideo = state.userId != null && Number(video?.uploader_id) === Number(state.userId);
+          const badgeHtml = isMyVideo ? '<div class="current-badge personal">🎬 我的作品</div>' : '';
+
+          card.innerHTML = `
+            ${badgeHtml}
+            <div class="scenario-image">
+              <img src="${thumbnailUrl}" alt="${escapeHtml(title)}" onerror="this.style.opacity='0';">
+              <div class="scenario-image-fallback">🎬</div>
+              <div class="video-duration-overlay">${durationLabel}</div>
+            </div>
+            <div class="scenario-info">
+              <h4 class="scenario-title">${escapeHtml(title)}</h4>
+              <div class="scenario-progress">
+                <div class="progress-bar-scenario">
+                  <div class="progress-fill-scenario" style="width: ${statusInfo.width};"></div>
+                </div>
+                <span class="progress-label-scenario">${statusInfo.label}</span>
+              </div>
+            </div>
+          `;
+
+          card.addEventListener('click', () => {
+            window.location.href = targetUrl;
+          });
+
+          fragment.appendChild(card);
+        });
+
+        allVideosSection.appendChild(fragment);
+      }
+
+      async function loadMyVideos() {
+        if (!myVideosList) return;
+
+        if (!state.token) {
+          hidePlaceholder();
+          renderMyVideos([]);
+          return;
+        }
+
+        showPlaceholder('正在加载我的视频...');
+        hideEmpty();
+
+        const headers = { Authorization: `Bearer ${state.token}` };
+
+        try {
+          const profileResponse = await fetch(`${API_BASE}/users/me`, { headers });
+          if (profileResponse.ok) {
+            const profile = await profileResponse.json();
+            state.userId = Number(profile?.id) || null;
+          } else if (profileResponse.status === 401) {
+            showEmpty('登录信息已过期，请重新登录。');
+            scheduleLogout();
+            return;
+          }
+        } catch (err) {
+          console.warn('Failed to load user profile:', err);
+        }
+
+        try {
+          const res = await fetch(`${API_BASE}/video-resources?lite=1`, { headers });
+          if (res.status === 401) {
+            showEmpty('登录信息已过期，请重新登录。');
+            scheduleLogout();
+            return;
+          }
+          if (!res.ok) {
+            throw new Error(`Unexpected status ${res.status}`);
+          }
+          const data = await res.json();
+          state.videos = Array.isArray(data?.items) ? data.items : [];
+
+          // 先按难度等级过滤
+          const filteredByLevel = filterVideosByDifficulty(state.videos);
+
+          let myVideos = filteredByLevel;
+          if (state.userId != null) {
+            const owned = filteredByLevel.filter((video) => Number(video?.uploader_id) === Number(state.userId));
+            if (owned.length > 0) {
+              myVideos = owned;
+            }
+          }
+          renderMyVideos(myVideos);
+          // Render all videos to the general section (also filtered by level)
+          renderAllVideos(filteredByLevel);
+        } catch (err) {
+          console.warn('Failed to load video resources:', err);
+          showEmpty('加载失败，请稍后重试。');
+        } finally {
+          hidePlaceholder();
+        }
+      }
+
+      function setActiveButton(target) {
+        pillButtons.forEach((btn) => btn.classList.toggle('active', btn === target));
+      }
+
+      function applyFilter(filter) {
+        if (!myVideosSection || !allVideosWrapper) return;
+
+        if (filter === 'mine') {
+          // Show only my videos section
+          myVideosSection.classList.remove('hidden');
+          allVideosWrapper.classList.add('hidden');
+          return;
+        }
+
+        // Show both sections for 'all' filter
+        myVideosSection.classList.remove('hidden');
+        allVideosWrapper.classList.remove('hidden');
+      }
+
+      pillButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const filter = button.dataset.filter || 'all';
+          setActiveButton(button);
+          applyFilter(filter);
+        });
+      });
+
+      await Promise.all([loadAIScenarios(), loadMyVideos()]);
+      applyFilter('all');
+
+      // Load league status
+      loadLeaguePreview();
+    });
+
+    // League Preview Functions
+    async function loadLeaguePreview() {
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+        || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+      const isGuest = typeof window.GuestCheck !== 'undefined'
+        && typeof window.GuestCheck.isGuest === 'function'
+        && window.GuestCheck.isGuest();
+      if (!token || isGuest) {
+        // Hide league section for guests
+        const leagueSection = document.getElementById('league-preview');
+        if (leagueSection) leagueSection.style.display = 'none';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/league/status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to load league status:', response.status);
+          return;
+        }
+
+        const status = await response.json();
+        if (!status) return;
+
+        updateLeaguePreview(status);
+      } catch (error) {
+        console.warn('Error loading league preview:', error);
+      }
+    }
+
+    function updateLeaguePreview(status) {
+      const tierIcons = {
+        'bronze': '🥉',
+        'silver': '🥈',
+        'gold': '🥇',
+        'diamond': '💎',
+        'master': '👑'
+      };
+
+      // Update tier info
+      const tierIcon = document.getElementById('tier-icon');
+      const tierName = document.getElementById('tier-name');
+      const tierRank = document.getElementById('tier-rank');
+      const weeklyXp = document.getElementById('weekly-xp');
+
+      if (tierIcon && status.tier) {
+        tierIcon.textContent = tierIcons[status.tier.key] || '🏆';
+      }
+      if (tierName && status.tier) {
+        tierName.textContent = status.tier.name || '联赛';
+        tierName.style.color = status.tier.colorCode || '#1e293b';
+      }
+      if (tierRank) {
+        tierRank.textContent = status.currentRank ? `排名: #${status.currentRank}` : '排名: --';
+      }
+      if (weeklyXp) {
+        weeklyXp.textContent = formatXP(status.weeklyXp || 0);
+      }
+
+      // Update progress marker position
+      const marker = document.getElementById('rank-marker');
+      if (marker && status.currentRank && status.groupSize) {
+        const position = ((status.currentRank - 1) / (status.groupSize - 1)) * 100;
+        marker.style.left = `${Math.min(95, Math.max(5, position))}%`;
+      }
+
+      // Update season timer
+      const timerEl = document.getElementById('season-timer');
+      if (timerEl && status.seasonEndsAt) {
+        updateSeasonTimer(timerEl, status.seasonEndsAt);
+        // Update every minute
+        setInterval(() => updateSeasonTimer(timerEl, status.seasonEndsAt), 60000);
+      }
+    }
+
+    function formatXP(xp) {
+      if (xp >= 1000) {
+        return (xp / 1000).toFixed(1) + 'K';
+      }
+      return xp.toString();
+    }
+
+    function updateSeasonTimer(element, endDate) {
+      const now = new Date().getTime();
+      const end = new Date(endDate).getTime();
+      const distance = end - now;
+
+      if (distance < 0) {
+        element.textContent = '赛季已结束';
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+      if (days > 0) {
+        element.textContent = `赛季剩余: ${days}天 ${hours}小时`;
+      } else {
+        element.textContent = `赛季剩余: ${hours}小时`;
+      }
+    }
+  </script>
+
+  <script>
+    // Haptic Feedback Helper
+    const triggerHaptic = () => {
+      if (navigator.vibrate) navigator.vibrate(10);
+    };
+
+    // Ripple Effect Helper
+    const createRipple = (event) => {
+      const button = event.currentTarget;
+      const circle = document.createElement('span');
+      const diameter = Math.max(button.clientWidth, button.clientHeight);
+      const radius = diameter / 2;
+
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+      circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+      circle.classList.add('ripple-effect');
+
+      const ripple = button.getElementsByClassName('ripple-effect')[0];
+      if (ripple) {
+        ripple.remove();
+      }
+
+      button.appendChild(circle);
+    };
+
+    // Bind interactions
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('button, a, .scenario-card, .pill-btn, .nav-item');
+      if (target) {
+        triggerHaptic();
+        createRipple({ currentTarget: target, clientX: e.clientX, clientY: e.clientY });
+      }
+    });
+
+    // Initialize i18n
+    if (typeof i18n !== 'undefined') {
+      try {
+        i18n.init();
+      } catch (e) {
+        console.error('[i18n] Failed to initialize:', e);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof i18n !== 'undefined') {
+        i18n.init();
+      }
+    });
+  </script>
+  <script src="./js/page-tracker.js"></script>
+</body>
+
+</html>

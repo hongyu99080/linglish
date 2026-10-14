@@ -1,0 +1,65 @@
+/* Stats Page Styles */
+
+.stats-content {
+  padding: 16px;
+  background: #f0f0f5;
+}
+
+/* Progress Section */
+.progress-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Stats Grid Detailed */
+.stats-grid-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.stats-grid-detailed {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  min-height: 220px;
+}
+
+/* Activity Section */
+.activity-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Goals Section */
+.goals-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Quick Stats Link */
+.quick-stats-link {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}

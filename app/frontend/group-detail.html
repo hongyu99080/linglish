@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小组详情 - Linglish</title>
+  <script src="./js/auth-manager.js?v=1"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      color: #1f2937;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 28px 20px;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .back-link {
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .header-title {
+      font-size: 26px;
+      margin-top: 12px;
+      font-weight: 700;
+    }
+
+    .header-subtitle {
+      margin-top: 6px;
+      opacity: 0.85;
+      font-size: 14px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-public {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .badge-private {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #667eea;
+      border: 1px solid #667eea;
+    }
+
+    .btn-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .stat-list {
+      display: grid;
+      gap: 8px;
+      font-size: 14px;
+      color: #4b5563;
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .list-item strong {
+      color: #111827;
+    }
+
+    .muted {
+      color: #9ca3af;
+      font-size: 13px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 30px 10px;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+
+    .chat-box {
+      display: grid;
+      gap: 12px;
+    }
+
+    .chat-list {
+      display: grid;
+      gap: 10px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .chat-item {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .chat-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+
+    .chat-input {
+      width: 100%;
+      min-height: 70px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+      resize: vertical;
+    }
+
+    .chat-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chat-hint {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .mention {
+      color: #4f46e5;
+      font-weight: 600;
+    }
+
+    .attachment-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .attachment-thumb img {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .chat-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chat-controls .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: #111827;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 0.95;
+    }
+
+    @media (max-width: 768px) {
+      .header-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="toast" id="toast"></div>
+  <div class="header">
+    <div class="header-inner">
+      <div class="header-top">
+        <a class="back-link" href="study-groups.html">← 返回学习小组</a>
+        <div id="group-badge" class="badge badge-public">公开小组</div>
+      </div>
+      <div class="header-title" id="group-name">小组详情</div>
+      <div class="header-subtitle" id="group-subtitle">加载中…</div>
+      <div class="toolbar">
+        <div class="muted" id="group-meta"></div>
+        <div>
+          <button class="btn btn-secondary" id="join-btn" type="button">加入小组</button>
+          <button class="btn btn-warning" id="leave-btn" type="button" hidden>退出小组</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <h3>小组概览</h3>
+        <div class="stat-list" id="group-overview"></div>
+      </div>
+      <div class="card">
+        <h3>成员排行</h3>
+        <div class="list" id="members-list"></div>
+      </div>
+      <div class="card">
+        <h3>进行中的挑战</h3>
+        <div class="list" id="challenges-list"></div>
+      </div>
+      <div class="card">
+        <h3>小组排行榜</h3>
+        <div class="list" id="leaderboard-list"></div>
+      </div>
+      <div class="card">
+        <h3>最新动态</h3>
+        <div class="list" id="activities-list"></div>
+      </div>
+      <div class="card">
+        <h3>小组聊天</h3>
+        <div class="chat-box">
+          <div class="chat-list" id="chat-list"></div>
+          <div class="attachment-list" id="chat-attachments"></div>
+          <textarea class="chat-input" id="chat-input" placeholder="和小组成员打个招呼…"></textarea>
+          <div class="chat-actions">
+            <span class="chat-hint" id="chat-hint">加入小组后可发送消息</span>
+            <div class="chat-controls">
+              <input id="chat-image-input" type="file" accept="image/*" hidden>
+              <input id="chat-audio-input" type="file" accept="audio/*" hidden>
+              <button class="btn btn-secondary" id="chat-image-btn" type="button">图片</button>
+              <button class="btn btn-secondary" id="chat-audio-btn" type="button">音频</button>
+              <button class="btn btn-secondary" id="chat-record-btn" type="button">语音录制</button>
+              <button class="btn btn-primary" id="chat-send-btn" type="button">发送</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const toastEl = document.getElementById('toast');
+    const groupId = Number(new URLSearchParams(window.location.search).get('id'));
+    let currentGroup = null;
+    let chatTimer = null;
+    let chatAttachments = [];
+    let chatSocket = null;
+    let chatConnecting = false;
+    let chatReconnectTimer = null;
+    let chatReconnectAttempt = 0;
+    let chatStopped = false;
+    let chatConnectionGeneration = 0;
+    let recorder = null;
+    let recordedChunks = [];
+
+    function getPreferredAudioMimeType() {
+      if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+        return '';
+      }
+      const candidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg'
+      ];
+      return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatMentions(text) {
+      const safe = escapeHtml(text || '');
+      return safe.replace(/@([a-zA-Z0-9_\\u4e00-\\u9fa5]+)/g, '<span class=\"mention\">@$1</span>');
+    }
+
+    function showToast(message) {
+      if (!toastEl) return;
+      toastEl.textContent = message;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 2200);
+    }
+
+    function getAuthToken() {
+      try {
+        if (window.AuthManager && typeof window.AuthManager.getToken === 'function') {
+          return window.AuthManager.getToken();
+        }
+      } catch (_) { }
+      try {
+        return localStorage.getItem('linglish_token');
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function buildAuthHeaders() {
+      const token = getAuthToken();
+      return token ? { 'Authorization': `Bearer ${token}` } : {};
+    }
+
+    function setEmpty(container, text) {
+      if (!container) return;
+      container.innerHTML = `<div class="empty">${text}</div>`;
+    }
+
+    async function loadGroupDetail() {
+      if (!groupId || Number.isNaN(groupId)) {
+        showToast('无效的小组ID');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/retention/groups/${groupId}`, {
+          headers: buildAuthHeaders()
+        });
+        if (!res.ok) throw new Error('加载失败');
+        const group = await res.json();
+        renderGroup(group);
+        currentGroup = group;
+        loadChallenges();
+        loadLeaderboard();
+        loadActivities();
+        loadChatMessages();
+        if (!(await connectChatSocket())) {
+          scheduleChatRefresh();
+        }
+      } catch (err) {
+        showToast(err.message || '加载失败，请稍后再试');
+      }
+    }
+
+    function renderGroup(group) {
+      document.title = `${group.name || '小组详情'} - Linglish`;
+      document.getElementById('group-name').textContent = group.name || '学习小组';
+      document.getElementById('group-subtitle').textContent = group.description || '暂无简介';
+      const badge = document.getElementById('group-badge');
+      if (badge) {
+        badge.textContent = group.group_type === 'private' ? '私密小组' : '公开小组';
+        badge.className = `badge ${group.group_type === 'private' ? 'badge-private' : 'badge-public'}`;
+      }
+      const meta = document.getElementById('group-meta');
+      if (meta) {
+        meta.textContent = `组长：${group.owner_name || '未知'} · 成员 ${group.member_count || 0}/${group.max_members || 5}`;
+      }
+      const overview = document.getElementById('group-overview');
+      if (overview) {
+        const stats = [
+          { label: '学习目标', value: group.learning_goal || '未设置' },
+          { label: '目标语言', value: group.target_language || 'en' },
+          { label: '难度等级', value: group.difficulty_level || '未设置' },
+          { label: '累计学习时长', value: `${Math.round((group.total_study_minutes || 0) / 60)} 小时` },
+          { label: '累计XP', value: group.total_xp || 0 }
+        ];
+        overview.innerHTML = stats.map(item => `
+          <div class="stat-item">
+            <span>${item.label}</span>
+            <strong>${item.value}</strong>
+          </div>
+        `).join('');
+      }
+      const membersList = document.getElementById('members-list');
+      if (membersList) {
+        const members = group.members || [];
+        if (!members.length) {
+          setEmpty(membersList, '暂无成员');
+        } else {
+          membersList.innerHTML = members.map((member, idx) => `
+            <div class="list-item">
+              <strong>${idx + 1}. ${member.username || '成员'}</strong>
+              <div class="muted">贡献 XP：${member.contribution_xp || 0} · 学习 ${member.study_minutes || 0} 分钟</div>
+            </div>
+          `).join('');
+        }
+      }
+
+      const joinBtn = document.getElementById('join-btn');
+      const leaveBtn = document.getElementById('leave-btn');
+      const isMember = !!group.is_member;
+      if (joinBtn) joinBtn.hidden = isMember;
+      if (leaveBtn) leaveBtn.hidden = !isMember;
+      const chatHint = document.getElementById('chat-hint');
+      const chatSendBtn = document.getElementById('chat-send-btn');
+      if (chatHint) chatHint.textContent = isMember ? '和成员分享学习进度' : '加入小组后可发送消息';
+      if (chatSendBtn) chatSendBtn.disabled = !isMember;
+    }
+
+    async function loadChallenges() {
+      const list = document.getElementById('challenges-list');
+      if (!list) return;
+      const token = getAuthToken();
+      if (!token) {
+        setEmpty(list, '登录后可查看挑战');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/retention/groups/${groupId}/challenges`, {
+          headers: buildAuthHeaders()
+        });
+        if (!res.ok) throw new Error('加载失败');
+        const challenges = await res.json();
+        if (!challenges.length) {
+          setEmpty(list, '暂无挑战');
+          return;
+        }
+        list.innerHTML = challenges.map(challenge => `
+          <div class="list-item">
+            <strong>${challenge.title}</strong>
+            <div class="muted">${challenge.description || '无描述'} · 目标 ${challenge.target_value || 0}</div>
+            <div class="muted">进度 ${challenge.current_value || 0} / ${challenge.target_value || 0}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        setEmpty(list, '加载挑战失败');
+      }
+    }
+
+    async function loadLeaderboard() {
+      const list = document.getElementById('leaderboard-list');
+      if (!list) return;
+      const token = getAuthToken();
+      if (!token) {
+        setEmpty(list, '登录后可查看排行榜');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/retention/groups/${groupId}/leaderboard`, {
+          headers: buildAuthHeaders()
+        });
+        if (!res.ok) throw new Error('加载失败');
+        const rows = await res.json();
+        if (!rows.length) {
+          setEmpty(list, '暂无排行数据');
+          return;
+        }
+        list.innerHTML = rows.map((row, idx) => `
+          <div class="list-item">
+            <strong>${idx + 1}. ${row.username || '成员'}</strong>
+            <div class="muted">XP ${row.contribution_xp || 0} · ${row.study_minutes || 0} 分钟</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        setEmpty(list, '加载排行榜失败');
+      }
+    }
+
+    async function loadActivities() {
+      const list = document.getElementById('activities-list');
+      if (!list) return;
+      const token = getAuthToken();
+      if (!token) {
+        setEmpty(list, '登录后可查看动态');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/retention/groups/${groupId}/activities?limit=8`, {
+          headers: buildAuthHeaders()
+        });
+        if (!res.ok) throw new Error('加载失败');
+        const activities = await res.json();
+        if (!activities.length) {
+          setEmpty(list, '暂无动态');
+          return;
+        }
+        list.innerHTML = activities.map(activity => `
+          <div class="list-item">
+            <strong>${activity.username || '成员'}</strong>
+            <div class="muted">${activity.content || '完成挑战'} · ${new Date(activity.created_at).toLocaleString()}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        setEmpty(list, '加载动态失败');
+      }
+    }
+
+    function renderChatList(items) {
+      const list = document.getElementById('chat-list');
+      if (!list) return;
+      if (!items.length) {
+        setEmpty(list, '暂无聊天消息');
+        return;
+      }
+      list.innerHTML = items.map(item => {
+        let data = item.activity_data;
+        if (typeof data === 'string') {
+          try { data = JSON.parse(data); } catch (_) { data = {}; }
+        }
+        const attachments = Array.isArray(data?.attachments) ? data.attachments : [];
+        const attachmentHtml = attachments.map((att) => {
+          if (att.kind === 'image' && att.url) {
+            return `<div class="attachment-thumb"><img src="${escapeHtml(att.url)}" alt="image"></div>`;
+          }
+          if (att.kind === 'audio' && att.url) {
+            return `<audio controls src="${escapeHtml(att.url)}"></audio>`;
+          }
+          return '';
+        }).join('');
+        return `
+          <div class="chat-item">
+            <div class="chat-meta">
+              <span>${escapeHtml(item.username || '成员')}</span>
+              <span>${new Date(item.created_at).toLocaleString()}</span>
+            </div>
+            <div>${formatMentions(item.content || '')}</div>
+            ${attachmentHtml ? `<div class="attachment-list">${attachmentHtml}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function scheduleChatRefresh() {
+      if (chatStopped || chatTimer) return;
+      chatTimer = setInterval(() => {
+        loadChatMessages(true);
+      }, 8000);
+    }
+
+    function stopChatRefresh() {
+      if (!chatTimer) return;
+      clearInterval(chatTimer);
+      chatTimer = null;
+    }
+
+    function stopChatReconnect() {
+      if (!chatReconnectTimer) return;
+      clearTimeout(chatReconnectTimer);
+      chatReconnectTimer = null;
+    }
+
+    function scheduleChatReconnect() {
+      if (chatStopped || chatReconnectTimer || chatConnecting) return;
+      const delay = Math.min(1000 * (2 ** Math.min(chatReconnectAttempt, 5)), 30000);
+      chatReconnectAttempt += 1;
+      chatReconnectTimer = setTimeout(async () => {
+        chatReconnectTimer = null;
+        if (chatStopped) return;
+        if (!(await connectChatSocket())) scheduleChatReconnect();
+      }, delay);
+    }
+
+    function handleChatDisconnect(socket) {
+      if (chatStopped || chatSocket !== socket) return;
+      chatSocket = null;
+      scheduleChatRefresh();
+      scheduleChatReconnect();
+    }
+
+    function stopChatConnection() {
+      chatStopped = true;
+      chatConnectionGeneration += 1;
+      stopChatReconnect();
+      stopChatRefresh();
+      const socket = chatSocket;
+      chatSocket = null;
+      if (socket && typeof socket.close === 'function') {
+        try { socket.close(); } catch (_) { }
+      }
+    }
+
+    async function connectChatSocket() {
+      if (chatStopped || chatConnecting) return false;
+      if (chatSocket) return true;
+      const token = getAuthToken();
+      if (!token || typeof WebSocket === 'undefined') return false;
+      const connectionGeneration = chatConnectionGeneration;
+      const isStale = () => chatStopped || connectionGeneration !== chatConnectionGeneration;
+      chatConnecting = true;
+      let ticket = null;
+      try {
+        const response = await fetch('/auth/ws-ticket', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ group_id: groupId })
+        });
+        if (isStale()) return false;
+        const payload = await response.json().catch(() => null);
+        if (isStale() || !response.ok || !payload?.ticket) return false;
+        ticket = payload.ticket;
+      } catch (_) {
+        return false;
+      } finally {
+        chatConnecting = false;
+      }
+      if (isStale()) return false;
+      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const wsUrl = `${protocol}://${window.location.host}/ws/group-chat?groupId=${groupId}&ticket=${encodeURIComponent(ticket)}`;
+      try {
+        chatSocket = new WebSocket(wsUrl);
+      } catch (_) {
+        chatSocket = null;
+        return false;
+      }
+      const socket = chatSocket;
+      socket.addEventListener('open', () => {
+        if (chatSocket !== socket) return;
+        chatReconnectAttempt = 0;
+        stopChatReconnect();
+        stopChatRefresh();
+      });
+      socket.addEventListener('message', (event) => {
+        let payload = null;
+        try {
+          payload = JSON.parse(event.data);
+        } catch (_) {
+          return;
+        }
+        if (payload.type === 'chat' && payload.message) {
+          loadChatMessages(true);
+        }
+      });
+      socket.addEventListener('close', () => handleChatDisconnect(socket));
+      socket.addEventListener('error', () => handleChatDisconnect(socket));
+      return true;
+    }
+
+    async function loadChatMessages(silent = false) {
+      const list = document.getElementById('chat-list');
+      if (!list) return;
+      const token = getAuthToken();
+      if (!token) {
+        setEmpty(list, '登录后可参与聊天');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/retention/groups/${groupId}/activities?type=chat&limit=30`, {
+          headers: buildAuthHeaders()
+        });
+        if (!res.ok) throw new Error('加载失败');
+        const items = await res.json();
+        renderChatList(items.reverse());
+      } catch (err) {
+        if (!silent) setEmpty(list, '加载聊天失败');
+      }
+    }
+
+    function renderAttachments() {
+      const container = document.getElementById('chat-attachments');
+      if (!container) return;
+      if (!chatAttachments.length) {
+        container.innerHTML = '';
+        return;
+      }
+      container.innerHTML = chatAttachments.map((att, index) => `
+        <div class="chat-item">
+          <div class="chat-meta">
+            <span>${att.kind === 'image' ? '图片' : '音频'}</span>
+            <button class="btn btn-secondary" data-remove-attachment="${index}">移除</button>
+          </div>
+          ${att.kind === 'image'
+            ? `<div class="attachment-thumb"><img src="${escapeHtml(att.url)}" alt="image"></div>`
+            : `<audio controls src="${escapeHtml(att.url)}"></audio>`
+          }
+        </div>
+      `).join('');
+      container.querySelectorAll('[data-remove-attachment]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.removeAttachment);
+          if (!Number.isNaN(idx)) {
+            chatAttachments.splice(idx, 1);
+            renderAttachments();
+          }
+        });
+      });
+    }
+
+    async function uploadChatFile(file, kind, options = {}) {
+      const token = getAuthToken();
+      if (!token) {
+        showToast('请先登录');
+        return null;
+      }
+      const { autoSend = false } = options || {};
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/retention/groups/${groupId}/chat-upload?kind=${encodeURIComponent(kind)}&auto_send=${autoSend ? '1' : '0'}`, {
+        method: 'POST',
+        headers: buildAuthHeaders(),
+        body: formData
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error((payload && payload.message) || '上传失败');
+      }
+      return await res.json();
+    }
+
+    async function handleImagePick(file) {
+      if (!file) return;
+      try {
+        const result = await uploadChatFile(file, 'image');
+        if (result?.url) {
+          chatAttachments.push({ kind: 'image', url: result.url, mime: result.mime });
+          renderAttachments();
+        }
+      } catch (err) {
+        showToast(err.message || '图片上传失败');
+      }
+    }
+
+    async function handleAudioPick(file, options = {}) {
+      if (!file) return;
+      const { autoSend = false } = options || {};
+      try {
+        const result = await uploadChatFile(file, 'audio', { autoSend });
+        if (result?.url && !autoSend) {
+          chatAttachments.push({ kind: 'audio', url: result.url, mime: result.mime });
+          renderAttachments();
+        }
+        if (autoSend) {
+          await loadChatMessages(true);
+        }
+      } catch (err) {
+        showToast(err.message || '音频上传失败');
+      }
+    }
+
+    async function toggleRecording() {
+      const recordBtn = document.getElementById('chat-record-btn');
+      if (recorder && recorder.state === 'recording') {
+        recorder.stop();
+        if (recordBtn) recordBtn.textContent = '语音录制';
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        const mimeType = getPreferredAudioMimeType();
+        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) recordedChunks.push(event.data);
+        };
+        recorder.onstop = async () => {
+          stream.getTracks().forEach(track => track.stop());
+          const mime = recorder.mimeType || mimeType || 'audio/webm';
+          const ext = mime.includes('ogg') ? 'ogg' : 'webm';
+          const blob = new Blob(recordedChunks, { type: mime });
+          const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: blob.type });
+          await handleAudioPick(file, { autoSend: true });
+        };
+        recorder.start();
+        if (recordBtn) recordBtn.textContent = '停止录制';
+      } catch (err) {
+        showToast('无法启用麦克风');
+      }
+    }
+
+    async function startHoldRecording() {
+      const recordBtn = document.getElementById('chat-record-btn');
+      if (recorder && recorder.state === 'recording') return;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        const mimeType = getPreferredAudioMimeType();
+        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) recordedChunks.push(event.data);
+        };
+        recorder.onstop = async () => {
+          stream.getTracks().forEach(track => track.stop());
+          const mime = recorder.mimeType || mimeType || 'audio/webm';
+          const ext = mime.includes('ogg') ? 'ogg' : 'webm';
+          const blob = new Blob(recordedChunks, { type: mime });
+          const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: blob.type });
+          await handleAudioPick(file, { autoSend: true });
+        };
+        recorder.start();
+        if (recordBtn) recordBtn.textContent = '松开发送';
+      } catch (err) {
+        showToast('无法启用麦克风');
+      }
+    }
+
+    function stopHoldRecording() {
+      const recordBtn = document.getElementById('chat-record-btn');
+      if (!recorder || recorder.state !== 'recording') {
+        if (recordBtn) recordBtn.textContent = '按住说话';
+        return;
+      }
+      recorder.stop();
+      if (recordBtn) recordBtn.textContent = '按住说话';
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const sendBtn = document.getElementById('chat-send-btn');
+      if (!input) return;
+      const content = input.value.trim();
+      if (!content && chatAttachments.length === 0) return;
+      if (!currentGroup || !currentGroup.is_member) {
+        showToast('加入小组后才能发言');
+        return;
+      }
+      if (sendBtn) sendBtn.disabled = true;
+      try {
+        const payload = { content, attachments: chatAttachments };
+        const res = await fetch(`/api/retention/groups/${groupId}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const errorPayload = await res.json().catch(() => null);
+          throw new Error((errorPayload && errorPayload.message) || '发送失败');
+        }
+        input.value = '';
+        chatAttachments = [];
+        renderAttachments();
+        await loadChatMessages(true);
+      } catch (err) {
+        showToast(err.message || '发送失败');
+      } finally {
+        if (sendBtn) sendBtn.disabled = false;
+      }
+    }
+
+    async function joinGroup() {
+      const token = getAuthToken();
+      if (!token) {
+        showToast('请先登录');
+        return;
+      }
+      const joinBtn = document.getElementById('join-btn');
+      if (joinBtn) joinBtn.disabled = true;
+      try {
+        const res = await fetch(`/api/retention/groups/${groupId}/join`, {
+          method: 'POST',
+          headers: buildAuthHeaders()
+        });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => null);
+          throw new Error((payload && payload.message) || '加入失败');
+        }
+        showToast('已加入小组');
+        await loadGroupDetail();
+        loadChatMessages();
+      } catch (err) {
+        showToast(err.message || '加入失败');
+      } finally {
+        if (joinBtn) joinBtn.disabled = false;
+      }
+    }
+
+    async function leaveGroup() {
+      const leaveBtn = document.getElementById('leave-btn');
+      if (leaveBtn) leaveBtn.disabled = true;
+      try {
+        const res = await fetch(`/api/retention/groups/${groupId}/leave`, {
+          method: 'POST',
+          headers: buildAuthHeaders()
+        });
+        if (!res.ok) {
+          const payload = await res.json().catch(() => null);
+          throw new Error((payload && payload.message) || '退出失败');
+        }
+        showToast('已退出小组');
+        await loadGroupDetail();
+        loadChatMessages();
+      } catch (err) {
+        showToast(err.message || '退出失败');
+      } finally {
+        if (leaveBtn) leaveBtn.disabled = false;
+      }
+    }
+
+    document.getElementById('join-btn').addEventListener('click', joinGroup);
+    document.getElementById('leave-btn').addEventListener('click', leaveGroup);
+    document.getElementById('chat-send-btn').addEventListener('click', sendChatMessage);
+    document.getElementById('chat-input').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+        sendChatMessage();
+      }
+    });
+    document.getElementById('chat-image-btn').addEventListener('click', () => {
+      const input = document.getElementById('chat-image-input');
+      if (input) input.click();
+    });
+    document.getElementById('chat-audio-btn').addEventListener('click', () => {
+      const input = document.getElementById('chat-audio-input');
+      if (input) input.click();
+    });
+    document.getElementById('chat-image-input').addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      handleImagePick(file);
+    });
+    document.getElementById('chat-audio-input').addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      handleAudioPick(file);
+    });
+    const recordBtn = document.getElementById('chat-record-btn');
+    if (recordBtn) {
+      recordBtn.textContent = '按住说话';
+      recordBtn.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        startHoldRecording();
+      });
+      recordBtn.addEventListener('pointerup', (event) => {
+        event.preventDefault();
+        stopHoldRecording();
+      });
+      recordBtn.addEventListener('pointerleave', stopHoldRecording);
+      recordBtn.addEventListener('pointercancel', stopHoldRecording);
+    }
+
+    window.addEventListener('load', () => {
+      loadGroupDetail();
+    });
+    window.addEventListener('beforeunload', stopChatConnection);
+    window.addEventListener('pagehide', stopChatConnection);
+  </script>
+</body>
+</html>

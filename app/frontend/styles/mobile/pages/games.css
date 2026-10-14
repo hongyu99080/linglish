@@ -1,0 +1,375 @@
+/* Game-Themed Pages Styles - Power Station, Arena, Treasure */
+
+/* ========== Explore World Page Styles ========== */
+
+.explore-content {
+  padding: 16px;
+  background: #f0f0f5;
+}
+
+/* ========== Power Station Page Styles ========== */
+
+.power-content {
+  padding: 16px;
+  background: #f0f0f5;
+}
+
+.energy-banner {
+  background: white;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(255, 214, 102, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.energy-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.energy-total {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.energy-total-icon {
+  font-size: 28px;
+}
+
+.energy-summary-main {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.energy-total-number {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.energy-total-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.energy-summary-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.energy-pill-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 215, 0, 0.16);
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.energy-pill-inline.muted {
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.energy-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.energy-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  padding: 6px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  font-size: 12px;
+}
+
+.energy-chip[data-state="mastered"] {
+  background: rgba(129, 230, 217, 0.35);
+}
+
+.energy-chip[data-state="reviewing"] {
+  background: rgba(255, 207, 134, 0.35);
+}
+
+.energy-chip[data-state="learning"] {
+  background: rgba(255, 242, 176, 0.35);
+}
+
+.energy-chip[data-state="encountered"] {
+  background: rgba(204, 191, 255, 0.35);
+}
+
+.energy-chip.active {
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+
+.chip-icon {
+  font-size: 14px;
+}
+
+.chip-text {
+  color: var(--text-secondary);
+}
+
+.chip-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vocab-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.filter-chip {
+  background: white;
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.filter-chip.active {
+  background: #ffd700;
+  border-color: #ffd700;
+  color: #1a1a1a;
+}
+
+.vocabulary-section {
+  margin-bottom: 80px;
+}
+
+.vocab-count {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.vocabulary-list-game {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vocabulary-placeholder,
+.vocabulary-empty {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.vocabulary-empty.hidden,
+.vocabulary-placeholder.hidden {
+  display: none;
+}
+
+.vocab-item-game {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s;
+}
+
+.vocab-item-game:active {
+  transform: scale(0.98);
+}
+
+.vocab-level-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.vocab-level-badge.level-1 {
+  background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+  color: #1a1a1a;
+}
+
+.vocab-level-badge.level-2 {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+}
+
+.vocab-level-badge.level-3 {
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: white;
+}
+
+.vocab-content-game {
+  flex: 1;
+}
+
+.vocab-word-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.vocab-word-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.vocab-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vocab-stats {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* ========== Arena Page Styles ========== */
+
+.arena-content {
+  padding: 16px;
+  background: #f0f0f5;
+}
+
+.arena-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.scenario-categories {
+  margin-bottom: 20px;
+}
+
+.category-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+.pill-btn {
+  background: white;
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.pill-btn.active {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+  color: white;
+}
+
+.scenarios-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* ========== Treasure Page Styles ========== */
+
+.treasure-content {
+  padding: 16px;
+  background: #f0f0f5;
+}
+
+.achievements-preview {
+  margin-bottom: 24px;
+}
+
+.features-menu {
+  margin-bottom: 24px;
+}
+
+.menu-list-treasure {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.menu-item-treasure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--text-primary);
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.2s;
+}
+
+.menu-item-treasure:last-child {
+  border-bottom: none;
+}
+
+.menu-item-treasure:active {
+  background: #f8f8f8;
+}
+
+.menu-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-icon {
+  font-size: 20px;
+}
+
+.menu-text {
+  font-size: 15px;
+  font-weight: 500;
+}

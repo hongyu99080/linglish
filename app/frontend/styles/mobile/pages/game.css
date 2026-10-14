@@ -1,0 +1,497 @@
+:root {
+  --game-bg: oklch(97% 0.03 85);
+  --game-surface: oklch(99% 0.01 85);
+  --game-primary: oklch(70% 0.19 45);
+  --game-secondary: oklch(75% 0.15 200);
+  --game-success: oklch(78% 0.17 145);
+  --game-danger: oklch(68% 0.19 25);
+  --game-star: oklch(85% 0.16 95);
+  --radius-card: 20px;
+  --radius-btn: 999px;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 320ms;
+}
+
+body.game-body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--game-bg);
+  font-family: system-ui, -apple-system, 'PingFang SC', sans-serif;
+  color: oklch(28% 0.02 85);
+}
+
+/* 手机:单列限宽。桌面(≥900px):游戏区放大到 960px,学词视图场景图+词卡双栏并排。 */
+#game-root {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+}
+
+@media (min-width: 560px) {
+  body.game-body { background: oklch(94% 0.03 85); }
+  #game-root {
+    background: var(--game-bg);
+    box-shadow: 0 0 0 1px oklch(88% 0.03 85), 0 18px 60px oklch(70% 0.05 85 / 0.25);
+  }
+}
+
+@media (min-width: 900px) {
+  #game-root {
+    max-width: 960px;
+    padding-bottom: 32px;
+    display: block;
+  }
+  /* 学词:场景图左、词卡右,标题/计数横贯顶部 */
+  #game-root:has(.game-scene) {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-auto-rows: min-content;
+    column-gap: 20px;
+    align-content: start;
+  }
+  #game-root:has(.game-scene) .game-view-title,
+  #game-root:has(.game-scene) .game-learn-counter { grid-column: 1 / -1; }
+  #game-root:has(.game-scene) .game-scene { grid-column: 1; margin-right: 0; }
+  #game-root:has(.game-scene) .game-learn-card { grid-column: 2; margin-left: 0; align-self: start; }
+  #game-root:has(.game-scene) > .game-btn { grid-column: 2; justify-self: stretch; margin: 12px 16px 0 0; }
+  /* 连连看/速答:更大的格子与题面 */
+  .game-board { margin: 8px 24px; gap: 10px; }
+  .game-cell { min-height: 72px; font-size: 16px; }
+  .game-quiz-prompt { font-size: 44px; }
+  .game-learn-photo { max-height: 260px; }
+}
+
+.game-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 52dvh;
+}
+
+.game-stage canvas { display: block; width: 100%; height: 100%; }
+
+.game-btn {
+  border: 0;
+  border-radius: var(--radius-btn);
+  padding: 14px 28px;
+  min-height: 48px;
+  font-size: 17px;
+  font-weight: 600;
+  color: oklch(99% 0 0);
+  background: var(--game-primary);
+  box-shadow: 0 6px 0 oklch(58% 0.19 45), 0 10px 22px oklch(70% 0.19 45 / 0.3);
+  transition: transform var(--duration-fast) var(--ease-spring),
+              box-shadow var(--duration-fast) ease;
+}
+
+.game-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 oklch(58% 0.19 45), 0 4px 10px oklch(70% 0.19 45 / 0.25);
+}
+
+.game-btn:focus-visible {
+  outline: 3px solid var(--game-secondary);
+  outline-offset: 3px;
+}
+
+.game-card {
+  background: var(--game-surface);
+  border-radius: var(--radius-card);
+  padding: 18px;
+  box-shadow: 0 2px 4px oklch(70% 0.05 85 / 0.18), 0 12px 28px oklch(70% 0.05 85 / 0.16);
+}
+
+/* WebGL 不可用时的零资产剪影降级(character-stage.js renderFallback 使用) */
+.game-figure-fallback {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+}
+
+.game-figure-part {
+  position: absolute;
+  border-radius: 12px;
+  transition: filter var(--duration-normal, 300ms) var(--ease-spring),
+              opacity var(--duration-normal, 300ms) var(--ease-spring),
+              transform var(--duration-normal, 300ms) var(--ease-spring);
+}
+
+.game-figure-part[data-unlocked='false'] {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.35;
+  transform: scale(0.9);
+}
+
+.game-figure-part[data-unlocked='true'] {
+  filter: none;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.game-figure-fallback[data-revived='true'] .game-figure-part {
+  filter: drop-shadow(0 0 8px var(--game-star));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+.game-view-title { margin: 20px 16px 12px; font-size: 22px; font-weight: 800; }
+.game-error, .game-loading { margin: 40px 16px; text-align: center; color: oklch(45% 0.02 85); }
+
+.game-btn--ghost {
+  color: var(--game-primary);
+  background: var(--game-surface);
+  box-shadow: inset 0 0 0 2px var(--game-primary);
+}
+
+/* 关卡地图:纵向蜿蜒路径,靠 nth-child 左右错位造出蛇形,不用绝对定位 */
+.game-map-title { margin: 24px 16px 4px; font-size: 26px; font-weight: 800; }
+
+/* 六章切换条:横向滚动,当前章高亮,未到章上锁置灰 */
+.game-chapter-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 8px 16px 4px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+.game-chapter-tab {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--game-primary);
+  background: var(--game-surface);
+  box-shadow: inset 0 0 0 2px oklch(88% 0.05 45);
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+.game-chapter-tab[data-active='true'] {
+  color: oklch(99% 0 0);
+  background: var(--game-primary);
+  box-shadow: 0 4px 0 oklch(58% 0.19 45);
+}
+.game-chapter-tab:disabled { color: oklch(62% 0.02 85); box-shadow: inset 0 0 0 2px oklch(88% 0.02 85); }
+.game-chapter-tab:focus-visible { outline: 3px solid var(--game-secondary); outline-offset: 2px; }
+
+.game-result-hint {
+  margin: 10px 20px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: oklch(95% 0.06 95);
+  color: oklch(45% 0.1 60);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+.game-map-stars { margin: 0 16px 20px; color: var(--game-star); font-weight: 700; }
+
+.game-map-continue {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 8px 16px 22px;
+  text-align: center;
+}
+.game-map-continue:disabled {
+  color: oklch(52% 0.02 85);
+  background: oklch(88% 0.02 85);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.game-node {
+  display: block;
+  width: 132px;
+  min-height: 64px;
+  margin: 14px 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  font-size: 16px;
+  font-weight: 700;
+  color: oklch(99% 0 0);
+  background: var(--game-secondary);
+  box-shadow: 0 6px 0 oklch(60% 0.15 200);
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+
+.game-node:nth-child(odd) { margin-left: 22%; }
+.game-node:nth-child(even) { margin-left: 48%; }
+.game-node:active { transform: translateY(4px); }
+.game-node:focus-visible { outline: 3px solid var(--game-primary); outline-offset: 3px; }
+.game-node:disabled { background: oklch(82% 0.02 85); box-shadow: none; color: oklch(52% 0.02 85); }
+
+/* 当前关呼吸光效 */
+.game-node[data-current='true'] {
+  background: var(--game-primary);
+  box-shadow: 0 6px 0 oklch(58% 0.19 45);
+  animation: game-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes game-breathe {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow: 0 6px 0 oklch(58% 0.19 45), 0 0 0 0 oklch(70% 0.19 45 / 0);
+  }
+  50% {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 0 oklch(58% 0.19 45), 0 0 0 7px oklch(70% 0.19 45 / 0.18);
+  }
+}
+
+.game-node__gate { display: block; font-size: 12px; font-weight: 500; opacity: 0.85; }
+
+/* 学:词卡 */
+.game-learn-counter { margin: 0 16px; color: oklch(52% 0.02 85); }
+.game-learn-card { margin: 12px 16px; text-align: center; }
+.game-learn-emoji { margin: 4px 0 0; font-size: 64px; line-height: 1.15; }
+.game-learn-photo {
+  display: block;
+  width: 100%;
+  max-height: 190px;
+  object-fit: cover;
+  border-radius: 14px;
+  margin: 0 0 10px;
+}
+
+/* 整体场景图(languageguide 式):全景常驻,标记脉冲定位当前词 */
+.game-scene {
+  position: relative;
+  display: block;
+  width: calc(100% - 32px);
+  margin: 4px 16px 12px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 2px 4px oklch(70% 0.05 85 / 0.18), 0 12px 28px oklch(70% 0.05 85 / 0.16);
+}
+.game-scene:focus-visible { outline: 3px solid var(--game-secondary); outline-offset: 3px; }
+.game-scene__img { display: block; width: 100%; height: auto; }
+.game-scene__marker {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 4px solid var(--game-danger);
+  border-radius: 50%;
+  background: oklch(68% 0.19 25 / 0.18);
+  box-shadow: 0 0 0 3px oklch(99% 0.01 85 / 0.85);
+  pointer-events: none;
+  transition: left var(--duration-normal) var(--ease-spring), top var(--duration-normal) var(--ease-spring);
+}
+.game-scene__marker--pulse { animation: game-marker-pulse 1.1s ease-out 2; }
+@keyframes game-marker-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+.game-learn-art { display: block; width: 88px; height: 88px; margin: 6px auto 0; font-size: 64px; line-height: 88px; }
+.game-cell__art { display: block; width: 30px; height: 30px; margin: 0 auto 2px; font-size: 24px; line-height: 30px; }
+.game-cell__photo { display: block; width: 46px; height: 34px; margin: 0 auto 3px; object-fit: cover; border-radius: 6px; }
+.game-spell-art { display: inline-block; width: 30px; height: 30px; margin-right: 8px; vertical-align: -6px; font-size: 24px; line-height: 30px; }
+.game-spell-photo { display: inline-block; width: 48px; height: 36px; margin-right: 8px; object-fit: cover; border-radius: 6px; vertical-align: -10px; }
+.game-learn-word { margin: 8px 0 4px; font-size: 40px; font-weight: 800; letter-spacing: 0.02em; }
+.game-learn-ipa { margin: 0; color: oklch(52% 0.02 85); font-size: 15px; }
+.game-learn-zh { margin: 8px 0 16px; font-size: 20px; }
+
+/* 连连看棋盘:6 列 × 4 行,cell 用 gridArea 定位 */
+.game-timer { margin: 0 16px; font-weight: 700; color: var(--game-danger); }
+.game-combo { margin: 4px 16px; min-height: 22px; font-weight: 800; color: var(--game-star); opacity: 0; }
+.game-combo[data-active='true'] { opacity: 1; animation: game-pop var(--duration-normal) var(--ease-spring); }
+
+@keyframes game-pop {
+  from { transform: scale(0.6); }
+  to { transform: scale(1); }
+}
+
+/* 行数随词数变(8-10 词 → 4-5 行),所以只固定列数,行高由 auto-rows 兜底。 */
+.game-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(56px, auto);
+  gap: 6px;
+  margin: 8px 12px;
+}
+
+.game-board[data-shake='true'] { animation: game-shake 0.5s ease; }
+
+@keyframes game-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.game-cell {
+  position: relative;
+  min-height: 56px;
+  padding: 4px;
+  border: 0;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--game-surface);
+  box-shadow: 0 3px 0 oklch(88% 0.03 85);
+  transition: transform var(--duration-fast) var(--ease-spring),
+              opacity var(--duration-fast) ease;
+}
+
+.game-cell[data-picked='true'] { transform: scale(1.08); box-shadow: 0 0 0 3px var(--game-primary); }
+.game-cell:focus-visible { outline: 3px solid var(--game-primary); outline-offset: 2px; }
+.game-cell__hint {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--game-secondary);
+}
+
+/* 拼写工坊 */
+.game-spell-zh { margin: 12px 16px 4px; font-size: 20px; text-align: center; }
+.game-spell-slots {
+  margin: 12px 16px;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-align: center;
+}
+
+.game-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 16px;
+}
+
+.game-tiles[data-shake='true'] { animation: game-shake 0.5s ease; }
+
+.game-tile {
+  width: 48px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--game-surface);
+  box-shadow: 0 4px 0 oklch(88% 0.03 85);
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+
+.game-tile:active { transform: translateY(3px); }
+.game-tile:focus-visible { outline: 3px solid var(--game-primary); outline-offset: 2px; }
+
+/* 速答:倒计时条由 JS 设 animation-duration */
+.game-countdown {
+  height: 8px;
+  margin: 0 auto 16px;
+  max-width: 420px;
+  width: calc(100% - 32px);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--game-success), var(--game-star), var(--game-danger));
+  transform-origin: left center;
+  animation-name: game-countdown-shrink;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (min-width: 900px) {
+  .game-countdown { max-width: 720px; }
+}
+
+@keyframes game-countdown-shrink {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.game-quiz-prompt { margin: 8px 16px 20px; font-size: 34px; font-weight: 800; text-align: center; }
+
+/* 选项:白底卡片 + A/B/C/D 字母徽章(CSS 计数器,不动 JS),
+   居中限宽——满宽橙色长条在宽屏上像四根香肠。 */
+.game-options {
+  display: grid;
+  gap: 12px;
+  margin: 0 auto;
+  padding: 0 16px;
+  max-width: 420px;
+  counter-reset: quiz-option;
+}
+
+.game-btn--option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 12px 18px;
+  color: var(--game-primary);
+  background: var(--game-surface);
+  box-shadow: 0 4px 0 oklch(88% 0.05 45), 0 8px 18px oklch(70% 0.05 85 / 0.18);
+  border-radius: var(--radius-card);
+  font-size: 19px;
+}
+
+.game-btn--option::before {
+  counter-increment: quiz-option;
+  content: counter(quiz-option, upper-alpha);
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: oklch(94% 0.06 45);
+  color: var(--game-primary);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.game-btn--option:hover {
+  filter: brightness(0.98);
+  box-shadow: 0 4px 0 oklch(88% 0.05 45), 0 10px 22px oklch(70% 0.05 85 / 0.24);
+}
+.game-btn--option:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 oklch(88% 0.05 45), 0 3px 8px oklch(70% 0.05 85 / 0.15);
+}
+
+@media (min-width: 900px) {
+  .game-options { max-width: 720px; grid-template-columns: 1fr 1fr; }
+}
+
+/* Boss 血条与护盾 */
+.game-boss-hp {
+  margin: 20px 16px 4px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--game-danger);
+}
+
+.game-boss-shields { margin: 0 16px 16px; font-size: 20px; letter-spacing: 0.1em; }
+
+/* 结算页 */
+.game-result-stars {
+  margin: 16px;
+  font-size: 44px;
+  text-align: center;
+  animation: game-pop var(--duration-normal) var(--ease-spring);
+}
+
+.game-result-accuracy, .game-result-xp, .game-result-streak {
+  margin: 4px 16px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.game-result-xp { color: var(--game-success); }

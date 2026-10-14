@@ -1,0 +1,202 @@
+/**
+ * Critical CSS - Above-the-fold styles for fast initial render
+ *
+ * This file contains only the essential styles needed to render the
+ * first viewport content without layout shift. Keep this file small
+ * (<14KB uncompressed) for optimal performance.
+ */
+
+/* Reset & Box Model */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base Typography */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: #3c3c3c;
+  background-color: #fdfdfd;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* CSS Variables for Theme */
+:root {
+  --primary: #58cc02;
+  --primary-shine: #89e219;
+  --primary-shadow: #46a302;
+  --secondary: #ce82ff;
+  --accent: #ff9600;
+  --bg-page: #fdfdfd;
+  --surface-card: #ffffff;
+  --text-main: #3c3c3c;
+  --text-sub: #777777;
+  --border-color: #e5e5e5;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --shadow-card: 0 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Links & Buttons Base */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Loading/Splash Screen Styles */
+.splash-container {
+  text-align: center;
+  color: white;
+  max-width: 500px;
+  padding: 20px;
+}
+
+.app-title {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.app-subtitle {
+  font-size: 20px;
+  opacity: 0.95;
+  margin-bottom: 48px;
+}
+
+/* Header/Hero Section */
+.today-hero {
+  padding: 16px 20px 10px;
+}
+
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.hero-greeting {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.5px;
+}
+
+/* Navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface-card);
+  border-top: 1px solid var(--border-color);
+  padding: 8px 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 1000;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  color: var(--text-sub);
+  transition: color 0.2s;
+}
+
+.nav-item.active {
+  color: var(--primary);
+}
+
+/* Card Components */
+.card {
+  background: var(--surface-card);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* Content Sections */
+.content-section {
+  padding: 0 20px;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-title {
+    font-size: 36px;
+  }
+
+  .app-subtitle {
+    font-size: 16px;
+  }
+}
+
+/* Prevent FOUC (Flash of Unstyled Content) */
+.js-loading {
+  visibility: hidden;
+}
+
+.js-loaded {
+  visibility: visible;
+}
+
+/* Placeholder for dynamic content (prevents CLS) */
+.placeholder {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--r-sm);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Image placeholders to prevent layout shift */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+img[data-src] {
+  background: #f0f0f0;
+}

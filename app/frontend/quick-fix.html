@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Quick Login Fix</title>
+  <script src="./auth-helpers.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    .box {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; margin-top: 0; }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4a5ff7;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover { background: #3a4fd7; }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+    .success { background: #d4edda; color: #155724; display: block; }
+    .error { background: #f8d7da; color: #721c24; display: block; }
+    .info { background: #d1ecf1; color: #0c5460; margin-bottom: 20px; padding: 15px; border-radius: 5px; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>🔐 快速登录修复</h1>
+
+    <div class="info" id="current-status">
+      检查中...
+    </div>
+
+    <form id="login-form">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">登录并保存 Token</button>
+    </form>
+
+    <div id="result" class="result"></div>
+
+    <div style="margin-top: 20px;">
+      <button onclick="checkStatus()" style="background: #6c757d;">🔍 检查 Token 状态</button>
+      <button onclick="clearAndReload()" style="background: #dc3545; margin-top: 5px;">🗑️ 清除并刷新</button>
+      <button onclick="goToVideoReader()" style="background: #28a745; margin-top: 5px;">➡️ 前往视频页面</button>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+
+    // 检查初始状态
+    function checkStatus() {
+      const token = localStorage.getItem('linglish_token');
+      const statusDiv = document.getElementById('current-status');
+
+      if (token && token !== 'null' && token !== 'undefined') {
+        statusDiv.innerHTML = `
+          ✅ <strong>Token 已保存</strong><br>
+          <small>认证凭证存在，未显示敏感内容</small>
+        `;
+        statusDiv.className = 'success';
+      } else {
+        statusDiv.innerHTML = '❌ <strong>未找到 Token</strong><br>请在下方登录';
+        statusDiv.className = 'error';
+      }
+    }
+
+    // 页面加载时检查
+    checkStatus();
+
+    // 登录表单
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const resultDiv = document.getElementById('result');
+
+      resultDiv.textContent = '登录中...';
+      resultDiv.className = 'result info';
+      resultDiv.style.display = 'block';
+
+      try {
+        console.log('Attempting login...');
+
+        const response = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        console.log('Response status:', response.status);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || '登录失败');
+        }
+
+        // 保存 token
+        const token = data.access_token;
+
+        if (!token) {
+          throw new Error('服务器没有返回 token');
+        }
+
+        // 多次尝试保存
+        localStorage.setItem('linglish_token', token);
+
+        // 验证保存
+        const savedToken = localStorage.getItem('linglish_token');
+        console.log('Token saved:', savedToken ? 'YES' : 'NO');
+
+        if (savedToken !== token) {
+          throw new Error('Token 保存失败！可能是浏览器设置阻止了 localStorage');
+        }
+
+        resultDiv.innerHTML = `
+          ✅ <strong>登录成功！</strong><br>
+          Token 已保存到 localStorage<br>
+          <button onclick="goToVideoReader()" style="margin-top: 10px;">前往视频页面</button>
+        `;
+        resultDiv.className = 'result success';
+
+        checkStatus();
+
+      } catch (err) {
+        console.error('Login error:', err);
+        resultDiv.innerHTML = `
+          ❌ <strong>错误：</strong>${err.message}<br><br>
+          <strong>调试信息：</strong><br>
+          localStorage 可用: ${typeof(Storage) !== 'undefined' ? '是' : '否'}<br>
+          Cookies 启用: ${navigator.cookieEnabled ? '是' : '否'}<br>
+          <br>
+          <small>请检查浏览器控制台获取更多信息</small>
+        `;
+        resultDiv.className = 'result error';
+      }
+    });
+
+    function clearAndReload() {
+      if (confirm('确定要清除 localStorage 并重新加载页面？')) {
+        localStorage.clear();
+        location.reload();
+      }
+    }
+
+    function goToVideoReader() {
+      const token = localStorage.getItem('linglish_token');
+      if (token && token !== 'null') {
+        window.location.href = './video-reader.html';
+      } else {
+        alert('请先登录！');
+      }
+    }
+  </script>
+</body>
+</html>

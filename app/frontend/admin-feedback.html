@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理后台 - 用户反馈</title>
+  <link rel="stylesheet" href="./admin-styles.css" />
+  <script src="./admin-common.js"></script>
+  <style>
+    .feedback-filters {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .feedback-item {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1rem;
+      transition: box-shadow 0.2s;
+    }
+    .feedback-item:hover {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .feedback-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .feedback-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      color: var(--gray-600);
+      font-size: 0.875rem;
+    }
+    .feedback-id {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    .feedback-content {
+      background: var(--gray-50);
+      padding: 1rem;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      margin: 1rem 0;
+      border-left: 3px solid var(--primary-color);
+    }
+    .feedback-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .feedback-attachments {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .feedback-attachment {
+      width: 140px;
+      height: 100px;
+      border-radius: 8px;
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+      background: var(--gray-50);
+      display: block;
+    }
+    .feedback-attachment img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .feedback-replies {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--gray-200);
+    }
+    .reply-item {
+      padding: 0.75rem;
+      background: #f0f9ff;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+    }
+    .reply-meta {
+      font-size: 0.75rem;
+      color: var(--gray-500);
+      margin-bottom: 0.5rem;
+    }
+    .reply-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .reply-form input {
+      flex: 1;
+    }
+    .priority-badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .priority-high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .priority-medium {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .priority-low {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-content">
+    <!-- 筛选和操作 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">📋 用户反馈管理</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="exportFeedback()">
+            <span>📊</span>
+            <span>导出CSV</span>
+          </button>
+          <button class="admin-btn admin-btn-sm admin-btn-primary" onclick="loadFeedback()">
+            <span>🔄</span>
+            <span>刷新</span>
+          </button>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div class="feedback-filters">
+          <div class="admin-form-group" style="margin-bottom: 0;">
+            <label class="admin-form-label">反馈状态</label>
+            <select id="filter-status" class="admin-form-input" onchange="loadFeedback()">
+              <option value="">全部状态</option>
+              <option value="open">待处理 (Open)</option>
+              <option value="in_progress">处理中 (In Progress)</option>
+              <option value="resolved">已解决 (Resolved)</option>
+              <option value="closed">已关闭 (Closed)</option>
+            </select>
+          </div>
+          <div class="admin-form-group" style="margin-bottom: 0;">
+            <label class="admin-form-label">反馈分类</label>
+            <select id="filter-category" class="admin-form-input" onchange="loadFeedback()">
+              <option value="">全部分类</option>
+              <option value="bug">Bug</option>
+              <option value="feature">功能建议</option>
+              <option value="improvement">改进建议</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+          <div class="admin-form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+            <label class="admin-form-label">搜索</label>
+            <input type="text" id="filter-search" class="admin-form-input" placeholder="搜索反馈内容..." oninput="debounceSearchFeedback()">
+          </div>
+        </div>
+        <div style="margin-top: 1rem; font-size: 0.875rem; color: var(--gray-600);">
+          <span id="feedback-count">加载中...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 批量操作栏 -->
+    <div id="batch-actions-bar" class="admin-card" style="display: none; margin-bottom: 1rem;">
+      <div class="admin-card-body">
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+          <span style="font-weight: 500;">
+            已选择 <strong id="selected-count">0</strong> 条反馈
+          </span>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <select id="batch-status-select" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;">
+              <option value="">批量修改状态...</option>
+              <option value="open">待处理</option>
+              <option value="in_progress">处理中</option>
+              <option value="resolved">已解决</option>
+              <option value="closed">已关闭</option>
+            </select>
+            <button class="admin-btn admin-btn-sm admin-btn-primary" onclick="applyBatchStatus()">
+              <span>✓</span>
+              <span>应用</span>
+            </button>
+            <button class="admin-btn admin-btn-sm admin-btn-danger" onclick="batchDelete()">
+              <span>🗑️</span>
+              <span>批量删除</span>
+            </button>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="clearSelection()">
+              <span>✕</span>
+              <span>取消选择</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 反馈列表 -->
+    <div id="feedback-list"></div>
+  </div>
+
+  <script>
+    // 初始化页面
+    initAdminPage('用户反馈');
+
+    let allFeedback = [];
+    let filteredFeedback = [];
+    let searchDebounceTimer = null;
+    let selectedFeedback = new Set(); // 用于存储选中的反馈ID
+
+    // 加载反馈
+    async function loadFeedback() {
+      try {
+        const listEl = document.getElementById('feedback-list');
+
+        // 显示骨架屏
+        listEl.innerHTML = `
+          <div class="admin-card">
+            <div class="admin-card-body">
+              <div class="skeleton skeleton-title"></div>
+              <div class="skeleton skeleton-text long"></div>
+              <div class="skeleton skeleton-text medium"></div>
+            </div>
+          </div>
+        `;
+
+        const statusFilter = document.getElementById('filter-status').value;
+        const qs = statusFilter ? `?status=${encodeURIComponent(statusFilter)}` : '';
+        const data = await AdminAPI.get(`/admin/feedback${qs}`);
+
+        allFeedback = data.items || [];
+        applyFeedbackFilters();
+
+      } catch (error) {
+        console.error('加载反馈失败:', error);
+        const listEl = document.getElementById('feedback-list');
+        listEl.innerHTML = `
+          <div class="admin-empty-state">
+            <div class="admin-empty-icon">❌</div>
+            <p class="admin-empty-text">加载失败: ${AdminUtils.escapeHtml(error.message)}</p>
+          </div>
+        `;
+      }
+    }
+
+    // 应用筛选
+    function applyFeedbackFilters() {
+      const categoryFilter = document.getElementById('filter-category').value;
+      const searchTerm = document.getElementById('filter-search').value.toLowerCase().trim();
+
+      let filtered = [...allFeedback];
+
+      // 分类筛选
+      if (categoryFilter) {
+        filtered = filtered.filter(f => f.category === categoryFilter);
+      }
+
+      // 搜索筛选
+      if (searchTerm) {
+        filtered = filtered.filter(f => {
+          const content = (f.content || '').toLowerCase();
+          const email = (f.email || '').toLowerCase();
+          const username = (f.username || '').toLowerCase();
+          return content.includes(searchTerm) || email.includes(searchTerm) || username.includes(searchTerm);
+        });
+      }
+
+      filteredFeedback = filtered;
+      renderFeedback(filtered);
+    }
+
+    // 渲染反馈列表
+    function renderFeedback(feedback) {
+      const listEl = document.getElementById('feedback-list');
+      const countEl = document.getElementById('feedback-count');
+
+      countEl.textContent = `共 ${allFeedback.length} 条反馈，显示 ${feedback.length} 条`;
+
+      if (feedback.length === 0) {
+        listEl.innerHTML = `
+          <div class="admin-empty-state">
+            <div class="admin-empty-icon">📭</div>
+            <p class="admin-empty-text">暂无反馈</p>
+          </div>
+        `;
+        return;
+      }
+
+      const html = feedback.map(item => {
+        const statusBadge = getStatusBadge(item.status);
+        const categoryText = getCategoryText(item.category);
+        const timeStr = new Date(item.created_at).toLocaleString('zh-CN');
+        const isChecked = selectedFeedback.has(item.id);
+
+        return `
+          <div class="feedback-item">
+            <div class="feedback-header">
+              <div class="feedback-meta">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                  <input type="checkbox"
+                    ${isChecked ? 'checked' : ''}
+                    onchange="toggleFeedbackSelection(${item.id})"
+                    style="width: 18px; height: 18px; cursor: pointer;">
+                  <span class="feedback-id">#${item.id}</span>
+                </label>
+                <span>${AdminUtils.escapeHtml(item.email || item.username || '未知用户')}</span>
+                <span>${categoryText}</span>
+                <span>${timeStr}</span>
+              </div>
+              <div class="feedback-actions">
+                ${statusBadge}
+                <select class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="updateFeedbackStatus(${item.id}, this.value)">
+                  <option value="open" ${item.status === 'open' ? 'selected' : ''}>待处理</option>
+                  <option value="in_progress" ${item.status === 'in_progress' ? 'selected' : ''}>处理中</option>
+                  <option value="resolved" ${item.status === 'resolved' ? 'selected' : ''}>已解决</option>
+                  <option value="closed" ${item.status === 'closed' ? 'selected' : ''}>已关闭</option>
+                </select>
+              </div>
+            </div>
+            <div class="feedback-content">${AdminUtils.escapeHtml(item.content || '')}</div>
+            ${renderAttachments(item.attachments || [])}
+            ${renderReplies(item.replies || [])}
+            <div class="reply-form">
+              <input type="text" class="admin-form-input" placeholder="输入回复内容..." id="reply-input-${item.id}">
+              <button class="admin-btn admin-btn-primary" onclick="sendReply(${item.id})">
+                <span>💬</span>
+                <span>回复</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      listEl.innerHTML = html;
+    }
+
+    // 渲染回复
+    function renderReplies(replies) {
+      if (!replies || replies.length === 0) return '';
+
+      const html = replies.map(reply => `
+        <div class="reply-item">
+          <div class="reply-meta">
+            <strong>${reply.role === 'admin' ? '管理员' : '用户'}</strong> · ${new Date(reply.created_at).toLocaleString('zh-CN')}
+          </div>
+          <div>${AdminUtils.escapeHtml(reply.message || '')}</div>
+        </div>
+      `).join('');
+
+      return `<div class="feedback-replies">${html}</div>`;
+    }
+
+    function renderAttachments(attachments) {
+      let list = attachments;
+      if (typeof list === 'string') {
+        try { list = JSON.parse(list); } catch (_) { list = []; }
+      }
+      if (!Array.isArray(list) || list.length === 0) return '';
+      const html = list.map(att => {
+        const url = AdminUtils.escapeHtml(att.url || '');
+        const name = AdminUtils.escapeHtml(att.name || 'attachment');
+        if (!url) return '';
+        return `
+          <a class="feedback-attachment" href="${url}" target="_blank" rel="noopener">
+            <img src="${url}" alt="${name}">
+          </a>
+        `;
+      }).join('');
+      return html ? `<div class="feedback-attachments">${html}</div>` : '';
+    }
+
+    // 获取状态徽章
+    function getStatusBadge(status) {
+      const badges = {
+        'open': '<span class="admin-badge admin-badge-warning">待处理</span>',
+        'in_progress': '<span class="admin-badge admin-badge-primary">处理中</span>',
+        'resolved': '<span class="admin-badge admin-badge-success">已解决</span>',
+        'closed': '<span class="admin-badge admin-badge-secondary">已关闭</span>'
+      };
+      return badges[status] || badges.open;
+    }
+
+    // 获取分类文本
+    function getCategoryText(category) {
+      const texts = {
+        'bug': '🐛 Bug',
+        'feature': '✨ 功能建议',
+        'improvement': '📈 改进建议',
+        'other': '💬 其他'
+      };
+      return texts[category] || category;
+    }
+
+    // 更新反馈状态
+    async function updateFeedbackStatus(id, status) {
+      try {
+        await AdminAPI.post(`/admin/feedback/${id}/status`, { status });
+        AdminUtils.showToast('状态已更新', 'success');
+        loadFeedback();
+      } catch (error) {
+        console.error('更新状态失败:', error);
+        AdminUtils.showToast('更新失败: ' + error.message, 'error');
+      }
+    }
+
+    // 发送回复
+    async function sendReply(id) {
+      try {
+        const inputEl = document.getElementById(`reply-input-${id}`);
+        const message = inputEl.value.trim();
+
+        if (!message) {
+          AdminUtils.showToast('请输入回复内容', 'warning');
+          return;
+        }
+
+        await AdminAPI.post(`/admin/feedback/${id}/reply`, { message });
+        AdminUtils.showToast('回复已发送', 'success');
+        inputEl.value = '';
+        loadFeedback();
+      } catch (error) {
+        console.error('发送回复失败:', error);
+        AdminUtils.showToast('发送失败: ' + error.message, 'error');
+      }
+    }
+
+    // 防抖搜索
+    function debounceSearchFeedback() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        applyFeedbackFilters();
+      }, 300);
+    }
+
+    // ===== 批量操作功能 =====
+
+    // 切换反馈选择
+    function toggleFeedbackSelection(id) {
+      if (selectedFeedback.has(id)) {
+        selectedFeedback.delete(id);
+      } else {
+        selectedFeedback.add(id);
+      }
+      updateBatchActionsBar();
+    }
+
+    // 更新批量操作栏
+    function updateBatchActionsBar() {
+      const bar = document.getElementById('batch-actions-bar');
+      const countEl = document.getElementById('selected-count');
+
+      countEl.textContent = selectedFeedback.size;
+
+      if (selectedFeedback.size > 0) {
+        bar.style.display = 'block';
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+
+    // 清除选择
+    function clearSelection() {
+      selectedFeedback.clear();
+      updateBatchActionsBar();
+      renderFeedback(filteredFeedback);
+    }
+
+    // 应用批量状态更新
+    async function applyBatchStatus() {
+      const status = document.getElementById('batch-status-select').value;
+
+      if (!status) {
+        AdminUtils.showToast('请选择要更新的状态', 'warning');
+        return;
+      }
+
+      if (selectedFeedback.size === 0) {
+        AdminUtils.showToast('请先选择反馈项', 'warning');
+        return;
+      }
+
+      if (!AdminUtils.confirm(`确定要将 ${selectedFeedback.size} 条反馈标记为 "${getStatusText(status)}" 吗？`)) {
+        return;
+      }
+
+      try {
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const id of selectedFeedback) {
+          try {
+            await AdminAPI.post(`/admin/feedback/${id}/status`, { status });
+            successCount++;
+          } catch (error) {
+            console.error(`更新反馈 ${id} 失败:`, error);
+            errorCount++;
+          }
+        }
+
+        AdminUtils.showToast(
+          `批量更新完成：成功 ${successCount} 条${errorCount > 0 ? `, 失败 ${errorCount} 条` : ''}`,
+          errorCount > 0 ? 'warning' : 'success'
+        );
+
+        selectedFeedback.clear();
+        document.getElementById('batch-status-select').value = '';
+        loadFeedback();
+
+      } catch (error) {
+        console.error('批量更新失败:', error);
+        AdminUtils.showToast('批量更新失败: ' + error.message, 'error');
+      }
+    }
+
+    // 批量删除
+    async function batchDelete() {
+      if (selectedFeedback.size === 0) {
+        AdminUtils.showToast('请先选择反馈项', 'warning');
+        return;
+      }
+
+      if (!AdminUtils.confirm(`确定要删除 ${selectedFeedback.size} 条反馈吗？此操作不可撤销！`)) {
+        return;
+      }
+
+      try {
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const id of selectedFeedback) {
+          try {
+            await AdminAPI.delete(`/admin/feedback/${id}`);
+            successCount++;
+          } catch (error) {
+            console.error(`删除反馈 ${id} 失败:`, error);
+            errorCount++;
+          }
+        }
+
+        AdminUtils.showToast(
+          `批量删除完成：成功 ${successCount} 条${errorCount > 0 ? `, 失败 ${errorCount} 条` : ''}`,
+          errorCount > 0 ? 'warning' : 'success'
+        );
+
+        selectedFeedback.clear();
+        loadFeedback();
+
+      } catch (error) {
+        console.error('批量删除失败:', error);
+        AdminUtils.showToast('批量删除失败: ' + error.message, 'error');
+      }
+    }
+
+    // 导出反馈
+    function exportFeedback() {
+      const exportData = filteredFeedback.map(item => ({
+        'ID': item.id,
+        '用户': item.email || item.username || '未知',
+        '分类': getCategoryText(item.category),
+        '状态': getStatusText(item.status),
+        '内容': item.content || '',
+        '回复数': (item.replies || []).length,
+        '创建时间': item.created_at,
+        '更新时间': item.updated_at
+      }));
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      AdminUtils.exportToCSV(exportData, `linglish-feedback-${timestamp}.csv`);
+    }
+
+    // 获取状态文本
+    function getStatusText(status) {
+      const texts = {
+        'open': '待处理',
+        'in_progress': '处理中',
+        'resolved': '已解决',
+        'closed': '已关闭'
+      };
+      return texts[status] || status;
+    }
+
+    // 页面加载后执行
+    loadFeedback();
+  </script>
+</body>
+</html>

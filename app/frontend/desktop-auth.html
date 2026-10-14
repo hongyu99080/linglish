@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <script src="/env.js"></script>
+  <script src="./js/auth-manager.js"></script>
+  <script src="./js/oauth-bootstrap.js?v=1"></script>
+  <script src="./js/storage-helper.js"></script>
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors and storage warnings
+    (function () {
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+          /iosMetadata\.js/i,
+          /Wu\.updateConfig/i,
+          /ul\.updateConfig/i,
+          /cloudflareinsights/i,
+          /beacon\.min\.js/i,
+          /Access to storage is not allowed/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            const name = error.name || '';
+            const message = error.message || '';
+
+            // Check error message and name
+            if (matchMsg(message) || matchMsg(name)) return true;
+
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/iosMetadata\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            if (/Wu\.|ul\./i.test(stack)) return true;
+            if (/cloudflare|beacon/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function (...args) {
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function (...args) {
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev && ev.reason;
+            if (reason && reason.name === 'SyntaxError') {
+              const msg = reason.message || '';
+              if (matchMsg(msg)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                ev.stopImmediatePropagation();
+                return;
+              }
+            }
+            const msg = (reason && reason.message) || (reason && reason.toString && reason.toString()) || reason;
+            if (matchMsg(String(msg || ''))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch (_) { }
+        }, true);
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = (ev && ev.message) || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (ev && ev.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            const filename = (ev && ev.filename) || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js|iosMetadata\.js|^VM\d+:/i.test(filename)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch (_) { }
+        }, true);
+      } catch (_) { }
+    })();
+
+    // Keep valid sessions intact. Use ?reset_auth=1 only when support needs to clear a bad local session.
+    (function clearAuthCacheWhenRequested() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('reset_auth') !== '1' && params.get('clear_auth') !== '1') return;
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        localStorage.removeItem('linglish_token');
+        sessionStorage.removeItem('linglish_token');
+        localStorage.removeItem('is_guest');
+        localStorage.removeItem('guest_id');
+        sessionStorage.removeItem('is_guest');
+        sessionStorage.removeItem('guest_id');
+      } catch (_) { }
+    })();
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="alternate icon" href="/linglish-favicon.png?v=1" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>Linglish - 账号登录（桌面版）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700&display=swap">
+  <link rel="stylesheet" href="./styles/tokens.css?v=1">
+  <script src="./i18n.js"></script>
+  <script src="./auth-helpers.js"></script>
+  <script src="./guest-check.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --brand: #0ea5e9;
+      --brand-strong: #0284c7;
+      --accent: #2dd4bf;
+      --ink: #0f172a;
+      --muted: #6b7280;
+      --border: #e2e8f0;
+      --surface: rgba(255, 255, 255, 0.9);
+      --glass: rgba(255, 255, 255, 0.75);
+      --shadow: 0 24px 60px rgba(15, 23, 42, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Manrope", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(45, 212, 191, 0.16), transparent 45%),
+        radial-gradient(circle at 85% 10%, rgba(15, 118, 110, 0.12), transparent 35%),
+        radial-gradient(circle at 20% 85%, rgba(148, 163, 184, 0.2), transparent 45%),
+        linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: repeating-linear-gradient(45deg, rgba(15, 23, 42, 0.02) 0, rgba(15, 23, 42, 0.02) 1px, transparent 1px, transparent 6px);
+      opacity: 0.6;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 48px auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      position: relative;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 28px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      background: linear-gradient(110deg, rgba(15, 118, 110, 0.08), rgba(14, 165, 233, 0.08));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--brand), var(--accent));
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: 1px;
+      box-shadow: 0 12px 24px rgba(15, 118, 110, 0.2);
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: var(--ink);
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 0;
+      animation: slideUp 0.8s ease both;
+    }
+
+    .hero {
+      padding: 34px 32px 36px;
+      border-right: 1px solid rgba(148, 163, 184, 0.25);
+      background:
+        radial-gradient(circle at 30% 0%, rgba(15, 118, 110, 0.15), transparent 45%),
+        radial-gradient(circle at 90% 20%, rgba(14, 165, 233, 0.14), transparent 40%),
+        rgba(255, 255, 255, 0.45);
+    }
+
+    .hero-kicker {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--brand-strong);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .hero h2 {
+      margin: 0 0 12px;
+      font-family: "Fraunces", "Noto Serif SC", serif;
+      font-size: 32px;
+      line-height: 1.2;
+      letter-spacing: 0.6px;
+    }
+
+    .hero p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .hero-tag {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--brand-strong);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .hero-quote {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(15, 118, 110, 0.2);
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .auth-context {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+      padding: 16px;
+      border: 1px solid rgba(14, 165, 233, 0.22);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .auth-route {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .auth-route strong {
+      display: block;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .auth-route span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .auth-route-badge {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #075985;
+      background: rgba(14, 165, 233, 0.12);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .auth-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .auth-step {
+      min-height: 72px;
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 14px;
+      background: rgba(248, 250, 252, 0.78);
+    }
+
+    .auth-step b {
+      display: block;
+      color: var(--brand-strong);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .auth-step span {
+      display: block;
+      margin-top: 5px;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .form {
+      padding: 32px 30px 36px;
+      background: var(--glass);
+    }
+
+    .form-intent {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(15, 118, 110, 0.2);
+      background: rgba(240, 253, 250, 0.72);
+    }
+
+    .form-intent strong {
+      display: block;
+      color: #0f766e;
+      font-size: 14px;
+    }
+
+    .form-intent span {
+      display: block;
+      margin-top: 6px;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .tabs {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.08);
+      margin-bottom: 18px;
+    }
+
+    .tab {
+      border: none;
+      background: transparent;
+      padding: 8px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all 0.2s ease;
+    }
+
+    .tab.active {
+      color: #fff;
+      background: linear-gradient(120deg, var(--brand), var(--accent));
+      box-shadow: 0 8px 20px rgba(15, 118, 110, 0.25);
+    }
+
+    .form-group {
+      margin: 12px 0;
+    }
+
+    .label {
+      display: block;
+      font-size: 13px;
+      color: #1f2937;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 14px;
+      font-size: 14px;
+      background: #fff;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: rgba(15, 118, 110, 0.6);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+    }
+
+    .options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 12px 0 16px;
+      font-size: 13px;
+      color: #475569;
+    }
+
+    .options a {
+      color: var(--brand-strong);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .options a:hover {
+      color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      background: linear-gradient(120deg, var(--brand), var(--accent));
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-radius: 14px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 12px 24px rgba(15, 118, 110, 0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(15, 118, 110, 0.25);
+    }
+
+    .btn.secondary {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: none;
+      width: auto;
+    }
+
+    .btn.full {
+      width: 100%;
+    }
+
+    .divider {
+      position: relative;
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin: 18px 0;
+    }
+
+    .form-note {
+      margin-top: 12px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 42%;
+      height: 1px;
+      background: rgba(148, 163, 184, 0.5);
+    }
+
+    .divider::before {
+      left: 0;
+    }
+
+    .divider::after {
+      right: 0;
+    }
+
+    .toast {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      background: rgba(15, 23, 42, 0.92);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 14px;
+      display: none;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+
+    /* Level Selector */
+    .level-selector {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .level-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.8);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .level-option:hover {
+      border-color: rgba(15, 118, 110, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .level-option.active {
+      border-color: rgba(15, 118, 110, 0.9);
+      background: linear-gradient(160deg, rgba(15, 118, 110, 0.12), rgba(45, 212, 191, 0.1));
+      box-shadow: 0 10px 20px rgba(15, 118, 110, 0.18);
+    }
+
+    .level-icon {
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .level-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .level-desc {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 3px;
+      text-align: center;
+    }
+
+    .level-option.active .level-name {
+      color: var(--brand-strong);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        border-right: none;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      }
+
+      .auth-route {
+        flex-direction: column;
+      }
+
+      .auth-steps {
+        grid-template-columns: 1fr;
+      }
+
+      .btn.secondary {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        margin: 24px auto;
+        padding: 16px;
+      }
+
+      .card-head {
+        flex-direction: column;
+        gap: 14px;
+        align-items: flex-start;
+      }
+
+      .hero h2 {
+        font-size: 26px;
+      }
+
+      .level-selector {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-head">
+        <div class="brand">
+          <div class="logo">LL</div>
+          <div class="title">Linglish · 登录</div>
+        </div>
+        <a href="./landing.html" class="btn secondary" id="back-link">返回介绍页</a>
+      </div>
+      <div class="content">
+        <div class="hero">
+          <div class="hero-kicker" id="hero-kicker">Linglish Account</div>
+          <h2 id="hero-title">保存你的训练计划，明天继续。</h2>
+          <p id="hero-copy">注册或登录后，Linglish 会把测评等级、每日目标、跟读反馈和复习队列串成可持续的训练闭环。</p>
+          <div class="hero-tags">
+            <span class="hero-tag">今日训练</span>
+            <span class="hero-tag">AI 口语反馈</span>
+            <span class="hero-tag">间隔复习</span>
+          </div>
+          <div class="hero-quote" id="hero-quote">新用户建议先注册保存计划；已有账号登录后会回到刚才的训练或购买页面。</div>
+          <div class="auth-context">
+            <div class="auth-route">
+              <div>
+                <strong id="auth-context-title">账号将回到今日训练</strong>
+                <span id="auth-context-copy">完成登录后直接进入 15 分钟训练计划，不再回到泛首页。</span>
+              </div>
+              <div class="auth-route-badge" id="auth-context-badge">Next: Today</div>
+            </div>
+            <div class="auth-steps">
+              <div class="auth-step">
+                <b>1. 真实输入</b>
+                <span>用视频或自选内容建立语境。</span>
+              </div>
+              <div class="auth-step">
+                <b>2. 跟读输出</b>
+                <span>逐句录音，拿到反馈。</span>
+              </div>
+              <div class="auth-step">
+                <b>3. 复习留存</b>
+                <span>明天继续今天的词句。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form">
+          <div class="form-intent">
+            <strong id="form-intent-title">继续今日训练</strong>
+            <span id="form-intent-copy">登录后会保存等级、目标和训练记录，并回到你刚才选择的页面。</span>
+          </div>
+          <div class="tabs">
+            <button class="tab active" id="tab-login">登录</button>
+            <button class="tab" id="tab-register">注册</button>
+          </div>
+
+          <form id="form-login" class="auth-form" autocomplete="on">
+            <div id="oauthErrorBanner" role="status" style="color:#b91c1c;"></div>
+            <button type="button" class="btn secondary full" id="google-login-btn">使用 Google 登录</button>
+            <div class="divider">或使用邮箱 / 手机号</div>
+            <div class="form-group">
+              <label class="label" for="login-account">邮箱或手机号</label>
+              <input class="input" id="login-account" name="username" placeholder="请输入邮箱或手机号" required autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label class="label" for="login-password">密码</label>
+              <input type="password" class="input" id="login-password" name="password" placeholder="请输入密码" required
+                autocomplete="current-password">
+            </div>
+            <div class="options">
+              <label><input type="checkbox" id="remember-me"> 记住我</label>
+              <a href="./reset-password.html?from=desktop_auth">忘记密码？</a>
+            </div>
+            <button type="submit" class="btn" id="login-submit">立即登录</button>
+            <div class="form-note" id="login-note">登录后会自动回到当前训练路径。</div>
+            <div class="divider">或者</div>
+            <button type="button" class="btn secondary full" id="guest-btn">游客体验</button>
+          </form>
+
+          <form id="form-register" class="auth-form" style="display:none;">
+            <div class="form-group">
+              <label class="label">邮箱或手机号</label>
+              <input class="input" id="register-account" placeholder="请输入邮箱或手机号" required autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label class="label">用户名</label>
+              <input class="input" id="register-username" placeholder="请输入用户名" required>
+            </div>
+            <div class="form-group">
+              <label class="label">密码</label>
+              <input type="password" class="input" id="register-password" placeholder="至少6位密码" required minlength="6"
+                autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label class="label">确认密码</label>
+              <input type="password" class="input" id="register-confirm" placeholder="再次输入密码" required
+                autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label class="label">词汇水平</label>
+              <div class="level-selector" id="level-selector">
+                <button type="button" class="level-option active" data-level="beginner">
+                  <span class="level-icon">🌱</span>
+                  <span class="level-name">初级</span>
+                  <span class="level-desc">核心3000词</span>
+                </button>
+                <button type="button" class="level-option" data-level="intermediate">
+                  <span class="level-icon">🌿</span>
+                  <span class="level-name">中级</span>
+                  <span class="level-desc">3000-8000词</span>
+                </button>
+                <button type="button" class="level-option" data-level="advanced">
+                  <span class="level-icon">🌳</span>
+                  <span class="level-name">高级</span>
+                  <span class="level-desc">8000词以上</span>
+                </button>
+              </div>
+              <input type="hidden" id="register-level" value="beginner">
+            </div>
+            <label><input type="checkbox" id="agree-terms" required> 我已阅读并同意<a href="./terms.html" target="_blank" rel="noopener">《用户协议》</a>和<a href="./privacy.html" target="_blank" rel="noopener">《隐私政策》</a></label>
+            <div style="margin-top:10px;"><button type="submit" class="btn" id="register-submit">注册并保存计划</button></div>
+            <div class="form-note" id="register-note">如果你刚完成测评，注册时会同步测评等级、每日目标和学习兴趣。</div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const toastEl = document.getElementById('toast');
+    const VISITOR_ID_KEY = 'linglish_visitor_id';
+    const PENDING_PROFILE_SYNC_KEY = 'linglish_onboarding_pending_profile_sync';
+    function toast(msg, type = 'info') { toastEl.textContent = msg; toastEl.style.display = 'block'; toastEl.style.background = type === 'error' ? '#b91c1c' : (type === 'success' ? '#065f46' : '#111827'); setTimeout(() => toastEl.style.display = 'none', 2200); }
+    function getSafeNext(fallback) {
+      try {
+        const raw = new URLSearchParams(location.search || '').get('next');
+        if (!raw) return fallback;
+        const target = new URL(raw, location.href);
+        if (target.origin !== location.origin) return fallback;
+        if (/\/(desktop-auth|mobile-auth)\.html$/i.test(target.pathname)) return fallback;
+        return target.pathname + target.search + target.hash;
+      } catch (_) {
+        return fallback;
+      }
+    }
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    googleLoginBtn.hidden = window.__LINGLISH_ENV__?.enableGoogleOAuth === false;
+    if (googleLoginBtn.hidden) googleLoginBtn.style.display = 'none';
+    googleLoginBtn.addEventListener('click', () => {
+      if (googleLoginBtn.disabled) return;
+      googleLoginBtn.disabled = true;
+      googleLoginBtn.setAttribute('aria-busy', 'true');
+      googleLoginBtn.textContent = '正在打开 Google 登录…';
+      const params = new URLSearchParams({
+        flow: 'cookie_v1',
+        redirect: location.pathname + location.search,
+      });
+      location.href = `/auth/oauth/google?${params.toString()}`;
+    });
+    window.addEventListener('pageshow', () => {
+      googleLoginBtn.disabled = false;
+      googleLoginBtn.removeAttribute('aria-busy');
+      googleLoginBtn.textContent = '使用 Google 登录';
+    });
+    function hasCompletedOnboarding() {
+      try {
+        const value = localStorage.getItem('linglish_onboarding_done');
+        return value === '1' || value === 'true';
+      } catch (_) {
+        return false;
+      }
+    }
+    function getDefaultAuthNext(source = 'auth') {
+      if (source === 'login' || source === 'guest' || source === 'auth_cached') {
+        return `./today.html?from=${encodeURIComponent(source)}`;
+      }
+      return hasCompletedOnboarding()
+        ? `./today.html?from=${encodeURIComponent(source)}`
+        : `./welcome.html?from=${encodeURIComponent(source)}`;
+    }
+    function getAuthTrackingContext() {
+      const params = new URLSearchParams(location.search || '');
+      const rawNext = params.get('next') || '';
+      const mode = (params.get('mode') || 'login').toLowerCase();
+      let authNext = rawNext;
+      let authSource = params.get('from') || mode || 'auth';
+
+      if (rawNext) {
+        try {
+          const target = new URL(rawNext, location.href);
+          authNext = target.pathname + target.search + target.hash;
+          authSource = target.searchParams.get('from') || authSource;
+        } catch (_) {
+          authSource = authSource || 'auth';
+        }
+      }
+
+      return {
+        auth_source: authSource || 'auth',
+        auth_next: authNext || '',
+        auth_mode: mode
+      };
+    }
+    function getVisitorId() {
+      try {
+        const existing = localStorage.getItem(VISITOR_ID_KEY);
+        if (/^llv_[a-zA-Z0-9_-]{12,64}$/.test(existing || '')) return existing;
+        const random = window.crypto?.getRandomValues
+          ? Array.from(window.crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, '0')).join('')
+          : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`;
+        const visitorId = `llv_${random}`.slice(0, 68);
+        localStorage.setItem(VISITOR_ID_KEY, visitorId);
+        return visitorId;
+      } catch (_) {
+        return null;
+      }
+    }
+    function getStoredOnboardingProfile() {
+      try {
+        const level = localStorage.getItem('linglish_active_level') || localStorage.getItem('vocab_difficulty_filter') || '';
+        const goal = localStorage.getItem('linglish_onboarding_goal') || '';
+        const minutes = Number(localStorage.getItem('linglish_onboarding_daily_minutes') || '');
+        const validLevel = ['beginner', 'intermediate', 'advanced'].includes(level) ? level : null;
+        return {
+          level: validLevel,
+          daily_goal: Number.isFinite(minutes) && minutes >= 5 && minutes <= 180 ? Math.round(minutes) : null,
+          interests: goal ? [goal].slice(0, 1) : null,
+          has_profile: Boolean(validLevel || goal || minutes)
+        };
+      } catch (_) {
+        return { level: null, daily_goal: null, interests: null, has_profile: false };
+      }
+    }
+    function isGuestCachedSession() {
+      try {
+        return localStorage.getItem('is_guest') === 'true' || sessionStorage.getItem('is_guest') === 'true';
+      } catch (_) {
+        return false;
+      }
+    }
+    function getDestinationMeta() {
+      const params = new URLSearchParams(location.search || '');
+      const mode = (params.get('mode') || '').toLowerCase() === 'register' ? 'register' : 'login';
+      const fallback = getDefaultAuthNext(mode);
+      const target = getSafeNext(fallback);
+      const normalized = target.toLowerCase();
+      if (normalized.includes('pricing')) {
+        return {
+          target,
+          label: '会员方案',
+          badge: 'Next: Pricing',
+          title: '账号将回到会员方案',
+          copy: '登录后继续完成升级或团队咨询，不会丢失当前选择。',
+          intentTitle: '继续会员流程',
+          intentCopy: '登录后会回到方案页，并保留当前购买或咨询入口。'
+        };
+      }
+      if (normalized.includes('welcome')) {
+        return {
+          target,
+          label: '个性化测评',
+          badge: 'Next: Onboarding',
+          title: '账号将进入个性化测评',
+          copy: '先完成 4 步测评，再生成你的第一天训练处方。',
+          intentTitle: '生成个性化训练计划',
+          intentCopy: '注册后会进入测评，生成等级、目标和每日训练时长。'
+        };
+      }
+      return {
+        target,
+        label: '今日训练',
+        badge: 'Next: Today',
+        title: '账号将回到今日训练',
+        copy: '完成登录后直接进入 15 分钟训练计划，不再回到泛首页。',
+        intentTitle: '继续今日训练',
+        intentCopy: '登录后会保存等级、目标和训练记录，并回到今天的训练闭环。'
+      };
+    }
+    function renderAuthContext(mode = 'login') {
+      const destination = getDestinationMeta();
+      const profile = getStoredOnboardingProfile();
+      const savingPlan = profile.has_profile
+        || destination.target.includes('save_plan')
+        || destination.target.includes('first_lesson')
+        || isGuestCachedSession();
+      const isRegister = mode === 'register';
+      const backLink = document.getElementById('back-link');
+      if (backLink) {
+        backLink.href = './landing.html';
+        backLink.textContent = '返回介绍页';
+      }
+      document.getElementById('auth-context-title').textContent = destination.title;
+      document.getElementById('auth-context-copy').textContent = savingPlan
+        ? `将保存${profile.daily_goal || 15}分钟目标${profile.interests?.[0] ? `、${profile.interests[0]}` : ''}和词汇等级，完成后回到${destination.label}。`
+        : destination.copy;
+      document.getElementById('auth-context-badge').textContent = destination.badge;
+      document.getElementById('form-intent-title').textContent = isRegister && savingPlan ? '注册并保存训练计划' : destination.intentTitle;
+      document.getElementById('form-intent-copy').textContent = isRegister && savingPlan
+        ? (isGuestCachedSession()
+          ? '注册后会保留刚才的首课记录、每日目标和后续复习队列，明天回来可以直接继续。'
+          : '注册后会同步刚才的测评结果、每日目标和学习兴趣，明天回来可以直接继续。')
+        : destination.intentCopy;
+      document.getElementById('hero-kicker').textContent = isRegister ? 'Create Linglish Account' : 'Linglish Account';
+      document.getElementById('hero-title').textContent = isRegister ? '保存你的训练计划，明天继续。' : '回到你的英语训练闭环。';
+      document.getElementById('hero-copy').textContent = savingPlan
+        ? 'Linglish 会把测评等级、每日目标、跟读反馈和复习队列串成可持续的训练闭环。'
+        : '用账号把真实视频、逐句跟读、AI 反馈和复习记录连接起来。';
+      document.getElementById('hero-quote').textContent = isRegister
+        ? '新用户建议先注册保存计划；已有账号可以切回登录。'
+        : '已有账号登录后会回到刚才的训练或购买页面。';
+      const loginNote = document.getElementById('login-note');
+      const registerNote = document.getElementById('register-note');
+      if (loginNote) loginNote.textContent = `登录后自动回到${destination.label}。`;
+      if (registerNote) {
+        registerNote.textContent = savingPlan
+          ? (isGuestCachedSession() ? '注册后会把游客体验进度转为正式账号记录。' : '注册时会同步测评等级、每日目标和学习兴趣。')
+          : '注册后建议先完成测评，生成第一天训练处方。';
+      }
+      const registerSubmit = document.getElementById('register-submit');
+      if (registerSubmit) registerSubmit.textContent = savingPlan ? '注册并保存计划' : '注册并生成计划';
+    }
+    async function postPublicAuthEvent(eventName, extra = {}) {
+      try {
+        const context = getAuthTrackingContext();
+        const visitorId = getVisitorId();
+        const token = (window.AuthManager && AuthManager.getToken && AuthManager.getToken())
+          || localStorage.getItem('authToken')
+          || sessionStorage.getItem('authToken')
+          || localStorage.getItem('linglish_token')
+          || sessionStorage.getItem('linglish_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        await fetch('/track/event', {
+          method: 'POST',
+          headers,
+          keepalive: true,
+          body: JSON.stringify({
+            event_name: eventName,
+            visitor_id: visitorId,
+            properties: {
+              page: 'desktop-auth',
+              visitor_id: visitorId,
+              destination: getDestinationMeta().label,
+              ...context,
+              ...extra
+            }
+          })
+        });
+      } catch (_) {}
+    }
+    async function postAuthEvent(eventName, extra = {}) {
+      try {
+        const token = (window.AuthManager && AuthManager.getToken && AuthManager.getToken())
+          || localStorage.getItem('authToken')
+          || sessionStorage.getItem('authToken')
+          || localStorage.getItem('linglish_token')
+          || sessionStorage.getItem('linglish_token');
+        if (!token) return;
+
+        const context = getAuthTrackingContext();
+        const visitorId = getVisitorId();
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = controller ? setTimeout(() => controller.abort(), 900) : null;
+        try {
+          await fetch('/events', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            signal: controller ? controller.signal : undefined,
+            body: JSON.stringify({
+              event_name: eventName,
+              visitor_id: visitorId,
+              properties: {
+                page: 'desktop-auth',
+                visitor_id: visitorId,
+                ...context,
+                ...extra
+              },
+              source: 'web'
+            })
+          });
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      } catch (err) {
+        console.warn('[Auth] Failed to record auth success event:', err?.message || err);
+      }
+    }
+
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
+    function setAuthTab(mode, { track = false } = {}) {
+      const isRegister = mode === 'register';
+      tabLogin.classList.toggle('active', !isRegister);
+      tabRegister.classList.toggle('active', isRegister);
+      formLogin.style.display = isRegister ? 'none' : 'block';
+      formRegister.style.display = isRegister ? 'block' : 'none';
+      renderAuthContext(isRegister ? 'register' : 'login');
+      if (track) postPublicAuthEvent('auth_tab_switch', { tab: isRegister ? 'register' : 'login' });
+    }
+    tabLogin.addEventListener('click', () => setAuthTab('login', { track: true }));
+    tabRegister.addEventListener('click', () => setAuthTab('register', { track: true }));
+
+    // Default tab from URL
+    (function () {
+      try {
+        const p = new URLSearchParams(location.search || '');
+        const mode = (p.get('mode') || '').toLowerCase() === 'register' ? 'register' : 'login';
+        setAuthTab(mode);
+        postPublicAuthEvent('auth_page_view', {
+          tab: mode,
+          has_onboarding_profile: getStoredOnboardingProfile().has_profile
+        });
+      } catch (_) {
+        setAuthTab('login');
+      }
+    })();
+
+    // Login submit
+    formLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const account = document.getElementById('login-account').value.trim();
+      const password = document.getElementById('login-password').value;
+      const remember = document.getElementById('remember-me').checked;
+      const payload = { password };
+      if (account.includes('@')) payload.email = account; else payload.phone = account;
+      postPublicAuthEvent('auth_submit_attempt', { method: 'login', remember });
+
+      // IMPORTANT: Clear old tokens BEFORE login to prevent expired token issues
+      console.log('[Login] Clearing old tokens before login...');
+      try {
+        AuthManager.clearToken();
+      } catch (e) {
+        console.warn('[Login] Failed to clear old tokens:', e.message);
+      }
+
+      try {
+        const r = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const j = await r.json();
+        if (!r.ok) {
+          postPublicAuthEvent('auth_submit_error', { method: 'login', status: r.status, message: j.message || 'LOGIN_FAILED' });
+          toast(j.message || '登录失败，请检查账号或密码', 'error');
+          return;
+        }
+        try {
+          // Clear guest flags
+          try { localStorage.removeItem('is_guest'); localStorage.removeItem('guest_id'); } catch (_) { }
+          try { sessionStorage.removeItem('is_guest'); } catch (_) { }
+
+          const token = j.access_token || j.token;
+          if (!token) { toast('登录失败：缺少令牌', 'error'); return; }
+
+          console.log('[Login] Got token, saving with remember=' + remember);
+          AuthManager.setToken(token, remember);
+
+          // Save user email
+          if (remember) {
+            try { localStorage.setItem('userEmail', account); } catch (e) {
+              console.warn('[Login] Failed to save userEmail to localStorage:', e.message);
+            }
+          } else {
+            try { sessionStorage.setItem('userEmail', account); } catch (e) {
+              console.warn('[Login] Failed to save userEmail to sessionStorage:', e.message);
+            }
+          }
+        } catch (err) {
+          console.error('[Login] Token save error:', err);
+          // Still show success if we got this far
+        }
+        await postAuthEvent('login_success', { remember });
+        toast('登录成功！', 'success'); setTimeout(() => { location.href = getSafeNext(getDefaultAuthNext('login')); }, 500);
+      } catch (err) {
+        postPublicAuthEvent('auth_submit_error', { method: 'login', status: 'network', message: 'NETWORK_ERROR' });
+        console.error('Login error', err);
+        toast('网络异常，请稍后重试', 'error');
+      }
+    });
+
+    // Level selector click handlers
+    const levelSelector = document.getElementById('level-selector');
+    if (levelSelector) {
+      levelSelector.querySelectorAll('.level-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+          levelSelector.querySelectorAll('.level-option').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('register-level').value = btn.dataset.level;
+        });
+      });
+    }
+    (function applyStoredProfileToRegister() {
+      const profile = getStoredOnboardingProfile();
+      if (!profile.level || !levelSelector) return;
+      const button = levelSelector.querySelector(`[data-level="${profile.level}"]`);
+      if (!button) return;
+      levelSelector.querySelectorAll('.level-option').forEach(b => b.classList.remove('active'));
+      button.classList.add('active');
+      document.getElementById('register-level').value = profile.level;
+    })();
+
+    // Register submit
+    formRegister.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const account = document.getElementById('register-account').value.trim();
+      const username = document.getElementById('register-username').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirm = document.getElementById('register-confirm').value;
+      const agree = document.getElementById('agree-terms').checked;
+      const level = document.getElementById('register-level').value || 'beginner';
+      if (password !== confirm) { toast('两次输入的密码不一致', 'error'); return; }
+      if (!agree) { toast('请先勾选同意协议', 'error'); return; }
+      const onboardingProfile = getStoredOnboardingProfile();
+      const payload = { username, password, level };
+      if (onboardingProfile.daily_goal != null) payload.daily_goal = onboardingProfile.daily_goal;
+      if (onboardingProfile.interests) payload.interests = onboardingProfile.interests;
+      if (account.includes('@')) payload.email = account; else { payload.phone = account; payload.email = `phone_${account}@linglish.local`; }
+      postPublicAuthEvent('auth_submit_attempt', {
+        method: 'register',
+        level,
+        has_onboarding_profile: onboardingProfile.has_profile,
+        daily_goal: onboardingProfile.daily_goal,
+        primary_interest: onboardingProfile.interests?.[0] || null
+      });
+      try {
+        const r = await fetch('/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const j = await r.json();
+        if (!r.ok) {
+          postPublicAuthEvent('auth_submit_error', { method: 'register', status: r.status, message: j.message || 'REGISTER_FAILED' });
+          toast(j.message || '注册失败，请稍后重试', 'error');
+          return;
+        }
+        const token = j.access_token || j.token;
+        if (token) {
+          try {
+            AuthManager.clearToken();
+            AuthManager.setToken(token, true);
+            localStorage.setItem('userEmail', account);
+            localStorage.removeItem('is_guest');
+            localStorage.removeItem('guest_id');
+            localStorage.removeItem(PENDING_PROFILE_SYNC_KEY);
+            sessionStorage.removeItem('is_guest');
+          } catch (err) {
+            console.error('[Register] Token save error:', err);
+          }
+          await postAuthEvent('register_success', {
+            level,
+            daily_goal: onboardingProfile.daily_goal,
+            primary_interest: onboardingProfile.interests?.[0] || null,
+            profile_synced: onboardingProfile.has_profile,
+            email_verification_delivery_configured: j.email_verification?.delivery_configured === true
+          });
+          const verificationCopy = j.email_verification?.already_verified
+            ? '注册成功，邮箱已验证！正在进入'
+            : (j.email_verification?.delivery_configured ? '注册成功，验证邮件已发送！正在进入' : '注册成功！稍后可验证邮箱');
+          toast(verificationCopy, 'success');
+          setTimeout(() => { location.href = getSafeNext(getDefaultAuthNext('register')); }, 500);
+          return;
+        }
+        toast('注册成功！请登录', 'success'); setTimeout(() => { tabLogin.click(); document.getElementById('login-account').value = account; }, 900);
+      } catch (err) {
+        postPublicAuthEvent('auth_submit_error', { method: 'register', status: 'network', message: 'NETWORK_ERROR' });
+        console.error('Register error', err);
+        toast('网络异常，请稍后重试', 'error');
+      }
+    });
+
+    // Guest
+    document.getElementById('guest-btn').addEventListener('click', async () => {
+      postPublicAuthEvent('auth_guest_click', { destination: getDestinationMeta().label });
+      // Clear old tokens before guest login
+      console.log('[Guest Login] Clearing old tokens...');
+      try {
+        AuthManager.clearToken();
+      } catch (e) {
+        console.warn('[Guest Login] Failed to clear old tokens:', e.message);
+      }
+
+      try {
+        const r = await fetch('/auth/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const j = await r.json();
+        if (!r.ok) { toast(j.message || '游客登录失败', 'error'); return; }
+        const token = j.access_token || j.token;
+        if (!token) { toast('游客登录失败：缺少令牌', 'error'); return; }
+
+        console.log('[Guest Login] Got token, saving...');
+        try {
+          AuthManager.setToken(token, true);
+          try { localStorage.setItem('is_guest', 'true'); } catch (e) {
+            console.warn('[Guest Login] Failed to save is_guest:', e.message);
+          }
+          try { localStorage.setItem('guest_id', j.guest_id || ''); } catch (e) {
+            console.warn('[Guest Login] Failed to save guest_id:', e.message);
+          }
+        } catch (err) {
+          console.error('[Guest Login] Token save error:', err);
+        }
+        await postAuthEvent('guest_login_success', { guest_id: j.guest_id || '' });
+        toast('已进入游客体验', 'success'); setTimeout(() => { location.href = getSafeNext(getDefaultAuthNext('guest')); }, 600);
+      } catch (err) { console.error('Guest login error', err); toast('网络异常，请稍后重试', 'error'); }
+    });
+
+    // If already logged in, continue the requested training or purchase flow.
+    (async function () {
+      if (window.LinglishOAuthBootstrap) await window.LinglishOAuthBootstrap.ready;
+      try {
+        const params = new URLSearchParams(location.search || '');
+        const wantsRegister = (params.get('mode') || '').toLowerCase() === 'register';
+        if (wantsRegister || isGuestCachedSession()) return;
+        // 必须走 AuthManager.getToken():它校验 JWT exp 并自动清过期 token。
+        // 裸读 localStorage 会拿到过期 token → 立刻弹回目标页 → 目标页 401 又显示
+        // "登录" → 点登录又被弹回,死循环("点登录一直跳转"就是这个)。
+        const t = (window.AuthManager && typeof AuthManager.getToken === 'function')
+          ? AuthManager.getToken()
+          : (localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
+            || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token'));
+        if (t) location.replace(getSafeNext(getDefaultAuthNext('auth_cached')));
+      } catch (_) { }
+    })();
+  </script>
+</body>
+
+</html>

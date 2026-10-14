@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the absolute first script to catch extension errors
+    (function(){
+      // Store original methods IMMEDIATELY before any extension can override them
+      const _origJSONParse = JSON.parse;
+      const _origConsoleError = console.error;
+      const _origConsoleWarn = console.warn;
+      const _origConsoleLog = console.log;
+
+      try {
+        // Comprehensive patterns for extension/browser errors
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /\"\" is not valid JSON/i,
+          /Unexpected token 'u'/i,
+          /Unexpected token 'n'/i,
+          /Unexpected token u in JSON/i,
+          /Unexpected token n in JSON/i,
+          /SyntaxError.*undefined/i,
+          /SyntaxError.*null/i,
+          /SyntaxError.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+          /iosMetadata\.js/i,
+          /Wu\.updateConfig/i,
+          /ul\.updateConfig/i,
+          /Wu\.initConfig/i,
+          /ul\.initConfig/i,
+          /\bWu\b/i,
+          /\bul\b.*config/i,
+          /cloudflareinsights/i,
+          /beacon\.min\.js/i,
+          /www-widgetapi\.js/i,
+          /postMessage.*target origin/i,
+          /postMessage.*does not match/i,
+          /postMessage.*recipient window/i,
+          /TIMEOUT waiting for/i,
+          /getYouTubeTitleNode/i,
+          /Access to fetch.*blocked by CORS/i,
+          /doubleclick\.net/i,
+          /googleads\.g\.doubleclick/i,
+          /pagead\/viewthroughconversion/i,
+          /Uncaught.*in promise.*SyntaxError/i,
+          /Uncaught.*in promise.*TIMEOUT/i,
+          /chrome-extension/i,
+          /moz-extension/i,
+          /safari-extension/i,
+          /webkit-masked-url/i,
+        ];
+
+        const matchMsg = (msg) => {
+          try {
+            const str = String(msg || '');
+            return patterns.some(re => re.test(str));
+          } catch {
+            return false;
+          }
+        };
+
+        // Check if error originated from browser extension
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+
+            const stack = error.stack || '';
+            const name = error.name || '';
+            const message = error.message || '';
+            const fullText = stack + ' ' + name + ' ' + message;
+
+            // Check error message and name first
+            if (matchMsg(message) || matchMsg(name)) return true;
+
+            // Check for extension URL patterns in stack
+            if (/chrome-extension:\/\//i.test(fullText)) return true;
+            if (/moz-extension:\/\//i.test(fullText)) return true;
+            if (/safari-extension:\/\//i.test(fullText)) return true;
+            if (/safari-web-extension:\/\//i.test(fullText)) return true;
+            if (/webkit-masked-url:\/\//i.test(fullText)) return true;
+            if (/^blob:/i.test(fullText)) return true;
+
+            // Check for known extension file names and functions
+            if (/metadata\.js|content\.js|iosMetadata\.js|www-widgetapi\.js/i.test(fullText)) return true;
+            if (/updateConfig|initConfig|getYouTubeTitleNode/i.test(fullText)) return true;
+            if (/\bWu\.|ul\./i.test(fullText)) return true;
+            if (/cloudflare|beacon|doubleclick/i.test(fullText)) return true;
+
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override JSON.parse to suppress extension errors
+        JSON.parse = function(text, reviver) {
+          try {
+            // Catch "undefined" or "null" string literals early
+            if (text === 'undefined' || text === 'null' || text === undefined || text === null) {
+              // Get stack trace to check if this is from our app or extension
+              const stack = new Error().stack || '';
+              if (isExtensionError({ stack, message: 'undefined string', name: 'SafetyCheck' })) {
+                return {}; // Silently return empty object for extensions
+              }
+              // For app code, this might be a legitimate error, so check caller
+              if (/youtube-reader\.html|youtube-player\.js/i.test(stack)) {
+                throw new SyntaxError('"undefined" is not valid JSON');
+              }
+              return {}; // Default to safe return
+            }
+
+            return _origJSONParse.call(this, text, reviver);
+          } catch (error) {
+            // Get stack trace to check origin
+            const stack = new Error().stack || '';
+
+            // Check if error is from extension
+            if (isExtensionError({ stack, message: error.message, name: error.name })) {
+              // Silently return empty object/array for extension errors
+              return text && typeof text === 'string' && text.trim().startsWith('[') ? [] : {};
+            }
+
+            // Re-throw application errors (important!)
+            throw error;
+          }
+        };
+
+        // Override console.error to filter extension errors
+        console.error = function(...args) {
+          if (!args || args.length === 0) return _origConsoleError.apply(console, args);
+
+          const firstArg = args[0];
+          const msg = String(firstArg || '');
+
+          // Check if this is an extension error
+          if (matchMsg(msg)) return;
+          if (firstArg instanceof Error && isExtensionError(firstArg)) return;
+
+          // Check for "Uncaught (in promise)" errors
+          if (/Uncaught.*in promise/i.test(msg) && matchMsg(args.join(' '))) return;
+
+          return _origConsoleError.apply(console, args);
+        };
+
+        // Override console.warn to filter extension warnings
+        console.warn = function(...args) {
+          if (!args || args.length === 0) return _origConsoleWarn.apply(console, args);
+
+          const msg = String(args[0] || '');
+          if (matchMsg(msg)) return;
+          if (args[0] instanceof Error && isExtensionError(args[0])) return;
+
+          return _origConsoleWarn.apply(console, args);
+        };
+
+        // Catch unhandled promise rejections EARLY
+        window.addEventListener('unhandledrejection', function(ev) {
+          try {
+            const reason = ev && ev.reason;
+
+            if (!reason) {
+              // Prevent default for null/undefined rejections from extensions
+              ev.preventDefault();
+              return;
+            }
+
+            // Check for SyntaxError with JSON parsing
+            if (reason.name === 'SyntaxError') {
+              const msg = reason.message || '';
+              if (matchMsg(msg) || isExtensionError(reason)) {
+                ev.preventDefault();
+                ev.stopPropagation && ev.stopPropagation();
+                ev.stopImmediatePropagation && ev.stopImmediatePropagation();
+                return false;
+              }
+            }
+
+            // Check general error patterns
+            const msg = reason.message || reason.toString?.() || String(reason);
+            if (matchMsg(msg) || isExtensionError(reason)) {
+              ev.preventDefault();
+              ev.stopPropagation && ev.stopPropagation();
+              ev.stopImmediatePropagation && ev.stopImmediatePropagation();
+              return false;
+            }
+          } catch(_) {
+            // Silently catch any errors in our error handler
+          }
+        }, true);  // Use capture phase
+
+        // Catch global error events
+        window.addEventListener('error', function(ev) {
+          try {
+            const msg = ev.message || '';
+            const filename = ev.filename || '';
+            const error = ev.error;
+
+            // Check message patterns
+            if (matchMsg(msg)) {
+              ev.preventDefault();
+              ev.stopPropagation && ev.stopPropagation();
+              ev.stopImmediatePropagation && ev.stopImmediatePropagation();
+              return false;
+            }
+
+            // Check error object
+            if (error && isExtensionError(error)) {
+              ev.preventDefault();
+              ev.stopPropagation && ev.stopPropagation();
+              ev.stopImmediatePropagation && ev.stopImmediatePropagation();
+              return false;
+            }
+
+            // Check filename for extension patterns
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js|iosMetadata\.js|www-widgetapi\.js|^VM\d+:|^blob:/i.test(filename)) {
+              ev.preventDefault();
+              ev.stopPropagation && ev.stopPropagation();
+              ev.stopImmediatePropagation && ev.stopImmediatePropagation();
+              return false;
+            }
+          } catch(_) {
+            // Silently catch any errors in our error handler
+          }
+        }, true);  // Use capture phase
+
+      } catch (_) {
+        // If error suppression setup fails, fail silently
+        // This ensures the page still loads even if our error handling has issues
+      }
+    })();
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube 视频学习 - Linglish</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: #f5f5f5;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .video-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+    }
+
+    .player-container {
+      flex: 1;
+      position: relative;
+      background: #000;
+    }
+
+    #youtubePlayer {
+      width: 100%;
+      height: 100%;
+    }
+
+    .video-controls {
+      background: #1a1a1a;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .control-btn {
+      background: #333;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .control-btn:hover {
+      background: #444;
+    }
+
+    .control-btn.active {
+      background: #667eea;
+    }
+
+    .speed-control {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .subtitle-section {
+      width: 450px;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid #ddd;
+    }
+
+    .subtitle-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .subtitle-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .subtitle-info {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .subtitle-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+
+    .subtitle-item {
+      padding: 12px 15px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+
+    .subtitle-item:hover {
+      background: #f5f5f5;
+    }
+
+    .subtitle-item.active {
+      background: linear-gradient(90deg, #e3e9ff 0%, #f0f3ff 100%);
+      border-left-color: #667eea;
+      border-left-width: 4px;
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+      transform: translateX(2px);
+      transition: all 0.3s ease;
+    }
+
+    .subtitle-time {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+
+    .subtitle-text {
+      font-size: 15px;
+      line-height: 1.5;
+      color: #333;
+    }
+
+    .subtitle-text .word {
+      cursor: pointer;
+      padding: 2px 0;
+    }
+
+    .subtitle-text .word:hover {
+      background: #fff3cd;
+      border-radius: 3px;
+    }
+
+    /* Vocabulary learning state color marking */
+    .subtitle-text .word.word-mastered,
+    .subtitle-text .word.known {
+      color: #059669 !important;
+      font-weight: 600 !important;
+    }
+
+    .subtitle-text .word.word-learning,
+    .subtitle-text .word.learning {
+      color: #d97706 !important;
+      font-weight: 600 !important;
+    }
+
+    .subtitle-text .word.word-encountered {
+      color: #0284c7 !important;
+      font-weight: 600 !important;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .word-tooltip {
+      position: fixed;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      max-width: 450px;
+      max-height: 80vh;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .word-tooltip.active {
+      display: block;
+    }
+
+    .tooltip-close-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #e2e8f0;
+      border: none;
+      border-radius: 4px;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #64748b;
+      z-index: 10;
+    }
+
+    .tooltip-close-btn:hover {
+      background: #cbd5e1;
+      color: #334155;
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .subtitle-section {
+        width: 100%;
+        max-height: 40vh;
+      }
+    }
+
+    /* 保存视频弹窗样式 */
+    .save-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .save-modal-overlay.active {
+      display: flex;
+    }
+
+    .save-modal {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow: hidden;
+      animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .save-modal-header {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .save-modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .save-modal-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .save-modal-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .save-modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      max-height: calc(80vh - 140px);
+    }
+
+    .save-form-group {
+      margin-bottom: 20px;
+    }
+
+    .save-form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .save-form-group label .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .save-form-group input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+
+    .save-form-group input[type="text"]:focus {
+      outline: none;
+      border-color: #059669;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+
+    .tag-selector-hint {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .tag-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      background: #f8f9fa;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+      user-select: none;
+    }
+
+    .tag-option:hover {
+      border-color: #059669;
+      background: #f0fdf4;
+      transform: translateY(-1px);
+    }
+
+    .tag-option.selected {
+      border-color: #059669;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+
+    .tag-option .tag-icon {
+      font-size: 16px;
+    }
+
+    .tag-option .tag-name {
+      font-weight: 500;
+    }
+
+    .tag-error,
+    .difficulty-error {
+      color: #ef4444;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .tag-error.show,
+    .difficulty-error.show {
+      display: block;
+    }
+
+    .save-select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.2s;
+      box-sizing: border-box;
+      background: #f8f9fa;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    .save-select:focus {
+      outline: none;
+      border-color: #059669;
+      background-color: white;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+
+    .save-modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .save-modal-btn {
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .save-modal-btn.cancel {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .save-modal-btn.cancel:hover {
+      background: #e2e8f0;
+    }
+
+    .save-modal-btn.confirm {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+    }
+
+    .save-modal-btn.confirm:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+
+    .save-modal-btn.confirm:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>正在加载视频...</p>
+  </div>
+
+  <div class="container" id="container" style="display: none;">
+    <div class="video-section">
+      <div class="player-container">
+        <div id="youtubePlayer"></div>
+      </div>
+      <div class="video-controls">
+        <button class="control-btn" id="playPauseBtn">播放</button>
+        <button class="control-btn" id="loopBtn">循环播放</button>
+        <select class="speed-control" id="speedControl">
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+        <span id="timeDisplay" style="color: white; font-size: 14px; min-width: 80px;">00:00</span>
+        <button class="control-btn" id="saveToLibraryBtn" style="background: #059669;">保存到视频库</button>
+        <button class="control-btn" id="backBtn" onclick="window.location.href='/youtube-import.html'">
+          返回
+        </button>
+      </div>
+    </div>
+
+    <div class="subtitle-section">
+      <div class="subtitle-header">
+        <div class="subtitle-title" id="videoTitle">视频标题</div>
+        <div class="subtitle-info" id="videoInfo">0 个字幕片段</div>
+      </div>
+      <div class="subtitle-list" id="subtitleList"></div>
+    </div>
+  </div>
+
+  <div class="word-tooltip" id="wordTooltip">
+    <button class="tooltip-close-btn" id="tooltipCloseBtn" aria-label="Close">×</button>
+    <div id="tooltipContent">查询中...</div>
+  </div>
+
+  <!-- 保存视频弹窗 -->
+  <div class="save-modal-overlay" id="saveModalOverlay">
+    <div class="save-modal">
+      <div class="save-modal-header">
+        <h3>📥 保存到视频库</h3>
+        <button class="save-modal-close" id="saveModalClose">×</button>
+      </div>
+      <div class="save-modal-body">
+        <div class="save-form-group">
+          <label for="saveVideoTitle">视频名称</label>
+          <input type="text" id="saveVideoTitle" placeholder="输入视频名称">
+        </div>
+        <div class="save-form-group">
+          <label>选择标签 <span class="required">*</span></label>
+          <div class="tag-selector-hint">请至少选择一个标签，方便分类和查找</div>
+          <div class="tag-options" id="saveTagOptions">
+            <!-- 标签选项将由JavaScript动态生成 -->
+          </div>
+          <div class="tag-error" id="tagError">请至少选择一个标签</div>
+        </div>
+        <div class="save-form-group">
+          <label for="saveCollectionName">合集（二级标签）</label>
+          <input type="text" id="saveCollectionName" placeholder="例如：RAZ分级阅读 / 小猪佩奇" maxlength="120" list="collectionDatalist">
+          <datalist id="collectionDatalist"></datalist>
+          <div class="collection-hint" style="font-size: 12px; color: #64748b; margin-top: 4px;">可选，用于在主标签下进一步分类，如「课程 → RAZ分级阅读」</div>
+        </div>
+        <div class="save-form-group">
+          <label for="saveDifficultyLevel">难度级别 <span class="required">*</span></label>
+          <select id="saveDifficultyLevel" class="save-select">
+            <option value="">请选择难度级别</option>
+            <option value="beginner">🌱 Beginner - 初级</option>
+            <option value="intermediate">🌿 Intermediate - 中级</option>
+            <option value="advanced">🌳 Advanced - 高级</option>
+          </select>
+          <div class="difficulty-error" id="difficultyError">请选择难度级别</div>
+        </div>
+      </div>
+      <div class="save-modal-footer">
+        <button class="save-modal-btn cancel" id="saveModalCancel">取消</button>
+        <button class="save-modal-btn confirm" id="saveModalConfirm">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/shared/dictionary-util.js"></script>
+  <script src="/shared/dictionary-render.js?v=1765726957"></script>
+  <link rel="stylesheet" href="/shared/dictionary.css">
+  <script src="./video-tag-system.js?v=20251225"></script>
+  <script src="/js/app/youtube-player.js"></script>
+  <script src="/js/youtube-temp-session-store.js"></script>
+  <script>
+    let player;
+    let videoData;
+    let currentSegmentIndex = -1;
+    let loopMode = false;
+    let loopStart = 0;
+    let loopEnd = 0;
+    let vocabMap = new Map(); // Store user vocabulary for color highlighting
+
+    // Scrolling state management
+    let __userScrollLockUntil = 0;
+    let __isAutoScrolling = false;
+    let __lastAutoScrollAt = 0;
+    let __scrollDetectionSetup = false; // Track if scroll detection is already setup
+
+    const API_BASE = '';
+    const loading = document.getElementById('loading');
+    const container = document.getElementById('container');
+    const subtitleList = document.getElementById('subtitleList');
+    const videoTitle = document.getElementById('videoTitle');
+    const videoInfo = document.getElementById('videoInfo');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const loopBtn = document.getElementById('loopBtn');
+    const speedControl = document.getElementById('speedControl');
+    const wordTooltip = document.getElementById('wordTooltip');
+    const tooltipContent = document.getElementById('tooltipContent');
+    const tooltipCloseBtn = document.getElementById('tooltipCloseBtn');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const saveToLibraryBtn = document.getElementById('saveToLibraryBtn');
+
+    let selectedWord = null;
+    let wasPlayingBeforeLookup = false; // Track if video was playing before word lookup
+    let isVideoSaved = false; // Track if current video has been saved to library
+
+    // Save modal elements
+    const saveModalOverlay = document.getElementById('saveModalOverlay');
+    const saveModalClose = document.getElementById('saveModalClose');
+    const saveModalCancel = document.getElementById('saveModalCancel');
+    const saveModalConfirm = document.getElementById('saveModalConfirm');
+    const saveVideoTitleInput = document.getElementById('saveVideoTitle');
+    const saveTagOptions = document.getElementById('saveTagOptions');
+    const tagError = document.getElementById('tagError');
+    const saveDifficultyLevel = document.getElementById('saveDifficultyLevel');
+    const difficultyError = document.getElementById('difficultyError');
+    const saveCollectionName = document.getElementById('saveCollectionName');
+    const collectionDatalist = document.getElementById('collectionDatalist');
+
+    // Selected tags for saving
+    const selectedSaveTags = new Set();
+
+    // Collection name cache for suggestions
+    let collectionSuggestions = [];
+
+    // Get token (fallback chain: both storages, both keys)
+    function getToken() {
+      return localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token')
+        || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    }
+
+    // Load vocabulary map for word coloring
+    async function loadVocabMap() {
+      try {
+        const token = getToken();
+        if (!token) {
+          console.log('[VocabMap] No auth token, skipping vocab map load');
+          return;
+        }
+
+        console.log('[VocabMap] Starting to load vocabulary...');
+        const res = await fetch(`${API_BASE}/vocab?limit=10000`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.items || [];
+          vocabMap.clear();
+          items.forEach(function(item) {
+            if (item.lemma) {
+              vocabMap.set(item.lemma.toLowerCase(), item.state || 'encountered');
+            }
+          });
+          console.log('[VocabMap] ✓ Loaded', vocabMap.size, 'words for color highlighting');
+          console.log('[VocabMap] Sample words:', Array.from(vocabMap.entries()).slice(0, 5));
+        } else {
+          console.warn('[VocabMap] Failed to load, status:', res.status);
+        }
+      } catch (err) {
+        console.warn('[VocabMap] Failed to load:', err);
+      }
+    }
+
+    // Initialize
+    async function init() {
+      try {
+        if (!window.YouTubeTempSessionStore) {
+          alert('临时视频存储组件加载失败，请刷新后重试');
+          window.location.href = '/youtube-import.html';
+          return;
+        }
+
+        const sessionResult = await window.YouTubeTempSessionStore.load();
+        if (sessionResult.status === 'expired') {
+          alert('临时视频数据已过期，请返回重新导入');
+          window.location.href = '/youtube-import.html';
+          return;
+        }
+        if (sessionResult.status === 'invalid') {
+          alert('视频数据格式错误，请返回重新导入');
+          window.location.href = '/youtube-import.html';
+          return;
+        }
+        if (sessionResult.status !== 'ready') {
+          alert('未找到视频数据，请返回重新导入');
+          window.location.href = '/youtube-import.html';
+          return;
+        }
+
+        videoData = sessionResult.session;
+
+        console.log('[YouTube Reader] Loaded video data:', videoData);
+        console.log('[YouTube Reader] videoData keys:', Object.keys(videoData));
+        console.log('[YouTube Reader] segments exists:', !!videoData.segments);
+        console.log('[YouTube Reader] segments type:', typeof videoData.segments);
+        console.log('[YouTube Reader] segments is array:', Array.isArray(videoData.segments));
+        console.log('[YouTube Reader] segments length:', videoData.segments?.length || 0);
+
+        // Log segment timing info for debugging
+        if (videoData.segments && videoData.segments.length > 0) {
+          console.log('[YouTube Reader] First segment:', {
+            index: 0,
+            start: videoData.segments[0].start,
+            end: videoData.segments[0].end,
+            text: videoData.segments[0].text
+          });
+          console.log('[YouTube Reader] Last segment:', {
+            index: videoData.segments.length - 1,
+            start: videoData.segments[videoData.segments.length - 1].start,
+            end: videoData.segments[videoData.segments.length - 1].end,
+            text: videoData.segments[videoData.segments.length - 1].text
+          });
+          console.log('[YouTube Reader] Total segments:', videoData.segments.length);
+        } else {
+          console.warn('[YouTube Reader] WARNING: No segments found in videoData!');
+          if (videoData.segments === undefined) {
+            console.warn('[YouTube Reader] segments is undefined');
+          } else if (videoData.segments === null) {
+            console.warn('[YouTube Reader] segments is null');
+          } else if (Array.isArray(videoData.segments) && videoData.segments.length === 0) {
+            console.warn('[YouTube Reader] segments is empty array');
+          }
+        }
+
+        // Set title and info
+        videoTitle.textContent = videoData.title || 'YouTube 视频';
+        videoInfo.textContent = `${videoData.segments?.length || 0} 个字幕片段`;
+
+        // Load vocabulary map for color highlighting
+        await loadVocabMap();
+
+        // Render subtitles
+        renderSubtitles();
+
+        // Initialize player
+        player = new YouTubePlayer('youtubePlayer');
+
+        let useLocalVideo = false;
+        let localVideoPath = null;
+
+        // Check if local video is available (for mainland users)
+        if (videoData.id) {
+          try {
+            const statusResponse = await fetch(`/video-resources/${videoData.id}`);
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              const videoResource = statusData.video;
+
+              // Check if local video is available and completed
+              if (videoResource.local_video_status === 'completed' && videoResource.local_video_path) {
+                console.log('[YouTube Reader] Local video available, using local playback');
+                useLocalVideo = true;
+                localVideoPath = videoResource.local_video_path;
+              }
+            }
+          } catch (err) {
+            console.warn('[YouTube Reader] Failed to check local video status:', err);
+          }
+        }
+
+        // Initialize video player
+        if (useLocalVideo && localVideoPath) {
+          // Local video available - use HTML5 player
+          console.log('[YouTube Reader] Using local video:', localVideoPath);
+          await initLocalVideoPlayer(localVideoPath);
+        } else {
+          // No local video - use direct YouTube playback
+          console.log('[YouTube Reader] Using YouTube player:', videoData.youtube_video_id);
+
+          try {
+            await player.init(videoData.youtube_video_id);
+          } catch (playerError) {
+            console.error('[YouTube Reader] Player initialization failed:', playerError);
+
+            // Show detailed error message
+            const errorMsg = playerError.message || 'Unknown error';
+            const detailedMsg = `YouTube播放器加载失败：${errorMsg}\n\n可能的原因：\n` +
+              `1. 网络连接问题\n` +
+              `2. 浏览器扩展（如广告拦截器）阻止了YouTube脚本\n` +
+              `3. 防火墙或网络限制\n\n` +
+              `建议尝试：\n` +
+              `1. 检查网络连接\n` +
+              `2. 暂时禁用浏览器扩展\n` +
+              `3. 尝试使用其他浏览器\n` +
+              `4. 如果在中国大陆，请等待视频下载完成后使用本地播放`;
+
+            alert(detailedMsg);
+
+            // Don't throw - allow user to see subtitles even if video fails
+            console.log('[YouTube Reader] Continuing without video player...');
+          }
+        }
+
+        // Setup player events (only if player initialized successfully)
+        if (player && (player.player || player.videoElement)) {
+          player.on('timeupdate', handleTimeUpdate);
+          player.on('statechange', handleStateChange);
+        }
+
+        // Hide loading
+        loading.style.display = 'none';
+        container.style.display = 'flex';
+
+      } catch (error) {
+        console.error('[YouTube Reader] Initialization error:', error);
+
+        // Show user-friendly error message
+        const errorMsg = error.message || 'Unknown error';
+        alert('加载失败：' + errorMsg + '\n\n请刷新页面重试，或返回重新导入视频。');
+
+        // Allow user to return to import page
+        loading.innerHTML = `
+          <div style="text-align: center;">
+            <p style="color: #ef4444; margin-bottom: 20px;">加载失败：${errorMsg}</p>
+            <button onclick="window.location.href='/youtube-import.html'"
+                    style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+              返回导入页面
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    // Initialize local HTML5 video player
+    async function initLocalVideoPlayer(videoPath) {
+      const container = document.getElementById('youtubePlayer');
+      container.innerHTML = '';
+
+      // Create HTML5 video element
+      const video = document.createElement('video');
+      video.id = 'localVideoPlayer';
+      video.src = videoPath;
+      video.controls = true;
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.backgroundColor = '#000';
+
+      container.appendChild(video);
+
+      // Create adapter to make it compatible with YouTubePlayer interface
+      player.videoElement = video;
+      player.isLocalVideo = true;
+
+      // Override player methods to work with HTML5 video
+      player.play = () => video.play();
+      player.pause = () => video.pause();
+      player.seekTo = (time) => { video.currentTime = time; };
+      player.getCurrentTime = () => video.currentTime;
+      player.getDuration = () => video.duration;
+      player.isPlaying = () => !video.paused && !video.ended;
+      player.setPlaybackRate = (rate) => { video.playbackRate = rate; };
+
+      // Setup time update event
+      let timeUpdateInterval;
+      video.addEventListener('play', () => {
+        if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+        timeUpdateInterval = setInterval(() => {
+          if (player.onTimeUpdateCallback) {
+            player.onTimeUpdateCallback({ currentTime: video.currentTime });
+          }
+        }, 100);
+      });
+
+      video.addEventListener('pause', () => {
+        if (timeUpdateInterval) {
+          clearInterval(timeUpdateInterval);
+          timeUpdateInterval = null;
+        }
+      });
+
+      video.addEventListener('ended', () => {
+        if (timeUpdateInterval) {
+          clearInterval(timeUpdateInterval);
+          timeUpdateInterval = null;
+        }
+      });
+
+      // Trigger ready callback
+      if (player.onReadyCallback) {
+        video.addEventListener('loadedmetadata', () => {
+          player.onReadyCallback({ target: player });
+        }, { once: true });
+      }
+
+      // Emit timeupdate events
+      player.on = (eventName, callback) => {
+        if (eventName === 'timeupdate') {
+          player.onTimeUpdateCallback = callback;
+        } else if (eventName === 'statechange') {
+          player.onStateChangeCallback = callback;
+
+          // Emit state change events
+          video.addEventListener('play', () => {
+            callback({ data: 1 }); // PLAYING
+          });
+          video.addEventListener('pause', () => {
+            callback({ data: 2 }); // PAUSED
+          });
+          video.addEventListener('ended', () => {
+            callback({ data: 0 }); // ENDED
+          });
+        }
+      };
+
+      console.log('[Local Video] Player initialized');
+    }
+
+    // Render subtitles
+    function renderSubtitles() {
+      if (!videoData.segments || videoData.segments.length === 0) {
+        subtitleList.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">暂无字幕</p>';
+        return;
+      }
+
+      subtitleList.innerHTML = videoData.segments.map((segment, index) => {
+        const startTime = formatTime(segment.start);
+        const text = highlightWords(segment.text, index);
+        return `
+          <div class="subtitle-item" data-index="${index}" data-start="${segment.start}" data-end="${segment.end}">
+            <div class="subtitle-time">${startTime}</div>
+            <div class="subtitle-text">${text}</div>
+          </div>
+        `;
+      }).join('');
+
+      // Add click listeners
+      document.querySelectorAll('.subtitle-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const start = parseFloat(item.dataset.start);
+          player.seekTo(start);
+        });
+      });
+
+      // Add word click listeners
+      document.querySelectorAll('.word').forEach(wordEl => {
+        wordEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleWordClick(wordEl);
+        });
+      });
+
+      // Setup user scroll detection
+      setupScrollDetection();
+    }
+
+    // Setup scroll event detection to prevent auto-scroll during manual scrolling
+    function setupScrollDetection() {
+      if (!subtitleList || __scrollDetectionSetup) return;
+
+      let scrollTimeout;
+      let isInitialized = false;
+
+      // Delay enabling scroll lock to avoid triggering on initial page load
+      setTimeout(() => {
+        isInitialized = true;
+        console.log('[Scroll] Detection enabled');
+      }, 1000);
+
+      subtitleList.addEventListener('scroll', () => {
+        // If this is an auto-scroll, ignore it
+        if (__isAutoScrolling) return;
+
+        // Ignore initial scrolls during page load
+        if (!isInitialized) {
+          console.log('[Scroll] Ignored (not initialized)');
+          return;
+        }
+
+        // User is manually scrolling, lock auto-scroll for 3 seconds
+        __userScrollLockUntil = Date.now() + 3000;
+        console.log('[Scroll] User scroll detected, locking auto-scroll for 3s');
+
+        // Clear any pending timeout
+        clearTimeout(scrollTimeout);
+
+        // After user stops scrolling for 1 second, reduce lock time
+        scrollTimeout = setTimeout(() => {
+          __userScrollLockUntil = Date.now() + 1000;
+          console.log('[Scroll] Reduced lock time to 1s');
+        }, 1000);
+      }, { passive: true });
+
+      // Also detect wheel events for more responsive detection
+      subtitleList.addEventListener('wheel', () => {
+        if (!__isAutoScrolling && isInitialized) {
+          __userScrollLockUntil = Date.now() + 3000;
+          console.log('[Scroll] Wheel detected, locking auto-scroll');
+        }
+      }, { passive: true });
+
+      // Detect touch events for mobile
+      subtitleList.addEventListener('touchstart', () => {
+        if (!__isAutoScrolling && isInitialized) {
+          __userScrollLockUntil = Date.now() + 3000;
+          console.log('[Scroll] Touch detected, locking auto-scroll');
+        }
+      }, { passive: true });
+
+      __scrollDetectionSetup = true;
+    }
+
+    // Highlight words
+    function highlightWords(text) {
+      if (!text) return '';
+
+      const words = text.split(/\b/);
+      return words.map(word => {
+        if (/^[a-zA-Z'-]+$/.test(word) && word.length >= 2) {
+          const lemma = word.toLowerCase();
+
+          // Check vocabulary state and apply color class
+          const vocabState = vocabMap.get(lemma);
+          let stateClass = '';
+          if (vocabState) {
+            if (vocabState === 'mastered' || vocabState === 'known') {
+              stateClass = ' word-mastered';
+            } else if (vocabState === 'learning' || vocabState === 'reviewing') {
+              stateClass = ' word-learning';
+            } else {
+              stateClass = ' word-encountered';
+            }
+          }
+
+          return `<span class="word${stateClass}" data-word="${lemma}">${word}</span>`;
+        }
+        return word;
+      }).join('');
+    }
+
+    // Format time (seconds to MM:SS)
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Ensure subtitle item is visible in scrollable container
+    function ensureVisible(el) {
+      if (!el || !subtitleList) return;
+
+      // Respect manual scrolling - don't auto-scroll if user recently scrolled
+      if (Date.now() < __userScrollLockUntil) {
+        console.log('[Scroll] Auto-scroll blocked (user scroll lock active)');
+        return;
+      }
+
+      const container = subtitleList;
+      const elTop = el.offsetTop;
+      const elBottom = elTop + el.offsetHeight;
+      const viewTop = container.scrollTop;
+      const viewBottom = viewTop + container.clientHeight;
+      const marginTop = 40;
+      const marginBottom = 60;
+      let targetScroll = null;
+
+      // Only scroll enough to reveal the item, don't re-center
+      if (elTop < viewTop + marginTop) {
+        targetScroll = elTop - marginTop;
+      } else if (elBottom > viewBottom - marginBottom) {
+        targetScroll = elBottom - container.clientHeight + marginBottom;
+      }
+
+      if (targetScroll !== null) {
+        const now = Date.now();
+        // Throttle auto-scrolling to avoid excessive updates
+        if (!__lastAutoScrollAt || (now - __lastAutoScrollAt) > 200) {
+          const clamped = Math.max(0, Math.round(targetScroll));
+          if (Math.abs(clamped - container.scrollTop) > 4) {
+            __lastAutoScrollAt = now;
+            __isAutoScrolling = true;
+            console.log(`[Scroll] Auto-scrolling to ${clamped}px`);
+            container.scrollTo({ top: clamped, behavior: 'auto' });
+            setTimeout(() => { __isAutoScrolling = false; }, 300);
+          }
+        }
+      }
+    }
+
+    // Handle time update
+    function handleTimeUpdate(currentTime) {
+      // Update time display
+      if (timeDisplay) {
+        timeDisplay.textContent = formatTime(currentTime);
+      }
+
+      // Find current segment
+      const segments = videoData.segments || [];
+      let newIndex = -1;
+
+      // Strategy: Find the BEST matching segment, not just the first one
+      // This prevents issues when segments overlap or have timing tolerances
+
+      // Step 1: Find all segments that contain the current time (with small tolerance)
+      const tolerance = 0.1; // Reduced tolerance for more accurate matching
+      const matchingSegments = [];
+
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        const start = segment.start;
+        const end = segment.end;
+
+        // Check if current time is within segment bounds
+        if (currentTime >= (start - tolerance) && currentTime < (end + tolerance)) {
+          matchingSegments.push({
+            index: i,
+            start: start,
+            end: end,
+            distanceFromStart: Math.abs(currentTime - start),
+            distanceFromMid: Math.abs(currentTime - (start + end) / 2)
+          });
+        }
+      }
+
+      // Step 2: If we have matches, choose the best one
+      if (matchingSegments.length > 0) {
+        // If multiple segments match, choose the one with:
+        // 1. Smallest distance from start time (prefer segments that just started)
+        // 2. If distances are similar, prefer the one closest to midpoint
+        matchingSegments.sort((a, b) => {
+          // Prioritize segments where current time is closest to start
+          const startDiff = a.distanceFromStart - b.distanceFromStart;
+          if (Math.abs(startDiff) > 0.5) {
+            return startDiff;
+          }
+          // If start distances are similar, prefer segment closest to midpoint
+          return a.distanceFromMid - b.distanceFromMid;
+        });
+
+        newIndex = matchingSegments[0].index;
+      }
+
+      // Step 3: If no exact match found, find closest segment by start time
+      if (newIndex === -1 && segments.length > 0) {
+        let minDiff = Infinity;
+        for (let i = 0; i < segments.length; i++) {
+          const segment = segments[i];
+          // Find segment with start time closest to current time
+          const diff = Math.abs(currentTime - segment.start);
+          if (diff < minDiff && diff < 3.0) { // Within 3 seconds
+            minDiff = diff;
+            newIndex = i;
+          }
+        }
+      }
+
+      // Update active subtitle only if index changed
+      if (newIndex !== currentSegmentIndex) {
+        // Remove old active
+        if (currentSegmentIndex >= 0) {
+          const oldItem = document.querySelector(`.subtitle-item[data-index="${currentSegmentIndex}"]`);
+          if (oldItem) {
+            oldItem.classList.remove('active');
+          }
+        }
+
+        // Add new active and scroll if needed
+        if (newIndex >= 0) {
+          const newItem = document.querySelector(`.subtitle-item[data-index="${newIndex}"]`);
+          if (newItem) {
+            newItem.classList.add('active');
+
+            // Scroll to make visible
+            ensureVisible(newItem);
+
+            // Debug log to help diagnose timing issues
+            const segment = segments[newIndex];
+            console.log(`[Subtitle] Time: ${currentTime.toFixed(2)}s | Segment ${newIndex}: ${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s | Text: "${segment.text.substring(0, 30)}..."`);
+          }
+        }
+
+        currentSegmentIndex = newIndex;
+      }
+
+      // Handle loop mode
+      if (loopMode && currentTime >= loopEnd) {
+        player.seekTo(loopStart);
+      }
+    }
+
+    // Handle player state change
+    function handleStateChange(event) {
+      const state = event.data;
+      if (state === YT.PlayerState.PLAYING) {
+        playPauseBtn.textContent = '暂停';
+      } else {
+        playPauseBtn.textContent = '播放';
+      }
+    }
+
+    // Play/Pause button
+    playPauseBtn.addEventListener('click', () => {
+      if (player.isPlaying()) {
+        player.pause();
+      } else {
+        player.play();
+      }
+    });
+
+    // Loop button
+    loopBtn.addEventListener('click', () => {
+      if (currentSegmentIndex >= 0) {
+        const segment = videoData.segments[currentSegmentIndex];
+        loopMode = !loopMode;
+        if (loopMode) {
+          loopStart = segment.start;
+          loopEnd = segment.end;
+          loopBtn.classList.add('active');
+          loopBtn.textContent = '取消循环';
+        } else {
+          loopBtn.classList.remove('active');
+          loopBtn.textContent = '循环播放';
+        }
+      }
+    });
+
+    // Speed control
+    speedControl.addEventListener('change', () => {
+      const rate = parseFloat(speedControl.value);
+      player.setPlaybackRate(rate);
+    });
+
+    // Word click handler
+    async function handleWordClick(wordEl) {
+      const word = wordEl.dataset.word;
+      selectedWord = word;
+
+      // Pause video when looking up a word (consistent with local video reader)
+      try {
+        if (player && player.isPlaying()) {
+          wasPlayingBeforeLookup = true;
+          player.pause();
+        } else {
+          wasPlayingBeforeLookup = false;
+        }
+      } catch (err) {
+        console.warn('[Word] Failed to pause video:', err);
+        wasPlayingBeforeLookup = false;
+      }
+
+      // Show tooltip near word
+      const rect = wordEl.getBoundingClientRect();
+      wordTooltip.style.left = `${rect.left}px`;
+      wordTooltip.style.top = `${rect.bottom + 5}px`;
+      wordTooltip.classList.add('active');
+
+      tooltipContent.innerHTML = `<div style="padding:0.5rem;color:#64748b;">Loading definition for "${word}"...</div>`;
+
+      try {
+        const token = getToken();
+
+        // Fetch dictionary entry (now includes translation in 'zh' field)
+        const dictResponse = await fetch(`${API_BASE}/dictionary/${encodeURIComponent(word)}`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let entry = null;
+        let zh = '';
+        if (dictResponse.ok) {
+          const dictData = await dictResponse.json();
+          entry = dictData?.entry || null;
+          zh = dictData?.zh || ''; // Translation is included in same response
+        }
+
+        // Determine vocabulary status
+        const normalizedWord = word.toLowerCase().replace(/['']/g, "'");
+        let vocabState = 'new';
+        try {
+          const status = vocabMap.get(normalizedWord);
+          if (status) {
+            vocabState = status;
+          }
+        } catch (e) {
+          console.warn('[Word] Vocab status check failed:', e);
+        }
+
+        // Render using DictionaryRender
+        if (window.DictionaryRender) {
+          const statusText = vocabState === 'known' ? '已掌握' :
+                            vocabState === 'learning' ? '学习中' : '新词';
+          const statusClass = vocabState === 'known' ? 'mastered' :
+                             vocabState === 'learning' ? 'learning' : 'new';
+
+          tooltipContent.innerHTML = DictionaryRender.build(word, entry, zh, {
+            statusText: statusText,
+            statusClass: statusClass
+          });
+
+          // 优化发音函数 - 使用后端 Neural TTS
+          async function speakText(text) {
+            const trimmed = String(text || '').trim();
+            if (!trimmed) return;
+
+            // 使用后端高质量 TTS 服务
+            try {
+              if (token) {
+                const res = await fetch(`${API_BASE}/tts/generate`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                    text: trimmed,
+                    lang: 'en',
+                    provider: 'edge',
+                    voice: 'en-US-AriaNeural'
+                  })
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.audioUrl) {
+                    new Audio(data.audioUrl).play().catch(() => {});
+                    return;
+                  }
+                }
+              }
+            } catch (_) {}
+
+            // 后备：浏览器 TTS
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(trimmed);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85;
+            utterance.pitch = 1.0;
+            utterance.volume = 0.8;
+
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+              const preferredVoice = voices.find(v =>
+                v.lang.startsWith('en') && (
+                  v.name.includes('Natural') || v.name.includes('Neural') ||
+                  v.name.includes('Premium') || v.name.includes('Samantha') ||
+                  v.name.includes('Google') || v.name.includes('Microsoft')
+                )
+              ) || voices.find(v => v.lang === 'en-US') || voices.find(v => v.lang.startsWith('en'));
+              if (preferredVoice) utterance.voice = preferredVoice;
+            }
+            window.speechSynthesis.speak(utterance);
+          }
+
+          // Bind speak button
+          const speakBtn = tooltipContent.querySelector('.dict-speak-btn');
+          if (speakBtn) {
+            speakBtn.addEventListener('click', () => speakText(word));
+          }
+
+          // Bind definition example speak buttons
+          tooltipContent.querySelectorAll('.dict-def-speak').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const text = btn.dataset.text || '';
+              if (text) speakText(text);
+            });
+          });
+
+          // Auto-add to vocabulary as 'learning'
+          try {
+            if (vocabState === 'new') {
+              const addResponse = await fetch(`${API_BASE}/vocabulary`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  lemma: word,
+                  state: 'learning'
+                })
+              });
+
+              if (addResponse.ok) {
+                vocabMap.set(normalizedWord, 'learning');
+                renderSubtitles();
+              }
+            }
+          } catch (e) {
+            console.warn('[Word] Auto-add to vocabulary failed:', e);
+          }
+        } else {
+          // Fallback if DictionaryRender not available
+          tooltipContent.innerHTML = `
+            <div style="padding:0.5rem;">
+              <h3>${word}</h3>
+              <p style="color:#666;margin-top:0.5rem;">${zh || '暂无翻译'}</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('[Word] Lookup error:', error);
+        tooltipContent.innerHTML = `<div style="padding:0.5rem;color:#ef4444;">查询失败: ${error.message}</div>`;
+      }
+    }
+
+
+    // Helper function to close tooltip and resume playback if needed
+    function closeTooltip() {
+      wordTooltip.classList.remove('active');
+
+      // Resume playback if video was playing before lookup
+      if (wasPlayingBeforeLookup) {
+        try {
+          if (player && !player.isPlaying()) {
+            player.play();
+          }
+        } catch (err) {
+          console.warn('[Word] Failed to resume video:', err);
+        }
+        wasPlayingBeforeLookup = false;
+      }
+    }
+
+    // Close tooltip button handler
+    tooltipCloseBtn.addEventListener('click', () => {
+      closeTooltip();
+    });
+
+    // Close tooltip on outside click
+    document.addEventListener('click', (e) => {
+      if (!wordTooltip.contains(e.target) && !e.target.classList.contains('word')) {
+        closeTooltip();
+      }
+    });
+
+    // ===== Save Modal Functions =====
+
+    // Initialize tag system and load tags from server
+    async function initTagSystem() {
+      if (typeof VideoTagSystem === 'undefined') {
+        console.warn('[Save] VideoTagSystem not loaded');
+        return;
+      }
+
+      const tagSystem = window.VideoTagSystem;
+      const token = getToken();
+
+      // Load tags from server
+      if (token) {
+        try {
+          await tagSystem.loadFromServer(API_BASE, token);
+          console.log('[Save] Tags loaded from server');
+        } catch (e) {
+          console.warn('[Save] Failed to load tags from server:', e);
+        }
+      }
+    }
+
+    // Render tag options in save modal
+    function renderSaveTagOptions() {
+      if (!saveTagOptions || typeof VideoTagSystem === 'undefined') return;
+
+      const tagSystem = window.VideoTagSystem;
+      const allTags = tagSystem.getVisibleTags ? tagSystem.getVisibleTags() : tagSystem.getAllTags();
+
+      // 本地去重：按名称去重，防止数据库有重复标签
+      const seenNames = new Set();
+      const uniqueTags = allTags.filter(tag => {
+        const name = (tag.name || '').trim().toLowerCase();
+        if (!name || seenNames.has(name)) return false;
+        seenNames.add(name);
+        return true;
+      });
+
+      saveTagOptions.innerHTML = '';
+      selectedSaveTags.clear();
+
+      uniqueTags.forEach(tag => {
+        const tagOption = document.createElement('div');
+        tagOption.className = 'tag-option';
+        tagOption.dataset.tagId = tag.id;
+
+        // "我的" tag selected by default
+        const isMyTag = tag.id === 'my' || tag.name === '我的';
+        if (isMyTag) {
+          tagOption.classList.add('selected');
+          selectedSaveTags.add(String(tag.id));
+        }
+
+        tagOption.innerHTML = `
+          <span class="tag-icon">${tag.icon || '🏷️'}</span>
+          <span class="tag-name">${tag.displayName || tag.name}</span>
+        `;
+
+        // Toggle selection on click
+        tagOption.addEventListener('click', () => {
+          const tagId = String(tag.id);
+          if (selectedSaveTags.has(tagId)) {
+            selectedSaveTags.delete(tagId);
+            tagOption.classList.remove('selected');
+          } else {
+            selectedSaveTags.add(tagId);
+            tagOption.classList.add('selected');
+          }
+          // Hide error when tag is selected
+          if (selectedSaveTags.size > 0) {
+            tagError.classList.remove('show');
+          }
+        });
+
+        saveTagOptions.appendChild(tagOption);
+      });
+    }
+
+    // Get selected tag names for API
+    function getSelectedTagNames() {
+      if (typeof VideoTagSystem === 'undefined') return [];
+      const tagSystem = window.VideoTagSystem;
+      const tagIds = Array.from(selectedSaveTags);
+      return tagIds.map(tagId => {
+        const tag = tagSystem.getTagById(tagId);
+        return tag ? tag.name : null;
+      }).filter(Boolean);
+    }
+
+    // Open save modal
+    function openSaveModal() {
+      if (isVideoSaved) {
+        alert('该视频已经保存到视频库了');
+        return;
+      }
+
+      const token = getToken();
+      if (!token) {
+        alert('请先登录');
+        return;
+      }
+
+      // Set default title from video data
+      if (saveVideoTitleInput && videoData) {
+        saveVideoTitleInput.value = videoData.title || '';
+      }
+
+      // Render tag options
+      renderSaveTagOptions();
+
+      // Reset difficulty level
+      if (saveDifficultyLevel) {
+        saveDifficultyLevel.value = '';
+      }
+
+      // Reset collection name
+      if (saveCollectionName) {
+        saveCollectionName.value = '';
+      }
+
+      // Load collection suggestions
+      loadCollectionSuggestions();
+
+      // Reset error states
+      tagError.classList.remove('show');
+      difficultyError.classList.remove('show');
+
+      // Show modal
+      saveModalOverlay.classList.add('active');
+    }
+
+    // Load collection suggestions from local storage
+    function loadCollectionSuggestions() {
+      try {
+        // 从 localStorage 获取已保存的合集名称
+        const stored = localStorage.getItem('linglish_collection_names');
+        collectionSuggestions = stored ? JSON.parse(stored) : [];
+        updateCollectionDatalist();
+      } catch (e) {
+        collectionSuggestions = [];
+      }
+    }
+
+    // Update datalist with suggestions
+    function updateCollectionDatalist() {
+      if (!collectionDatalist) return;
+      collectionDatalist.innerHTML = collectionSuggestions
+        .slice(0, 20)
+        .map(name => `<option value="${name.replace(/"/g, '&quot;')}">`)
+        .join('');
+    }
+
+    // Save collection name to local storage for future suggestions
+    function saveCollectionToHistory(name) {
+      if (!name) return;
+      try {
+        const stored = localStorage.getItem('linglish_collection_names');
+        let names = stored ? JSON.parse(stored) : [];
+        // Remove if exists, then add to front
+        names = names.filter(n => n !== name);
+        names.unshift(name);
+        // Keep only last 50
+        names = names.slice(0, 50);
+        localStorage.setItem('linglish_collection_names', JSON.stringify(names));
+        collectionSuggestions = names;
+      } catch (e) {
+        console.warn('Failed to save collection to history', e);
+      }
+    }
+
+    // Close save modal
+    function closeSaveModal() {
+      saveModalOverlay.classList.remove('active');
+    }
+
+    // Save to library function (called from modal confirm)
+    async function saveToLibrary() {
+      let hasError = false;
+
+      // Validate: at least one tag must be selected
+      if (selectedSaveTags.size === 0) {
+        tagError.classList.add('show');
+        hasError = true;
+      } else {
+        tagError.classList.remove('show');
+      }
+
+      // Validate: difficulty level must be selected
+      const difficultyLevel = saveDifficultyLevel?.value || '';
+      if (!difficultyLevel) {
+        difficultyError.classList.add('show');
+        hasError = true;
+      } else {
+        difficultyError.classList.remove('show');
+      }
+
+      if (hasError) {
+        return;
+      }
+
+      const token = getToken();
+      if (!token) {
+        alert('请先登录');
+        return;
+      }
+
+      // Get title from input
+      const customTitle = saveVideoTitleInput?.value?.trim() || videoData.title || 'YouTube Video';
+
+      // Get selected tag names
+      const tagNames = getSelectedTagNames();
+
+      // Get collection name (二级标签)
+      const collectionName = saveCollectionName?.value?.trim() || '';
+
+      // Debug: Check segments before sending
+      console.log('[Save] videoData.segments exists:', !!videoData.segments);
+      console.log('[Save] videoData.segments length:', videoData.segments?.length || 0);
+      console.log('[Save] Custom title:', customTitle);
+      console.log('[Save] Selected tags:', tagNames);
+      console.log('[Save] Collection name:', collectionName);
+      console.log('[Save] Difficulty level:', difficultyLevel);
+      if (videoData.segments && videoData.segments.length > 0) {
+        console.log('[Save] First segment:', videoData.segments[0]);
+      } else {
+        console.warn('[Save] WARNING: No segments to save!');
+      }
+
+      try {
+        saveModalConfirm.disabled = true;
+        saveModalConfirm.textContent = '保存中...';
+
+        const requestBody = {
+          youtube_video_id: videoData.youtube_video_id,
+          title: customTitle,
+          description: videoData.description || '',
+          duration_sec: videoData.duration || 0,
+          language: 'en',
+          segments: videoData.segments || [],
+          tags: tagNames,
+          difficulty_level: difficultyLevel,
+          collection_name: collectionName || null,
+          is_public: true,
+        };
+
+        console.log('[Save] Request body segments:', requestBody.segments?.length || 0);
+
+        const response = await fetch(`${API_BASE}/video-resources/youtube`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        let result = {};
+        try {
+          result = await response.json();
+        } catch (parseErr) {
+          console.warn('[Save] Failed to parse response JSON:', parseErr);
+          result = {};
+        }
+
+        if (response.ok) {
+          isVideoSaved = true;
+          saveToLibraryBtn.textContent = '已保存';
+          saveToLibraryBtn.style.background = '#6b7280';
+
+          // Save tags to local tag system
+          const videoId = result?.video?.id || result?.id;
+          if (videoId && typeof VideoTagSystem !== 'undefined') {
+            window.VideoTagSystem.setVideoTags(videoId, Array.from(selectedSaveTags));
+          }
+
+          // Save collection name to history for future suggestions
+          if (collectionName) {
+            saveCollectionToHistory(collectionName);
+          }
+
+          closeSaveModal();
+          alert('视频已成功保存到视频库！');
+        } else if (response.status === 409 && result.message === 'VIDEO_ALREADY_EXISTS') {
+          // Video already exists in library
+          isVideoSaved = true;
+          saveToLibraryBtn.textContent = '已保存';
+          saveToLibraryBtn.style.background = '#6b7280';
+          closeSaveModal();
+          alert('该视频已经在视频库中了');
+        } else if (response.status === 403 && (result.message === 'UPLOAD_LIMIT_REACHED' || result.code === 'UPLOAD_LIMIT_REACHED')) {
+          // 上传限额触发，给出明确提示
+          alert('上传次数已达上限，请稍后再试或删除一些视频后再上传。');
+          saveModalConfirm.disabled = false;
+          saveModalConfirm.textContent = '保存';
+          return;
+        } else if (response.status === 403) {
+          const msg = result.message || result.code || '权限不足或已超过上传限制';
+          alert('保存失败：' + msg);
+          saveModalConfirm.disabled = false;
+          saveModalConfirm.textContent = '保存';
+          return;
+        } else {
+          throw new Error(result.message || '保存失败');
+        }
+      } catch (error) {
+        console.error('[Save] Error:', error);
+        alert('保存失败：' + error.message);
+        saveModalConfirm.disabled = false;
+        saveModalConfirm.textContent = '保存';
+      }
+    }
+
+    // Save modal event listeners
+    if (saveModalClose) {
+      saveModalClose.addEventListener('click', closeSaveModal);
+    }
+    if (saveModalCancel) {
+      saveModalCancel.addEventListener('click', closeSaveModal);
+    }
+    if (saveModalConfirm) {
+      saveModalConfirm.addEventListener('click', saveToLibrary);
+    }
+    // Close modal on overlay click
+    if (saveModalOverlay) {
+      saveModalOverlay.addEventListener('click', (e) => {
+        if (e.target === saveModalOverlay) {
+          closeSaveModal();
+        }
+      });
+    }
+
+    // Save to library button - now opens modal instead of saving directly
+    if (saveToLibraryBtn) {
+      saveToLibraryBtn.addEventListener('click', openSaveModal);
+    }
+
+    // Initialize on load
+    window.addEventListener('load', async () => {
+      await initTagSystem();
+      await init();
+    });
+  </script>
+  <script src="./js/page-tracker.js"></script>
+</body>
+</html>

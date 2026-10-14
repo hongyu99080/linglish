@@ -1,0 +1,570 @@
+/* 会员权限系统样式 */
+
+/* 会员通知 */
+.membership-notification {
+  position: fixed;
+  top: 80px;
+  right: -400px;
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 350px;
+  border-left: 4px solid #0f766e;
+}
+
+.membership-notification.show {
+  right: 20px;
+}
+
+.membership-notification.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-left-color: #fff;
+}
+
+.membership-notification.warning {
+  background: #fff3cd;
+  color: #856404;
+  border-left-color: #ffc107;
+}
+
+.membership-notification.error {
+  background: #f8d7da;
+  color: #721c24;
+  border-left-color: #dc3545;
+}
+
+/* 会员模态框 */
+.membership-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+  padding: 1rem;
+}
+
+.membership-modal.show {
+  opacity: 1;
+}
+
+.membership-modal-content {
+  background: white;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideUp 0.3s ease-out;
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 升级提示 */
+.upgrade-prompt {
+  padding: 2.5rem;
+  text-align: center;
+}
+
+.upgrade-icon {
+  display: inline-grid;
+  place-items: center;
+  min-width: 58px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #0f766e;
+  font-size: 1rem;
+  font-weight: 850;
+  margin-bottom: 1rem;
+  animation: none;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.upgrade-prompt h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 1rem 0;
+}
+
+.upgrade-reason {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.upgrade-benefits {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.benefit-item {
+  padding: 0.75rem 0;
+  font-size: 0.95rem;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.benefit-item:last-child {
+  border-bottom: none;
+}
+
+.upgrade-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.upgrade-btn {
+  padding: 0.875rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+}
+
+.upgrade-btn.primary {
+  background: #0f766e;
+  color: white;
+  box-shadow: 0 12px 26px rgba(15, 118, 110, 0.22);
+}
+
+.upgrade-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(15, 118, 110, 0.26);
+}
+
+.upgrade-btn.secondary {
+  background: #f3f4f6;
+  color: #666;
+}
+
+.upgrade-btn.secondary:hover {
+  background: #e5e7eb;
+}
+
+/* 会员徽章 */
+.membership-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.membership-badge.free {
+  background: linear-gradient(135deg, #e5e7eb 0%, #cbd5e1 100%);
+  color: #475569;
+}
+
+.membership-badge.vip {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.membership-badge.family {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.membership-badge.admin {
+  background: linear-gradient(135deg, #fdba74 0%, #2dd4bf 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+/* 会员权益卡片 */
+.membership-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.tier-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 2px solid transparent;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column; /* 使内容纵向排列，便于按钮对齐底部 */
+}
+
+.tier-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #0f766e 0%, #0ea5e9 100%);
+}
+
+.tier-card.vip::before {
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.tier-card.admin::before {
+  background: linear-gradient(90deg, #fdba74 0%, #2dd4bf 100%);
+}
+
+.tier-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.tier-card.current {
+  border-color: #0d9488;
+}
+
+.tier-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.tier-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.tier-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.tier-price {
+  font-size: 1rem;
+  color: #666;
+  margin: 0.5rem 0 0 0;
+}
+
+.tier-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  flex: 1 1 auto; /* 占据剩余空间，压到按钮在底部 */
+}
+
+.tier-features li {
+  padding: 0.75rem 0;
+  font-size: 0.9rem;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tier-features li:last-child {
+  border-bottom: none;
+}
+
+.tier-action {
+  width: 100%;
+  padding: 0.875rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  margin-top: auto; /* 将按钮推至卡片底部，实现横向对齐 */
+}
+
+.tier-action.primary {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.tier-action.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.tier-action.secondary {
+  background: #f3f4f6;
+  color: #666;
+}
+
+.tier-action.secondary:hover {
+  background: #e5e7eb;
+}
+
+.tier-action.current {
+  background: #10b981;
+  color: white;
+  cursor: default;
+}
+
+/* 视频卡片上的标签 */
+.video-expiry-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.video-expiry-badge.expiring-soon {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.video-expiry-badge.expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.video-expiry-badge.featured {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+}
+
+.video-expiry-badge.shared {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+/* 视频操作按钮 */
+.video-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.video-action-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  flex: 1;
+}
+
+.video-action-btn.share {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.video-action-btn.feature {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+}
+
+.video-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.video-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 会员提示横幅 */
+.membership-banner {
+  background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.membership-banner.vip {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+}
+
+.banner-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.banner-action {
+  padding: 0.625rem 1.5rem;
+  background: white;
+  color: #0f766e;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s;
+}
+
+.banner-action:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+/* 限制提示 */
+.upload-limits {
+  background: linear-gradient(135deg, #fff5f7 0%, #f0f9ff 100%);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #f093fb;
+}
+
+.limit-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.75rem 0;
+}
+
+.limit-items {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.limit-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.limit-label {
+  color: #666;
+}
+
+.limit-value {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.limit-value.warning {
+  color: #dc2626;
+}
+
+.limit-progress {
+  margin-top: 0.5rem;
+}
+
+.limit-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.limit-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+.limit-fill.warning {
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.limit-fill.danger {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .membership-modal-content {
+    max-height: 85vh;
+  }
+
+  .upgrade-prompt {
+    padding: 1.5rem;
+  }
+
+  .upgrade-icon {
+    font-size: 3rem;
+  }
+
+  .upgrade-prompt h2 {
+    font-size: 1.5rem;
+  }
+
+  .upgrade-actions {
+    flex-direction: column;
+  }
+
+  .upgrade-btn {
+    width: 100%;
+  }
+
+  .membership-tiers {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .membership-banner {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .banner-action {
+    width: 100%;
+  }
+}

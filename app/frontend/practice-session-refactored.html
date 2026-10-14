@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            // Check if it's an error object
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev?.reason;
+            // Check message
+            const msg = reason?.message || reason?.toString?.() || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if from extension
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        });
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = ev?.message || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if error is from extension
+            if (ev?.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              return;
+            }
+            // Check filename for extension patterns
+            const filename = ev?.filename || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>角色扮演练习 - linglish</title>
+
+  <!-- Base Styles -->
+  <link rel="stylesheet" href="./mobile-styles.css">
+
+  <!-- Practice Session Modular Styles -->
+  <link rel="stylesheet" href="./css/practice-session/variables.css">
+  <link rel="stylesheet" href="./css/practice-session/layout.css">
+  <link rel="stylesheet" href="./css/practice-session/controls.css">
+  <link rel="stylesheet" href="./css/practice-session/animations.css">
+
+  <!-- Shared Scripts -->
+  <script src="./mobile-auth.js"></script>
+  <script src="./i18n.js"></script>
+  <script src="./auth-helpers.js"></script>
+  <script src="./feedback.js"></script>
+</head>
+<body>
+  <!-- Desktop Header -->
+  <header class="back-header">
+    <a href="javascript:goBack()" class="back-btn" title="返回">
+      ←
+    </a>
+    <div class="view-toggle">
+      <button class="toggle-btn active" id="practice-view-btn">练习模式</button>
+      <button class="toggle-btn" id="review-view-btn">复习模式</button>
+    </div>
+  </header>
+
+  <!-- Practice Banner -->
+  <div class="practice-banner">
+    <h2>
+      <span>🎭</span>
+      角色扮演练习
+    </h2>
+  </div>
+
+  <!-- Video Player Container -->
+  <div class="video-player-container">
+    <video id="practice-video" class="practice-video" controls></video>
+    <button class="mobile-practice-back" onclick="goBack()">←</button>
+    <div class="video-controls-overlay">
+      <div class="video-progress">
+        <div class="video-progress-fill"></div>
+      </div>
+      <div class="video-time" id="video-time">0:00 / 0:00</div>
+    </div>
+    <div id="play-overlay" class="play-overlay">
+      <div class="play-button">▶</div>
+    </div>
+  </div>
+
+  <!-- Practice Controls -->
+  <div class="practice-controls">
+    <select id="practice-speaker-select" class="speaker-selector">
+      <option value="">选择你要扮演的角色</option>
+    </select>
+    <p class="practice-hint" id="practice-hint">
+      选择一个角色，视频会在你的台词处暂停，让你跟读练习
+    </p>
+  </div>
+
+  <!-- Control Modes Panel -->
+  <div class="control-modes-panel">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="mode-section-label">播放模式</span>
+      <div class="audio-mode-toggle">
+        <button class="audio-mode-btn active" data-mode="original">🎬 原声</button>
+        <button class="audio-mode-btn" data-mode="my-voice">🎤 我的配音</button>
+        <button class="audio-mode-btn" data-mode="mixed">🎭 对话模式</button>
+      </div>
+      <span id="recording-indicator" class="recording-indicator" hidden>
+        已录制 <strong id="recorded-count">0</strong> 句
+      </span>
+    </div>
+  </div>
+
+  <!-- Lines Container -->
+  <div class="lines-container">
+    <div class="practice-content">
+      <div id="practice-current-line" class="practice-current-line" hidden>
+        <div class="practice-current-meta">Current Line</div>
+        <div class="practice-current-text"></div>
+        <div class="practice-current-time"></div>
+      </div>
+      <ul id="practice-line-list" class="practice-line-list">
+        <li class="line-item">加载中...</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Auto Practice Controls -->
+  <div id="auto-practice-status" class="auto-practice-controls" hidden>
+    <div class="status-indicator-inline">
+      <span id="status-icon" class="status-icon-inline">🎬</span>
+      <span id="status-text" class="status-text-inline">准备开始...</span>
+    </div>
+    <div class="auto-control-buttons-inline">
+      <button id="auto-start-btn" class="control-btn start-btn" title="开始/继续">▶</button>
+      <button id="auto-pause-btn" class="control-btn pause-btn" hidden title="暂停">⏸</button>
+      <button id="auto-prev-btn" class="control-btn prev-btn" title="上一句">⏮</button>
+      <button id="auto-next-btn" class="control-btn next-btn" title="下一句">⏭</button>
+    </div>
+  </div>
+
+  <!-- Start Recording FAB -->
+  <button id="start-recording-fab" class="start-recording-fab" hidden title="开始录音">
+    <span class="fab-icon">🎤</span>
+  </button>
+
+  <!-- Progress Chip -->
+  <div id="practice-progress-chip" class="practice-progress-chip" hidden>
+    0/0
+  </div>
+
+  <!-- Debug Log -->
+  <div id="debug-log" class="debug-log hidden">
+    <h4>调试日志</h4>
+    <div id="debug-entries"></div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>加载中...</p>
+  </div>
+
+  <!-- Bottom Navigation (Mobile) -->
+  <nav class="bottom-nav">
+    <a href="mobile-explore.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">🔍</span>
+      </div>
+      <span>发现</span>
+    </a>
+    <a href="mobile-collection.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">⭐</span>
+      </div>
+      <span>收藏</span>
+    </a>
+    <a href="mobile-arena.html" class="nav-item active">
+      <div class="nav-icon">
+        <span class="nav-emoji">🎪</span>
+      </div>
+      <span>实战场</span>
+    </a>
+    <a href="mobile-treasure.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">🪴</span>
+      </div>
+      <span>成长中心</span>
+    </a>
+  </nav>
+
+  <!-- Shared Utility Script -->
+  <script>
+    // Smart back navigation: PC returns to PC page, mobile returns to mobile page
+    function goBack() {
+      const isPC = window.innerWidth >= 768;
+      if (isPC) {
+        window.location.href = './index-desktop.html';
+      } else {
+        window.location.href = './mobile-arena.html';
+      }
+    }
+
+    // Safe video play with autoplay policy handling
+    async function safePlayVideo(options = {}) {
+      const { preferUnmuted = true } = options;
+      const videoPlayer = window.videoPlayer || document.getElementById('practice-video');
+      if (!videoPlayer) return false;
+
+      try {
+        // Try playing with sound first
+        if (preferUnmuted) {
+          videoPlayer.muted = false;
+          await videoPlayer.play();
+          return true;
+        } else {
+          // Start muted then unmute
+          videoPlayer.muted = true;
+          await videoPlayer.play();
+          setTimeout(() => {
+            videoPlayer.muted = false;
+          }, 100);
+          return true;
+        }
+      } catch (error) {
+        // If failed, try muted playback
+        try {
+          videoPlayer.muted = true;
+          await videoPlayer.play();
+          return true;
+        } catch (mutedError) {
+          console.error('[视频播放] 失败:', mutedError);
+          return false;
+        }
+      }
+    }
+
+    // Make globally accessible
+    window.safePlayVideo = safePlayVideo;
+  </script>
+
+  <script src="./js/media-session.js"></script>
+
+  <!-- Practice Session Main Module (ES6) -->
+  <script type="module" src="./js/practice-session/main.js"></script>
+</body>
+</html>

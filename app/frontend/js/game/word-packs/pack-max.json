@@ -1,0 +1,1755 @@
+{
+  "id": "max",
+  "name": "校园小子 Max",
+  "themeColor": "oklch(70% 0.19 45)",
+  "chapters": [
+    {
+      "chapter": 1,
+      "part": "head",
+      "theme": "学校场所",
+      "scene": "/images/game/scenes/school.svg?v=1",
+      "words": [
+        {
+          "lemma": "school",
+          "zh": "学校",
+          "ipa": "/skuːl/",
+          "emoji": "🏫",
+          "spot": [
+            35,
+            14
+          ]
+        },
+        {
+          "lemma": "classroom",
+          "zh": "教室",
+          "ipa": "/ˈklɑːsruːm/",
+          "emoji": "🧑‍🏫",
+          "spot": [
+            22,
+            61
+          ]
+        },
+        {
+          "lemma": "desk",
+          "zh": "课桌",
+          "ipa": "/desk/",
+          "emoji": "✍️",
+          "spot": [
+            15,
+            67
+          ]
+        },
+        {
+          "lemma": "chair",
+          "zh": "椅子",
+          "ipa": "/tʃeə/",
+          "emoji": "🪑",
+          "spot": [
+            23,
+            67
+          ]
+        },
+        {
+          "lemma": "door",
+          "zh": "门",
+          "ipa": "/dɔː/",
+          "emoji": "🚪",
+          "spot": [
+            35,
+            66
+          ]
+        },
+        {
+          "lemma": "window",
+          "zh": "窗户",
+          "ipa": "/ˈwɪndəʊ/",
+          "emoji": "🪟",
+          "spot": [
+            21,
+            55
+          ]
+        },
+        {
+          "lemma": "floor",
+          "zh": "地板",
+          "ipa": "/flɔː/",
+          "emoji": "🟫",
+          "spot": [
+            15,
+            74.5
+          ]
+        },
+        {
+          "lemma": "wall",
+          "zh": "墙",
+          "ipa": "/wɔːl/",
+          "emoji": "🧱",
+          "spot": [
+            5.5,
+            58
+          ]
+        },
+        {
+          "lemma": "board",
+          "zh": "黑板",
+          "ipa": "/bɔːd/",
+          "emoji": "🟩",
+          "spot": [
+            12,
+            55
+          ]
+        },
+        {
+          "lemma": "library",
+          "zh": "图书馆",
+          "ipa": "/ˈlaɪbrəri/",
+          "emoji": "📚",
+          "spot": [
+            12.6,
+            35
+          ]
+        },
+        {
+          "lemma": "playground",
+          "zh": "操场",
+          "ipa": "/ˈpleɪɡraʊnd/",
+          "emoji": "🛝",
+          "spot": [
+            84,
+            73
+          ]
+        },
+        {
+          "lemma": "gate",
+          "zh": "大门",
+          "ipa": "/ɡeɪt/",
+          "emoji": "🚧",
+          "spot": [
+            96,
+            75
+          ]
+        },
+        {
+          "lemma": "office",
+          "zh": "办公室",
+          "ipa": "/ˈɒfɪs/",
+          "emoji": "💼",
+          "spot": [
+            27,
+            37
+          ]
+        },
+        {
+          "lemma": "hall",
+          "zh": "大厅",
+          "ipa": "/hɔːl/",
+          "emoji": "🏛️",
+          "spot": [
+            44,
+            62
+          ]
+        },
+        {
+          "lemma": "stairs",
+          "zh": "楼梯",
+          "ipa": "/steəz/",
+          "emoji": "🪜",
+          "spot": [
+            47,
+            72.5
+          ]
+        },
+        {
+          "lemma": "garden",
+          "zh": "花园",
+          "ipa": "/ˈɡɑːdn/",
+          "emoji": "🌷",
+          "spot": [
+            73,
+            80
+          ]
+        },
+        {
+          "lemma": "gym",
+          "zh": "体育馆",
+          "ipa": "/dʒɪm/",
+          "emoji": "🏋️",
+          "spot": [
+            57,
+            61
+          ]
+        },
+        {
+          "lemma": "lab",
+          "zh": "实验室",
+          "ipa": "/læb/",
+          "emoji": "🧪",
+          "spot": [
+            42,
+            35
+          ]
+        },
+        {
+          "lemma": "canteen",
+          "zh": "食堂",
+          "ipa": "/kænˈtiːn/",
+          "emoji": "🍽️",
+          "spot": [
+            57,
+            37
+          ]
+        },
+        {
+          "lemma": "seat",
+          "zh": "座位",
+          "ipa": "/siːt/",
+          "emoji": "💺",
+          "spot": [
+            30,
+            69
+          ]
+        },
+        {
+          "lemma": "shelf",
+          "zh": "书架",
+          "ipa": "/ʃelf/",
+          "emoji": "🗄️",
+          "spot": [
+            31,
+            57
+          ]
+        },
+        {
+          "lemma": "clock",
+          "zh": "时钟",
+          "ipa": "/klɒk/",
+          "emoji": "🕐",
+          "spot": [
+            47.5,
+            52
+          ]
+        },
+        {
+          "lemma": "light",
+          "zh": "灯",
+          "ipa": "/laɪt/",
+          "emoji": "💡",
+          "spot": [
+            34.7,
+            53
+          ]
+        },
+        {
+          "lemma": "flag",
+          "zh": "旗",
+          "ipa": "/flæɡ/",
+          "emoji": "🚩",
+          "spot": [
+            65.5,
+            4
+          ]
+        },
+        {
+          "lemma": "bell",
+          "zh": "铃",
+          "ipa": "/bel/",
+          "emoji": "🔔",
+          "spot": [
+            43.7,
+            51
+          ]
+        },
+        {
+          "lemma": "map",
+          "zh": "地图",
+          "ipa": "/mæp/",
+          "emoji": "🗺️",
+          "spot": [
+            26.6,
+            55
+          ]
+        },
+        {
+          "lemma": "picture",
+          "zh": "图画",
+          "ipa": "/ˈpɪktʃə/",
+          "emoji": "🖼️",
+          "spot": [
+            30.9,
+            54
+          ]
+        },
+        {
+          "lemma": "corner",
+          "zh": "角落",
+          "ipa": "/ˈkɔːnə/",
+          "emoji": "📐",
+          "spot": [
+            6.5,
+            76
+          ]
+        },
+        {
+          "lemma": "room",
+          "zh": "房间",
+          "ipa": "/ruːm/",
+          "emoji": "🛏️",
+          "spot": [
+            39,
+            25
+          ]
+        },
+        {
+          "lemma": "building",
+          "zh": "楼房",
+          "ipa": "/ˈbɪldɪŋ/",
+          "emoji": "🏢",
+          "spot": [
+            8,
+            21
+          ]
+        }
+      ]
+    },
+    {
+      "chapter": 2,
+      "part": "body",
+      "theme": "文具与日常用品",
+      "scene": "/images/game/scenes/stationery.svg?v=1",
+      "words": [
+        {
+          "lemma": "pen",
+          "zh": "钢笔",
+          "ipa": "/pen/",
+          "emoji": "🖊️",
+          "spot": [
+            36.8,
+            64.5
+          ]
+        },
+        {
+          "lemma": "pencil",
+          "zh": "铅笔",
+          "ipa": "/ˈpensl/",
+          "emoji": "✏️",
+          "spot": [
+            15.5,
+            63.5
+          ]
+        },
+        {
+          "lemma": "book",
+          "zh": "书",
+          "ipa": "/bʊk/",
+          "emoji": "📖",
+          "spot": [
+            18,
+            46
+          ]
+        },
+        {
+          "lemma": "bag",
+          "zh": "书包",
+          "ipa": "/bæɡ/",
+          "emoji": "🎒",
+          "spot": [
+            13,
+            85
+          ]
+        },
+        {
+          "lemma": "ruler",
+          "zh": "尺子",
+          "ipa": "/ˈruːlə/",
+          "emoji": "📏",
+          "spot": [
+            16.6,
+            74
+          ]
+        },
+        {
+          "lemma": "eraser",
+          "zh": "橡皮",
+          "ipa": "/ɪˈreɪzə/",
+          "emoji": "🩹",
+          "spot": [
+            32.5,
+            74
+          ]
+        },
+        {
+          "lemma": "crayon",
+          "zh": "蜡笔",
+          "ipa": "/ˈkreɪən/",
+          "emoji": "🖍️",
+          "spot": [
+            76.5,
+            63
+          ]
+        },
+        {
+          "lemma": "brush",
+          "zh": "画笔",
+          "ipa": "/brʌʃ/",
+          "emoji": "🖌️",
+          "spot": [
+            91.5,
+            62
+          ]
+        },
+        {
+          "lemma": "glue",
+          "zh": "胶水",
+          "ipa": "/ɡluː/",
+          "emoji": "🧴",
+          "spot": [
+            70,
+            72.5
+          ]
+        },
+        {
+          "lemma": "tape",
+          "zh": "胶带",
+          "ipa": "/teɪp/",
+          "emoji": "📼",
+          "spot": [
+            78,
+            73
+          ]
+        },
+        {
+          "lemma": "paper",
+          "zh": "纸",
+          "ipa": "/ˈpeɪpə/",
+          "emoji": "📄",
+          "spot": [
+            48,
+            46
+          ]
+        },
+        {
+          "lemma": "notebook",
+          "zh": "笔记本",
+          "ipa": "/ˈnəʊtbʊk/",
+          "emoji": "📓",
+          "spot": [
+            36,
+            46
+          ]
+        },
+        {
+          "lemma": "folder",
+          "zh": "文件夹",
+          "ipa": "/ˈfəʊldə/",
+          "emoji": "📁",
+          "spot": [
+            61.5,
+            46
+          ]
+        },
+        {
+          "lemma": "sharpener",
+          "zh": "卷笔刀",
+          "ipa": "/ˈʃɑːpnə/",
+          "emoji": "🔪",
+          "spot": [
+            42.5,
+            73.5
+          ]
+        },
+        {
+          "lemma": "marker",
+          "zh": "记号笔",
+          "ipa": "/ˈmɑːkə/",
+          "emoji": "✒️",
+          "spot": [
+            58.5,
+            63.5
+          ]
+        },
+        {
+          "lemma": "scissors",
+          "zh": "剪刀",
+          "ipa": "/ˈsɪzəz/",
+          "emoji": "✂️",
+          "spot": [
+            61.5,
+            72.5
+          ]
+        },
+        {
+          "lemma": "clip",
+          "zh": "回形针",
+          "ipa": "/klɪp/",
+          "emoji": "📎",
+          "spot": [
+            52,
+            74
+          ]
+        },
+        {
+          "lemma": "stamp",
+          "zh": "印章",
+          "ipa": "/stæmp/",
+          "emoji": "📮",
+          "spot": [
+            88,
+            72
+          ]
+        },
+        {
+          "lemma": "card",
+          "zh": "卡片",
+          "ipa": "/kɑːd/",
+          "emoji": "🃏",
+          "spot": [
+            35,
+            14
+          ]
+        },
+        {
+          "lemma": "box",
+          "zh": "盒子",
+          "ipa": "/bɒks/",
+          "emoji": "📦",
+          "spot": [
+            94,
+            20
+          ]
+        },
+        {
+          "lemma": "bottle",
+          "zh": "瓶子",
+          "ipa": "/ˈbɒtl/",
+          "emoji": "🍼"
+        },
+        {
+          "lemma": "cup",
+          "zh": "杯子",
+          "ipa": "/kʌp/",
+          "emoji": "🥤",
+          "spot": [
+            75,
+            45
+          ]
+        },
+        {
+          "lemma": "towel",
+          "zh": "毛巾",
+          "ipa": "/ˈtaʊəl/",
+          "emoji": "🧻",
+          "spot": [
+            90,
+            46
+          ]
+        },
+        {
+          "lemma": "key",
+          "zh": "钥匙",
+          "ipa": "/kiː/",
+          "emoji": "🔑",
+          "spot": [
+            57,
+            16
+          ]
+        },
+        {
+          "lemma": "watch",
+          "zh": "手表",
+          "ipa": "/wɒtʃ/",
+          "emoji": "⌚",
+          "spot": [
+            70,
+            15
+          ]
+        },
+        {
+          "lemma": "phone",
+          "zh": "手机",
+          "ipa": "/fəʊn/",
+          "emoji": "📱",
+          "spot": [
+            47,
+            15
+          ]
+        },
+        {
+          "lemma": "screen",
+          "zh": "屏幕",
+          "ipa": "/skriːn/",
+          "emoji": "🖥️",
+          "spot": [
+            17,
+            15
+          ]
+        },
+        {
+          "lemma": "button",
+          "zh": "按钮",
+          "ipa": "/ˈbʌtn/",
+          "emoji": "🔘",
+          "spot": [
+            29,
+            85
+          ]
+        },
+        {
+          "lemma": "string",
+          "zh": "绳子",
+          "ipa": "/strɪŋ/",
+          "emoji": "🪢",
+          "spot": [
+            42,
+            85
+          ]
+        },
+        {
+          "lemma": "bin",
+          "zh": "垃圾桶",
+          "ipa": "/bɪn/",
+          "emoji": "🗑️",
+          "spot": [
+            84,
+            20
+          ]
+        }
+      ]
+    },
+    {
+      "chapter": 3,
+      "part": "armL",
+      "theme": "数字",
+      "scene": "/images/game/scenes/numbers.svg?v=1",
+      "words": [
+        {
+          "lemma": "one",
+          "zh": "一",
+          "ipa": "/wʌn/",
+          "emoji": "1️⃣",
+          "spot": [
+            17.5,
+            51
+          ]
+        },
+        {
+          "lemma": "two",
+          "zh": "二",
+          "ipa": "/tuː/",
+          "emoji": "2️⃣",
+          "spot": [
+            25.5,
+            51
+          ]
+        },
+        {
+          "lemma": "three",
+          "zh": "三",
+          "ipa": "/θriː/",
+          "emoji": "3️⃣",
+          "spot": [
+            33.5,
+            51
+          ]
+        },
+        {
+          "lemma": "four",
+          "zh": "四",
+          "ipa": "/fɔː/",
+          "emoji": "4️⃣",
+          "spot": [
+            41.5,
+            51
+          ]
+        },
+        {
+          "lemma": "five",
+          "zh": "五",
+          "ipa": "/faɪv/",
+          "emoji": "5️⃣",
+          "spot": [
+            49.5,
+            51
+          ]
+        },
+        {
+          "lemma": "six",
+          "zh": "六",
+          "ipa": "/sɪks/",
+          "emoji": "6️⃣",
+          "spot": [
+            57.5,
+            51
+          ]
+        },
+        {
+          "lemma": "seven",
+          "zh": "七",
+          "ipa": "/ˈsevn/",
+          "emoji": "7️⃣",
+          "spot": [
+            65.5,
+            51
+          ]
+        },
+        {
+          "lemma": "eight",
+          "zh": "八",
+          "ipa": "/eɪt/",
+          "emoji": "8️⃣",
+          "spot": [
+            73.5,
+            51
+          ]
+        },
+        {
+          "lemma": "nine",
+          "zh": "九",
+          "ipa": "/naɪn/",
+          "emoji": "9️⃣",
+          "spot": [
+            81.5,
+            51
+          ]
+        },
+        {
+          "lemma": "ten",
+          "zh": "十",
+          "ipa": "/ten/",
+          "emoji": "🔟",
+          "spot": [
+            90,
+            51
+          ]
+        },
+        {
+          "lemma": "eleven",
+          "zh": "十一",
+          "ipa": "/ɪˈlevn/",
+          "emoji": "11",
+          "spot": [
+            15,
+            34.5
+          ]
+        },
+        {
+          "lemma": "twelve",
+          "zh": "十二",
+          "ipa": "/twelv/",
+          "emoji": "12",
+          "spot": [
+            31,
+            27.5
+          ]
+        },
+        {
+          "lemma": "thirteen",
+          "zh": "十三",
+          "ipa": "/ˌθɜːˈtiːn/",
+          "emoji": "13",
+          "spot": [
+            47.5,
+            22.5
+          ]
+        },
+        {
+          "lemma": "fifteen",
+          "zh": "十五",
+          "ipa": "/ˌfɪfˈtiːn/",
+          "emoji": "15",
+          "spot": [
+            61,
+            18
+          ]
+        },
+        {
+          "lemma": "twenty",
+          "zh": "二十",
+          "ipa": "/ˈtwenti/",
+          "emoji": "20",
+          "spot": [
+            80,
+            20
+          ]
+        },
+        {
+          "lemma": "thirty",
+          "zh": "三十",
+          "ipa": "/ˈθɜːti/",
+          "emoji": "30",
+          "spot": [
+            86,
+            17
+          ]
+        },
+        {
+          "lemma": "fifty",
+          "zh": "五十",
+          "ipa": "/ˈfɪfti/",
+          "emoji": "50",
+          "spot": [
+            92,
+            21
+          ]
+        },
+        {
+          "lemma": "hundred",
+          "zh": "百",
+          "ipa": "/ˈhʌndrəd/",
+          "emoji": "100",
+          "spot": [
+            42,
+            72
+          ]
+        },
+        {
+          "lemma": "first",
+          "zh": "第一",
+          "ipa": "/fɜːst/",
+          "emoji": "1st",
+          "spot": [
+            8.6,
+            76
+          ]
+        },
+        {
+          "lemma": "second",
+          "zh": "第二",
+          "ipa": "/ˈsekənd/",
+          "emoji": "2nd",
+          "spot": [
+            17,
+            78
+          ]
+        },
+        {
+          "lemma": "third",
+          "zh": "第三",
+          "ipa": "/θɜːd/",
+          "emoji": "3rd",
+          "spot": [
+            25,
+            79
+          ]
+        },
+        {
+          "lemma": "half",
+          "zh": "一半",
+          "ipa": "/hɑːf/",
+          "emoji": "½",
+          "spot": [
+            59,
+            75
+          ]
+        },
+        {
+          "lemma": "many",
+          "zh": "许多",
+          "ipa": "/ˈmeni/",
+          "emoji": "👥",
+          "spot": [
+            77.5,
+            78
+          ]
+        },
+        {
+          "lemma": "few",
+          "zh": "少数",
+          "ipa": "/fjuː/",
+          "emoji": "🤏",
+          "spot": [
+            93.5,
+            80
+          ]
+        },
+        {
+          "lemma": "more",
+          "zh": "更多",
+          "ipa": "/mɔː/",
+          "emoji": "➕"
+        },
+        {
+          "lemma": "less",
+          "zh": "更少",
+          "ipa": "/les/",
+          "emoji": "➖"
+        },
+        {
+          "lemma": "all",
+          "zh": "全部",
+          "ipa": "/ɔːl/",
+          "emoji": "💯"
+        },
+        {
+          "lemma": "some",
+          "zh": "一些",
+          "ipa": "/sʌm/",
+          "emoji": "🍕"
+        },
+        {
+          "lemma": "number",
+          "zh": "数字",
+          "ipa": "/ˈnʌmbə/",
+          "emoji": "🔢",
+          "spot": [
+            37,
+            88
+          ]
+        },
+        {
+          "lemma": "count",
+          "zh": "数数",
+          "ipa": "/kaʊnt/",
+          "emoji": "🧮",
+          "spot": [
+            18.5,
+            90
+          ]
+        }
+      ]
+    },
+    {
+      "chapter": 4,
+      "part": "armR",
+      "theme": "颜色与形状",
+      "scene": "/images/game/scenes/colors.svg?v=1",
+      "words": [
+        {
+          "lemma": "red",
+          "zh": "红色",
+          "ipa": "/red/",
+          "emoji": "🔴",
+          "spot": [
+            54.7,
+            26.7
+          ]
+        },
+        {
+          "lemma": "blue",
+          "zh": "蓝色",
+          "ipa": "/bluː/",
+          "emoji": "🔵",
+          "spot": [
+            54.7,
+            46.7
+          ]
+        },
+        {
+          "lemma": "green",
+          "zh": "绿色",
+          "ipa": "/ɡriːn/",
+          "emoji": "🟢",
+          "spot": [
+            54.7,
+            41.7
+          ]
+        },
+        {
+          "lemma": "yellow",
+          "zh": "黄色",
+          "ipa": "/ˈjeləʊ/",
+          "emoji": "🟡",
+          "spot": [
+            54.7,
+            36.7
+          ]
+        },
+        {
+          "lemma": "orange",
+          "zh": "橙色",
+          "ipa": "/ˈɒrɪndʒ/",
+          "emoji": "🟠",
+          "spot": [
+            54.7,
+            31.7
+          ]
+        },
+        {
+          "lemma": "purple",
+          "zh": "紫色",
+          "ipa": "/ˈpɜːpl/",
+          "emoji": "🟣",
+          "spot": [
+            54.7,
+            51.7
+          ]
+        },
+        {
+          "lemma": "pink",
+          "zh": "粉色",
+          "ipa": "/pɪŋk/",
+          "emoji": "🌸",
+          "spot": [
+            83,
+            27
+          ]
+        },
+        {
+          "lemma": "brown",
+          "zh": "棕色",
+          "ipa": "/braʊn/",
+          "emoji": "🟤",
+          "spot": [
+            77,
+            22.7
+          ]
+        },
+        {
+          "lemma": "black",
+          "zh": "黑色",
+          "ipa": "/blæk/",
+          "emoji": "⚫",
+          "spot": [
+            75,
+            19.7
+          ]
+        },
+        {
+          "lemma": "white",
+          "zh": "白色",
+          "ipa": "/waɪt/",
+          "emoji": "⚪",
+          "spot": [
+            79.5,
+            17.3
+          ]
+        },
+        {
+          "lemma": "grey",
+          "zh": "灰色",
+          "ipa": "/ɡreɪ/",
+          "emoji": "🌫️",
+          "spot": [
+            84,
+            18.7
+          ]
+        },
+        {
+          "lemma": "gold",
+          "zh": "金色",
+          "ipa": "/ɡəʊld/",
+          "emoji": "🥇",
+          "spot": [
+            74.5,
+            25.7
+          ]
+        },
+        {
+          "lemma": "silver",
+          "zh": "银色",
+          "ipa": "/ˈsɪlvə/",
+          "emoji": "🥈",
+          "spot": [
+            78.5,
+            28.3
+          ]
+        },
+        {
+          "lemma": "color",
+          "zh": "颜色",
+          "ipa": "/ˈkʌlə/",
+          "emoji": "🎨",
+          "spot": [
+            77.5,
+            23
+          ]
+        },
+        {
+          "lemma": "bright",
+          "zh": "明亮的",
+          "ipa": "/braɪt/",
+          "emoji": "✨",
+          "spot": [
+            76.7,
+            46.3
+          ]
+        },
+        {
+          "lemma": "dark",
+          "zh": "深色的",
+          "ipa": "/dɑːk/",
+          "emoji": "🌑",
+          "spot": [
+            89,
+            47.5
+          ]
+        },
+        {
+          "lemma": "circle",
+          "zh": "圆形",
+          "ipa": "/ˈsɜːkl/",
+          "emoji": "⭕",
+          "spot": [
+            12.8,
+            16
+          ]
+        },
+        {
+          "lemma": "square",
+          "zh": "正方形",
+          "ipa": "/skweə/",
+          "emoji": "⬜",
+          "spot": [
+            23,
+            16
+          ]
+        },
+        {
+          "lemma": "triangle",
+          "zh": "三角形",
+          "ipa": "/ˈtraɪæŋɡl/",
+          "emoji": "🔺",
+          "spot": [
+            35,
+            16
+          ]
+        },
+        {
+          "lemma": "star",
+          "zh": "星形",
+          "ipa": "/stɑː/",
+          "emoji": "⭐",
+          "spot": [
+            11.5,
+            32
+          ]
+        },
+        {
+          "lemma": "heart",
+          "zh": "心形",
+          "ipa": "/hɑːt/",
+          "emoji": "❤️",
+          "spot": [
+            26,
+            33.5
+          ]
+        },
+        {
+          "lemma": "line",
+          "zh": "线",
+          "ipa": "/laɪn/",
+          "emoji": "〰️",
+          "spot": [
+            34,
+            30
+          ]
+        },
+        {
+          "lemma": "dot",
+          "zh": "点",
+          "ipa": "/dɒt/",
+          "emoji": "⏺️",
+          "spot": [
+            40,
+            38
+          ]
+        },
+        {
+          "lemma": "shape",
+          "zh": "形状",
+          "ipa": "/ʃeɪp/",
+          "emoji": "🔷",
+          "spot": [
+            39,
+            41
+          ]
+        },
+        {
+          "lemma": "big",
+          "zh": "大的",
+          "ipa": "/bɪɡ/",
+          "emoji": "🐘",
+          "spot": [
+            79,
+            66
+          ]
+        },
+        {
+          "lemma": "small",
+          "zh": "小的",
+          "ipa": "/smɔːl/",
+          "emoji": "🐭",
+          "spot": [
+            91,
+            68
+          ]
+        },
+        {
+          "lemma": "long",
+          "zh": "长的",
+          "ipa": "/lɒŋ/",
+          "emoji": "🐍",
+          "spot": [
+            20,
+            56
+          ]
+        },
+        {
+          "lemma": "short",
+          "zh": "短的",
+          "ipa": "/ʃɔːt/",
+          "emoji": "🐜",
+          "spot": [
+            12.5,
+            61.5
+          ]
+        },
+        {
+          "lemma": "round",
+          "zh": "圆的",
+          "ipa": "/raʊnd/",
+          "emoji": "🏀",
+          "spot": [
+            70,
+            86
+          ]
+        },
+        {
+          "lemma": "flat",
+          "zh": "平的",
+          "ipa": "/flæt/",
+          "emoji": "🥞",
+          "spot": [
+            89,
+            87.5
+          ]
+        }
+      ]
+    },
+    {
+      "chapter": 5,
+      "part": "legL",
+      "theme": "课程与动作",
+      "scene": "/images/game/scenes/actions.svg?v=1",
+      "words": [
+        {
+          "lemma": "read",
+          "zh": "读",
+          "ipa": "/riːd/",
+          "emoji": "📖",
+          "spot": [
+            10.7,
+            37.5
+          ]
+        },
+        {
+          "lemma": "write",
+          "zh": "写",
+          "ipa": "/raɪt/",
+          "emoji": "✍️",
+          "spot": [
+            25.7,
+            36.7
+          ]
+        },
+        {
+          "lemma": "draw",
+          "zh": "画",
+          "ipa": "/drɔː/",
+          "emoji": "✏️",
+          "spot": [
+            41,
+            37.5
+          ]
+        },
+        {
+          "lemma": "sing",
+          "zh": "唱",
+          "ipa": "/sɪŋ/",
+          "emoji": "🎤",
+          "spot": [
+            74.5,
+            76
+          ]
+        },
+        {
+          "lemma": "dance",
+          "zh": "跳舞",
+          "ipa": "/dɑːns/",
+          "emoji": "💃",
+          "spot": [
+            87.5,
+            78
+          ]
+        },
+        {
+          "lemma": "listen",
+          "zh": "听",
+          "ipa": "/ˈlɪsn/",
+          "emoji": "👂"
+        },
+        {
+          "lemma": "speak",
+          "zh": "说",
+          "ipa": "/spiːk/",
+          "emoji": "🗣️"
+        },
+        {
+          "lemma": "learn",
+          "zh": "学",
+          "ipa": "/lɜːn/",
+          "emoji": "🎓"
+        },
+        {
+          "lemma": "teach",
+          "zh": "教",
+          "ipa": "/tiːtʃ/",
+          "emoji": "🧑‍🏫",
+          "spot": [
+            91.5,
+            35.5
+          ]
+        },
+        {
+          "lemma": "study",
+          "zh": "学习",
+          "ipa": "/ˈstʌdi/",
+          "emoji": "📚"
+        },
+        {
+          "lemma": "spell",
+          "zh": "拼写",
+          "ipa": "/spel/",
+          "emoji": "🔤",
+          "spot": [
+            84,
+            95
+          ]
+        },
+        {
+          "lemma": "ask",
+          "zh": "问",
+          "ipa": "/ɑːsk/",
+          "emoji": "🙋",
+          "spot": [
+            60.7,
+            33
+          ]
+        },
+        {
+          "lemma": "answer",
+          "zh": "回答",
+          "ipa": "/ˈɑːnsə/",
+          "emoji": "💬",
+          "spot": [
+            77.7,
+            33
+          ]
+        },
+        {
+          "lemma": "open",
+          "zh": "打开",
+          "ipa": "/ˈəʊpən/",
+          "emoji": "🔓"
+        },
+        {
+          "lemma": "close",
+          "zh": "关上",
+          "ipa": "/kləʊz/",
+          "emoji": "🔒"
+        },
+        {
+          "lemma": "stand",
+          "zh": "站",
+          "ipa": "/stænd/",
+          "emoji": "🧍",
+          "spot": [
+            8.2,
+            80
+          ]
+        },
+        {
+          "lemma": "sit",
+          "zh": "坐",
+          "ipa": "/sɪt/",
+          "emoji": "🪑"
+        },
+        {
+          "lemma": "walk",
+          "zh": "走",
+          "ipa": "/wɔːk/",
+          "emoji": "🚶",
+          "spot": [
+            19.5,
+            80.8
+          ]
+        },
+        {
+          "lemma": "run",
+          "zh": "跑",
+          "ipa": "/rʌn/",
+          "emoji": "🏃",
+          "spot": [
+            31.5,
+            79
+          ]
+        },
+        {
+          "lemma": "jump",
+          "zh": "跳",
+          "ipa": "/dʒʌmp/",
+          "emoji": "🦘",
+          "spot": [
+            44,
+            76
+          ]
+        },
+        {
+          "lemma": "play",
+          "zh": "玩",
+          "ipa": "/pleɪ/",
+          "emoji": "⚽",
+          "spot": [
+            59,
+            80
+          ]
+        },
+        {
+          "lemma": "help",
+          "zh": "帮助",
+          "ipa": "/help/",
+          "emoji": "🤝"
+        },
+        {
+          "lemma": "share",
+          "zh": "分享",
+          "ipa": "/ʃeə/",
+          "emoji": "🤲"
+        },
+        {
+          "lemma": "math",
+          "zh": "数学",
+          "ipa": "/mæθ/",
+          "emoji": "📐",
+          "spot": [
+            12,
+            12
+          ]
+        },
+        {
+          "lemma": "english",
+          "zh": "英语",
+          "ipa": "/ˈɪŋɡlɪʃ/",
+          "emoji": "🇬🇧",
+          "spot": [
+            30,
+            12
+          ]
+        },
+        {
+          "lemma": "music",
+          "zh": "音乐",
+          "ipa": "/ˈmjuːzɪk/",
+          "emoji": "🎵",
+          "spot": [
+            48,
+            12
+          ]
+        },
+        {
+          "lemma": "art",
+          "zh": "美术",
+          "ipa": "/ɑːt/",
+          "emoji": "🎨",
+          "spot": [
+            66,
+            12
+          ]
+        },
+        {
+          "lemma": "science",
+          "zh": "科学",
+          "ipa": "/ˈsaɪəns/",
+          "emoji": "🔬",
+          "spot": [
+            84,
+            12
+          ]
+        },
+        {
+          "lemma": "lesson",
+          "zh": "课",
+          "ipa": "/ˈlesn/",
+          "emoji": "🛎️"
+        },
+        {
+          "lemma": "homework",
+          "zh": "作业",
+          "ipa": "/ˈhəʊmwɜːk/",
+          "emoji": "📝",
+          "spot": [
+            12.5,
+            95.5
+          ]
+        }
+      ]
+    },
+    {
+      "chapter": 6,
+      "part": "legR",
+      "theme": "人物与时间",
+      "scene": "/images/game/scenes/town.svg?v=1",
+      "words": [
+        {
+          "lemma": "teacher",
+          "zh": "老师",
+          "ipa": "/ˈtiːtʃə/",
+          "emoji": "🧑‍🏫",
+          "spot": [
+            10,
+            71.5
+          ]
+        },
+        {
+          "lemma": "student",
+          "zh": "学生",
+          "ipa": "/ˈstjuːdnt/",
+          "emoji": "🧑‍🎓",
+          "spot": [
+            26.5,
+            74
+          ]
+        },
+        {
+          "lemma": "friend",
+          "zh": "朋友",
+          "ipa": "/frend/",
+          "emoji": "👫",
+          "spot": [
+            40,
+            76.7
+          ]
+        },
+        {
+          "lemma": "boy",
+          "zh": "男孩",
+          "ipa": "/bɔɪ/",
+          "emoji": "👦",
+          "spot": [
+            36.5,
+            74
+          ]
+        },
+        {
+          "lemma": "girl",
+          "zh": "女孩",
+          "ipa": "/ɡɜːl/",
+          "emoji": "👧",
+          "spot": [
+            43.5,
+            74
+          ]
+        },
+        {
+          "lemma": "class",
+          "zh": "班级",
+          "ipa": "/klɑːs/",
+          "emoji": "🏫",
+          "spot": [
+            36,
+            91.3
+          ]
+        },
+        {
+          "lemma": "group",
+          "zh": "小组",
+          "ipa": "/ɡruːp/",
+          "emoji": "👥",
+          "spot": [
+            63,
+            75
+          ]
+        },
+        {
+          "lemma": "team",
+          "zh": "团队",
+          "ipa": "/tiːm/",
+          "emoji": "⚽",
+          "spot": [
+            85.7,
+            76.7
+          ]
+        },
+        {
+          "lemma": "name",
+          "zh": "名字",
+          "ipa": "/neɪm/",
+          "emoji": "📛",
+          "spot": [
+            13.5,
+            91.7
+          ]
+        },
+        {
+          "lemma": "morning",
+          "zh": "早上",
+          "ipa": "/ˈmɔːnɪŋ/",
+          "emoji": "🌅",
+          "spot": [
+            12.5,
+            20
+          ]
+        },
+        {
+          "lemma": "afternoon",
+          "zh": "下午",
+          "ipa": "/ˌɑːftəˈnuːn/",
+          "emoji": "☀️",
+          "spot": [
+            37.5,
+            13.7
+          ]
+        },
+        {
+          "lemma": "evening",
+          "zh": "傍晚",
+          "ipa": "/ˈiːvnɪŋ/",
+          "emoji": "🌆",
+          "spot": [
+            62.5,
+            23.3
+          ]
+        },
+        {
+          "lemma": "night",
+          "zh": "夜晚",
+          "ipa": "/naɪt/",
+          "emoji": "🌙",
+          "spot": [
+            89,
+            18.3
+          ]
+        },
+        {
+          "lemma": "today",
+          "zh": "今天",
+          "ipa": "/təˈdeɪ/",
+          "emoji": "📅",
+          "spot": [
+            13,
+            47.5
+          ]
+        },
+        {
+          "lemma": "tomorrow",
+          "zh": "明天",
+          "ipa": "/təˈmɒrəʊ/",
+          "emoji": "🌄"
+        },
+        {
+          "lemma": "yesterday",
+          "zh": "昨天",
+          "ipa": "/ˈjestədeɪ/",
+          "emoji": "🌃"
+        },
+        {
+          "lemma": "week",
+          "zh": "星期",
+          "ipa": "/wiːk/",
+          "emoji": "🗓️",
+          "spot": [
+            17,
+            55.7
+          ]
+        },
+        {
+          "lemma": "month",
+          "zh": "月",
+          "ipa": "/mʌnθ/",
+          "emoji": "📆",
+          "spot": [
+            10,
+            55.7
+          ]
+        },
+        {
+          "lemma": "year",
+          "zh": "年",
+          "ipa": "/jɪə/",
+          "emoji": "🎆",
+          "spot": [
+            87.5,
+            43.3
+          ]
+        },
+        {
+          "lemma": "day",
+          "zh": "天",
+          "ipa": "/deɪ/",
+          "emoji": "🌤️"
+        },
+        {
+          "lemma": "time",
+          "zh": "时间",
+          "ipa": "/taɪm/",
+          "emoji": "⏰",
+          "spot": [
+            50,
+            31.3
+          ]
+        },
+        {
+          "lemma": "hour",
+          "zh": "小时",
+          "ipa": "/ˈaʊə/",
+          "emoji": "⏳",
+          "spot": [
+            57,
+            93.7
+          ]
+        },
+        {
+          "lemma": "minute",
+          "zh": "分钟",
+          "ipa": "/ˈmɪnɪt/",
+          "emoji": "⏱️",
+          "spot": [
+            67.5,
+            93.7
+          ]
+        },
+        {
+          "lemma": "early",
+          "zh": "早的",
+          "ipa": "/ˈɜːli/",
+          "emoji": "🐓"
+        },
+        {
+          "lemma": "late",
+          "zh": "晚的",
+          "ipa": "/leɪt/",
+          "emoji": "🦉"
+        },
+        {
+          "lemma": "now",
+          "zh": "现在",
+          "ipa": "/naʊ/",
+          "emoji": "👇"
+        },
+        {
+          "lemma": "soon",
+          "zh": "很快",
+          "ipa": "/suːn/",
+          "emoji": "🔜"
+        },
+        {
+          "lemma": "again",
+          "zh": "再次",
+          "ipa": "/əˈɡen/",
+          "emoji": "🔁"
+        },
+        {
+          "lemma": "always",
+          "zh": "总是",
+          "ipa": "/ˈɔːlweɪz/",
+          "emoji": "♾️"
+        },
+        {
+          "lemma": "never",
+          "zh": "从不",
+          "ipa": "/ˈnevə/",
+          "emoji": "🚫"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学习小组 - Linglish</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow-x: auto;
+    }
+
+    .tab {
+      flex: 1;
+      min-width: 100px;
+      padding: 15px 20px;
+      border: none;
+      background: white;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #667eea;
+      border: 1px solid #667eea;
+    }
+
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .group-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+    }
+
+    .group-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .group-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .group-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .badge-public {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .badge-private {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .group-desc {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .group-stats {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      font-size: 13px;
+      color: #999;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .group-owner {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 10px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .groups-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>👥 学习小组</h1>
+    <p>与志同道合的伙伴一起学习，相互激励进步</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('browse')">浏览小组</button>
+    <button class="tab" onclick="switchTab('my')">我的小组</button>
+  </div>
+
+  <div class="container">
+    <div class="actions">
+      <button class="btn btn-primary" onclick="showCreateModal()">➕ 创建小组</button>
+      <button class="btn btn-secondary" onclick="window.location.href='leaderboard.html'">🏆 排行榜</button>
+      <button class="btn btn-secondary" onclick="window.location.href='learning-reports.html'">📊 学习报告</button>
+    </div>
+
+    <!-- 浏览小组Tab -->
+    <div id="browse-tab" class="tab-content">
+      <div id="all-groups" class="groups-grid"></div>
+    </div>
+
+    <!-- 我的小组Tab -->
+    <div id="my-tab" class="tab-content" style="display:none;">
+      <div id="my-groups" class="groups-grid"></div>
+    </div>
+  </div>
+
+  <!-- 创建小组Modal -->
+  <div id="create-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">创建学习小组</div>
+      <form id="create-form">
+        <div class="form-group">
+          <label class="form-label">小组名称 *</label>
+          <input type="text" class="form-input" name="name" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">小组简介</label>
+          <textarea class="form-textarea" name="description"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">学习目标</label>
+          <input type="text" class="form-input" name="learningGoal" placeholder="例如：雅思7分">
+        </div>
+        <div class="form-group">
+          <label class="form-label">类型</label>
+          <select class="form-select" name="groupType">
+            <option value="public">公开小组</option>
+            <option value="private">私密小组</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">难度等级</label>
+          <select class="form-select" name="difficultyLevel">
+            <option value="beginner">初级</option>
+            <option value="intermediate">中级</option>
+            <option value="advanced">高级</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">最大人数</label>
+          <input type="number" class="form-input" name="maxMembers" value="50" min="2" max="500">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" style="flex:1;">创建小组</button>
+          <button type="button" class="btn btn-secondary" onclick="hideCreateModal()">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let currentTab = 'browse';
+
+    // Token管理（兼容 localStorage / sessionStorage 与两种 key）
+    function getToken() {
+      return localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token')
+        || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    }
+
+    function checkAuth() {
+      if (!getToken()) {
+        window.location.href = 'index.html';
+        return false;
+      }
+      return true;
+    }
+
+    // Tab切换
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.getElementById('browse-tab').style.display = tab === 'browse' ? 'block' : 'none';
+      document.getElementById('my-tab').style.display = tab === 'my' ? 'block' : 'none';
+
+      if (tab === 'browse') {
+        loadAllGroups();
+      } else if (tab === 'my') {
+        loadMyGroups();
+      }
+    }
+
+    // 加载所有小组
+    async function loadAllGroups() {
+      try {
+        const response = await fetch('/api/retention/groups?limit=50');
+        if (!response.ok) throw new Error('加载失败');
+
+        const groups = await response.json();
+        displayGroups(groups, 'all-groups');
+      } catch (error) {
+        console.error('Error loading groups:', error);
+        document.getElementById('all-groups').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">😕</div>
+            <p>加载失败，请稍后重试</p>
+          </div>
+        `;
+      }
+    }
+
+    // 加载我的小组
+    async function loadMyGroups() {
+      if (!checkAuth()) return;
+
+      try {
+        const response = await fetch('/api/retention/groups/my', {
+          headers: {
+            'Authorization': `Bearer ${getToken()}`
+          }
+        });
+
+        if (!response.ok) throw new Error('加载失败');
+
+        const groups = await response.json();
+        if (groups.length === 0) {
+          document.getElementById('my-groups').innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <h3>还没有加入小组</h3>
+              <p>去浏览小组加入一个吧！</p>
+            </div>
+          `;
+        } else {
+          displayGroups(groups, 'my-groups', true);
+        }
+      } catch (error) {
+        console.error('Error loading my groups:', error);
+      }
+    }
+
+    // 显示小组列表
+    function displayGroups(groups, containerId, showRole = false) {
+      const container = document.getElementById(containerId);
+
+      if (groups.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <p>暂无小组</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = groups.map(group => `
+        <div class="group-card" onclick="viewGroup(${group.id})">
+          <div class="group-header">
+            <div>
+              <div class="group-name">${group.name}</div>
+              ${showRole ? `<span style="font-size:12px;color:#999;">角色: ${getRoleName(group.role)}</span>` : ''}
+            </div>
+            <span class="group-badge badge-${group.group_type}">${group.group_type === 'public' ? '公开' : '私密'}</span>
+          </div>
+          <div class="group-desc">${group.description || '暂无简介'}</div>
+          <div class="group-stats">
+            <div class="stat-item">
+              <span>👥</span>
+              <span>${group.member_count || 0}/${group.max_members || 50}人</span>
+            </div>
+            <div class="stat-item">
+              <span>⏱️</span>
+              <span>${Math.round((group.total_study_minutes || 0) / 60)}小时</span>
+            </div>
+            <div class="stat-item">
+              <span>🎯</span>
+              <span>${group.difficulty_level || '未设置'}</span>
+            </div>
+          </div>
+          <div class="group-owner">👤 组长: ${group.owner_name || '未知'}</div>
+          ${group.learning_goal ? `<div style="font-size:12px;color:#667eea;">🎯 ${group.learning_goal}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    // 角色名称
+    function getRoleName(role) {
+      const roles = {
+        'owner': '组长',
+        'admin': '管理员',
+        'member': '成员'
+      };
+      return roles[role] || '成员';
+    }
+
+    // 查看小组详情
+    function viewGroup(groupId) {
+      window.location.href = `group-detail.html?id=${groupId}`;
+    }
+
+    // 显示创建Modal
+    function showCreateModal() {
+      if (!checkAuth()) return;
+      document.getElementById('create-modal').classList.add('active');
+    }
+
+    // 隐藏创建Modal
+    function hideCreateModal() {
+      document.getElementById('create-modal').classList.remove('active');
+      document.getElementById('create-form').reset();
+    }
+
+    // 创建小组
+    document.getElementById('create-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!checkAuth()) return;
+
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+
+      try {
+        const response = await fetch('/api/retention/groups', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error('创建失败');
+
+        const group = await response.json();
+        alert('小组创建成功！');
+        hideCreateModal();
+
+        // 切换到我的小组tab
+        currentTab = 'my';
+        document.querySelectorAll('.tab')[1].click();
+      } catch (error) {
+        console.error('Error creating group:', error);
+        alert('创建失败：' + error.message);
+      }
+    });
+
+    // 页面加载
+    window.addEventListener('load', () => {
+      if (!checkAuth()) return;
+      loadAllGroups();
+    });
+  </script>
+</body>
+</html>

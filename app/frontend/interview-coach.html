@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>外企英文面试 · 1v1 模拟训练 — Linglish</title>
+<meta name="description" content="AI 招聘官 1v1 模拟面试，每答完一题立刻给出语速、地道度、音素反馈，3 分钟看到自己的问题。">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --bg:#050d0a; --surface:#0a1a14; --surface-2:#0f2a1f; --border:rgba(52,211,153,.18); --text:#d1fae5; --text-dim:rgba(167,243,208,.65); --accent:#34d399; --accent-2:#059669; --warn:#fbbf24; --danger:#f87171; }
+html,body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 28px 20px 60px; }
+.nav { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; color: var(--text-dim); }
+.nav a { color: var(--accent); text-decoration: none; }
+.hero { padding: 12px 0 22px; border-bottom: 1px solid var(--border); }
+.hero .crumb { font-size: 12px; color: var(--text-dim); letter-spacing: .15em; text-transform: uppercase; }
+.hero h1 { font-size: 28px; font-weight: 800; line-height: 1.3; margin-top: 8px; background: linear-gradient(135deg,#34d399 0%,#059669 60%,#065f46 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero .sub { margin-top: 12px; color: var(--text-dim); font-size: 15px; line-height: 1.6; }
+.hero .cta { margin-top: 18px; display: inline-block; padding: 12px 28px; border-radius: 999px; background: linear-gradient(135deg, var(--accent-2), #047857); color: #ecfdf5; font-weight: 600; text-decoration: none; box-shadow: 0 0 24px rgba(5,150,105,.4); }
+.card { margin-top: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 18px; }
+.card-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-h .t { font-size: 16px; font-weight: 700; }
+.card-h .badge { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: rgba(52,211,153,.12); color: var(--accent); border: 1px solid var(--border); }
+.dlg { display: flex; flex-direction: column; gap: 10px; }
+.bubble { padding: 10px 14px; border-radius: 14px; max-width: 86%; font-size: 14px; line-height: 1.55; }
+.bubble.ai { background: var(--surface-2); border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
+.bubble.me { background: linear-gradient(135deg, var(--accent-2), #047857); color: #ecfdf5; align-self: flex-end; border-bottom-right-radius: 4px; }
+.bubble .meta { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+.bubble.me .meta { color: rgba(236,253,245,.7); }
+.metric-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed rgba(52,211,153,.12); gap: 12px; }
+.metric-row:last-child { border: none; }
+.metric-row .k { color: var(--text-dim); font-size: 13px; flex-shrink: 0; }
+.metric-row .v { font-weight: 700; color: var(--accent); font-size: 13px; text-align: right; }
+.metric-row .v.warn { color: var(--warn); }
+.metric-row .v.bad { color: var(--danger); }
+.bars-wrap { padding: 6px 0 24px; }
+.bars { display: flex; align-items: flex-end; gap: 12px; height: 140px; }
+.bar { flex: 1; background: linear-gradient(180deg, var(--accent), var(--accent-2)); border-radius: 6px 6px 0 0; position: relative; min-height: 12px; }
+.bar::after { content: attr(data-v); position: absolute; top: -20px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--text-dim); font-weight: 600; }
+.bar::before { content: attr(data-l); position: absolute; bottom: -22px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--text-dim); }
+.foot { margin-top: 32px; text-align: center; color: var(--text-dim); font-size: 12px; line-height: 1.7; }
+.foot a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <div class="crumb">Linglish · 场景练习</div>
+    <h1>明天面试，今晚还能练 5 轮</h1>
+    <p class="sub">AI 招聘官追问式提问，答完一题立刻给反馈：哪个音不清、哪句话太中式、节奏哪里乱。3 分钟看到自己问题在哪。</p>
+    <a class="cta" id="cta-top" href="/landing.html">立即免费试一段 →</a>
+  </header>
+
+  <section class="card" id="sec-mock">
+    <div class="card-h"><span class="t">AI 招聘官 · 模拟面试中</span><span class="badge">第 3 轮 · Round 3</span></div>
+    <div class="dlg">
+      <div class="bubble ai"><span class="meta">Recruiter · 0:00</span>Tell me about a time you had to learn something new very quickly.</div>
+      <div class="bubble me"><span class="meta">You · 0:42</span>Last quarter, my team needed to migrate to a new analytics tool in two weeks. I spent the first three days reading docs and building a small prototype.</div>
+      <div class="bubble ai"><span class="meta">Recruiter · 1:05 · 追问</span>Interesting. What was the hardest part of that migration, and how did you handle it?</div>
+      <div class="bubble me"><span class="meta">You · 1:48</span>The hardest part was that the team was skeptical, because—uh—because the old tool worked fine. So I built a side-by-side dashboard.</div>
+    </div>
+  </section>
+
+  <section class="card" id="sec-feedback">
+    <div class="card-h"><span class="t">答完即出反馈</span><span class="badge">Round 3 · 8.4 / 10</span></div>
+    <div>
+      <div class="metric-row"><span class="k">语速 wpm</span><span class="v">142 · 偏快 12</span></div>
+      <div class="metric-row"><span class="k">填充词 uh / um</span><span class="v warn">3 次 · 集中在追问</span></div>
+      <div class="metric-row"><span class="k">中式表达</span><span class="v warn">"the old tool worked fine" → "the existing tool was already working"</span></div>
+      <div class="metric-row"><span class="k">音素不到位</span><span class="v bad">/θ/ "thought" 偏 /s/ · /v/ "skeptical" 弱</span></div>
+      <div class="metric-row"><span class="k">逻辑结构</span><span class="v">STAR 完整 · 缺 Result 数据</span></div>
+      <div class="metric-row"><span class="k">地道度</span><span class="v">76% (上轮 68%)</span></div>
+    </div>
+  </section>
+
+  <section class="card" id="sec-progress">
+    <div class="card-h"><span class="t">一晚 5 轮 · 自动评分曲线</span><span class="badge">↑ 持续上升</span></div>
+    <div class="bars-wrap">
+      <div class="bars">
+        <div class="bar" style="height:42%" data-v="6.2" data-l="R1"></div>
+        <div class="bar" style="height:55%" data-v="7.0" data-l="R2"></div>
+        <div class="bar" style="height:68%" data-v="7.6" data-l="R3"></div>
+        <div class="bar" style="height:78%" data-v="8.1" data-l="R4"></div>
+        <div class="bar" style="height:92%" data-v="8.6" data-l="R5"></div>
+      </div>
+    </div>
+    <div class="metric-row"><span class="k">本场训练</span><span class="v">5 轮 · 共 47 分钟</span></div>
+    <div class="metric-row"><span class="k">薄弱项收敛</span><span class="v">填充词 -68% · /θ/ -2 次</span></div>
+  </section>
+
+  <div style="margin-top:28px; text-align:center;">
+    <a class="cta" href="/landing.html">立即免费试一段 →</a>
+    <p class="foot">不收集简历 · 不录音上传 · 浏览器内本地完成<br><a href="/landing.html">返回首页</a></p>
+  </div>
+</main>
+<script>
+(function(){
+  try {
+    const p = new URLSearchParams(location.search);
+    const src = p.get('src');
+    if (src) localStorage.setItem('ll_src', src);
+  } catch(e) {}
+  const src = (function(){ try { return localStorage.getItem('ll_src') || ''; } catch(e){ return ''; } })();
+  if (src) document.querySelectorAll('a').forEach(a => {
+    try {
+      const u = new URL(a.href, location.href);
+      if (u.host === location.host && !u.searchParams.has('src')) { u.searchParams.set('src', src); a.href = u.toString(); }
+    } catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

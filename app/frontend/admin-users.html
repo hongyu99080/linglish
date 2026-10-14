@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="script-src 'self' 'unsafe-inline' 'unsafe-eval'; object-src 'none'; base-uri 'self';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linglish 管理后台 - 用户管理</title>
+  <link rel="stylesheet" href="./admin-styles.css" />
+  <script>
+    // Filter noise from extensions
+    (function () { try { const p = [/"undefined" is not valid JSON/i, /"null" is not valid JSON/i, /Unexpected token 'u'.*JSON/i, /Unexpected token 'n'.*JSON/i, /SyntaxError.*undefined.*JSON/i, /SyntaxError.*null.*JSON/i, /JSON\.parse/i, /updateConfig/i, /initConfig/i, /metadata\.js/i, /content\.js/i, /iosMetadata\.js/i, /Wu\.updateConfig/i, /ul\.updateConfig/i, /cloudflareinsights/i, /beacon\.min\.js/i]; const m = (msg) => { try { return p.some(r => r.test(String(msg || ''))) } catch { return false } }; const isExt = (e) => { try { if (!e) return false; const s = e.stack || e.toString(); const n = e.name || ''; const msg = e.message || ''; if (m(msg) || m(n)) return true; if (/chrome-extension:|moz-extension:|safari-extension:|webkit-masked-url:|metadata\.js|content\.js|iosMetadata\.js|updateConfig|initConfig|Wu\.|ul\.|cloudflare|beacon/i.test(s)) return true; return false } catch (_) { return false } }; const ce = console.error?.bind(console); const cw = console.warn?.bind(console); if (ce) console.error = (...a) => { const h = a && a.length ? String(a[0]) : ''; if (m(h) || (a[0] instanceof Error && isExt(a[0]))) return; ce(...a) }; if (cw) console.warn = (...a) => { const h = a && a.length ? String(a[0]) : ''; if (m(h) || (a[0] instanceof Error && isExt(a[0]))) return; cw(...a) }; window.addEventListener('unhandledrejection', e => { try { const r = e && e.reason; if (r && r.name === 'SyntaxError' && m(r.message)) { e.preventDefault(); return } const msg = (r && r.message) || (r && r.toString && r.toString()) || r; if (m(String(msg || '')) || isExt(r)) e.preventDefault() } catch { } }, true); window.addEventListener('error', e => { try { const msg = (e && e.message) || ''; if (m(String(msg))) { e.preventDefault(); return } if (e && e.error && isExt(e.error)) { e.preventDefault(); return } const f = (e && e.filename) || ''; if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js|iosMetadata\.js|^VM\d+:/i.test(f)) e.preventDefault() } catch { } }, true) } catch { } })();
+  </script>
+</head>
+
+<body>
+  <div class="admin-content">
+
+    <!-- 统计概览 -->
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">总用户</span>
+          <div class="admin-stat-icon primary">👥</div>
+        </div>
+        <div class="admin-stat-value" id="sum-total">-</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">今日新增</span>
+          <div class="admin-stat-icon success">📅</div>
+        </div>
+        <div class="admin-stat-value" id="sum-today">-</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">7日新增</span>
+          <div class="admin-stat-icon info">📈</div>
+        </div>
+        <div class="admin-stat-value" id="sum-7d">-</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">7日活跃</span>
+          <div class="admin-stat-icon warning">⚡</div>
+        </div>
+        <div class="admin-stat-value" id="sum-active">-</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">发音平均分</span>
+          <div class="admin-stat-icon primary">🎤</div>
+        </div>
+        <div class="admin-stat-value" id="p-avg">-</div>
+        <div class="admin-stat-change">
+          <span id="p-count" class="admin-badge admin-badge-gray" style="font-size: 12px;">- 次评测</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顶部控制条 (使用时长 & 发音区间) -->
+    <div class="admin-card"
+      style="padding: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+      <div class="admin-text-muted" id="usage-line" style="font-size: 0.9rem;">使用时长统计加载中…</div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="p-days" style="font-size: 0.875rem; color: var(--gray-600);">发音统计区间:</label>
+        <select id="p-days" class="admin-form-input" style="width: auto; padding: 0.25rem 0.5rem; height: 32px;">
+          <option value="7">7天</option>
+          <option value="14" selected>14天</option>
+          <option value="30">30天</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 用户管理卡片 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <div class="admin-card-title">用户列表</div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <select id="filter-status" class="admin-form-input" style="width: 120px;">
+            <option value="">全部状态</option>
+            <option value="active">Active</option>
+            <option value="banned">Banned</option>
+          </select>
+          <select id="filter-user-type" class="admin-form-input" style="width: 120px;">
+            <option value="">全部类型</option>
+            <option value="registered">注册用户</option>
+            <option value="guest">游客</option>
+          </select>
+          <div style="position: relative;">
+            <input type="text" id="search-q" placeholder="搜索邮箱/用户名" class="admin-form-input"
+              style="width: 200px; padding-right: 30px;" />
+            <span
+              style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--gray-400);">🔍</span>
+          </div>
+          <button class="admin-btn admin-btn-secondary" id="btn-refresh">刷新</button>
+        </div>
+      </div>
+
+      <!-- 批量操作栏 -->
+      <div
+        style="background: var(--gray-50); padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+        <div class="toggle-view" style="display: flex; gap: 0.5rem;">
+          <button class="admin-btn admin-btn-sm admin-btn-primary" id="users-view-normal">普通视图</button>
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" id="users-view-ip">IP聚合视图</button>
+        </div>
+
+        <div id="users-batch-controls" style="display: none; align-items: center; gap: 1rem;">
+          <span class="admin-text-muted" id="users-selected-count">已选择 0 条</span>
+          <button class="admin-btn admin-btn-sm admin-btn-danger" id="users-batch-delete">批量删除</button>
+        </div>
+      </div>
+
+      <!-- 用户列表表格 -->
+      <div id="users-normal-view" style="overflow-x: auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" id="users-select-all" /></th>
+              <th>ID</th>
+              <th>用户</th>
+              <th>类型</th>
+              <th>状态</th>
+              <th>上传配额</th>
+              <th>最近登录</th>
+              <th>IP信息</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr>
+              <td colspan="9" style="text-align: center; color: var(--gray-500); padding: 2rem;">加载中…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- IP 视图容器 -->
+      <div id="users-ip-view" style="display: none;"></div>
+
+      <!-- 分页 -->
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--gray-200);">
+        <div class="admin-text-muted" id="users-page-info" style="font-size: 0.875rem;">第 1 页 / 共 1 页</div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" id="users-prev-page" disabled>上一页</button>
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" id="users-next-page">下一页</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 访问统计卡片 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <div class="admin-card-title">访问统计</div>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <select id="visit-days" class="admin-form-input" style="width: auto;">
+            <option value="7">近7天</option>
+            <option value="14">近14天</option>
+            <option value="30" selected>近30天</option>
+          </select>
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" id="btn-refresh-visits">刷新</button>
+        </div>
+      </div>
+
+      <div class="admin-stats-grid" style="grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+          <div style="font-size: 0.875rem; color: var(--gray-500); margin-bottom: 0.5rem;">总访问</div>
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);" id="visits-total">-</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+          <div style="font-size: 0.875rem; color: var(--gray-500); margin-bottom: 0.5rem;">用户访问</div>
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--info-color);" id="visits-users">-</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+          <div style="font-size: 0.875rem; color: var(--gray-500); margin-bottom: 0.5rem;">游客访问</div>
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning-color);" id="visits-guests">-</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+          <div style="font-size: 0.875rem; color: var(--gray-500); margin-bottom: 0.5rem;">独立IP</div>
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--success-color);" id="visits-ips">-</div>
+        </div>
+      </div>
+
+      <!-- 最近访问列表 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h4 style="font-size: 1rem; margin: 0;">最近访问记录</h4>
+        <div style="display: flex; gap: 0.75rem;">
+          <select id="visit-event-filter" class="admin-form-input admin-btn-sm" style="width: auto;">
+            <option value="">全部事件</option>
+            <option value="page_visit">用户访问</option>
+            <option value="guest_visit">游客访问</option>
+          </select>
+          <select id="visit-user-type-filter" class="admin-form-input admin-btn-sm" style="width: auto;">
+            <option value="">全部类型</option>
+            <option value="registered">注册用户</option>
+            <option value="guest">游客</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="batch-actions" style="margin-bottom: 1rem; display: flex; justify-content: flex-end;">
+        <div id="visits-batch-controls" style="display: none; align-items: center; gap: 1rem;">
+          <span class="admin-text-muted" id="visits-selected-count">已选择 0 条</span>
+          <button class="admin-btn admin-btn-sm admin-btn-danger" id="visits-batch-delete">批量删除</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+        <button class="admin-btn admin-btn-sm admin-btn-primary" id="visits-view-normal">普通视图</button>
+        <button class="admin-btn admin-btn-sm admin-btn-secondary" id="visits-view-ip">IP聚合视图</button>
+      </div>
+
+      <div id="visits-normal-view" style="overflow-x: auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" id="visits-select-all" /></th>
+              <th>时间</th>
+              <th>账号类型</th>
+              <th>用户/邮箱</th>
+              <th>IP地址</th>
+              <th>页面</th>
+            </tr>
+          </thead>
+          <tbody id="visits-tbody">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--gray-500);">加载中…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="visits-ip-view" style="display: none;"></div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+        <div class="admin-text-muted" id="visits-page-info" style="font-size: 0.875rem;">第 1 页 / 共 1 页</div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" id="visits-prev-page" disabled>上一页</button>
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" id="visits-next-page">下一页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 统计详情 Modal -->
+  <div id="stats-modal"
+    style="display: none; position: fixed; top: 0; left: 0; w-100; h-100; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center;">
+    <div class="admin-card"
+      style="width: 600px; max-width: 90%; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column;">
+      <div class="admin-card-header">
+        <div class="admin-card-title">用户详细统计</div>
+        <button class="admin-btn admin-btn-sm admin-btn-secondary" id="stats-close">关闭</button>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label>发音趋势: </label>
+        <select id="p-days-user" class="admin-form-input" style="width: auto; padding: 2px 8px; font-size: 12px;">
+          <option value="7">7天</option>
+          <option value="14" selected>14天</option>
+          <option value="30">30天</option>
+        </select>
+      </div>
+      <div id="p-chart-user"
+        style="width: 100%; height: 120px; border: 1px solid var(--gray-200); border-radius: 8px; margin-bottom: 1rem;">
+      </div>
+      <pre id="stats-summary"
+        style="white-space: pre-wrap; font-family: monospace; font-size: 0.875rem; background: var(--gray-50); padding: 1rem; border-radius: 8px; color: var(--gray-800);"></pre>
+    </div>
+  </div>
+
+  <script src="./admin-common.js"></script>
+  <script>
+    // Initialize common admin UI
+    if (typeof initAdminPage === 'function') {
+      initAdminPage('用户管理');
+    }
+
+    const API_BASE = window.API_BASE || '';
+
+    // Reuse AdminAPI from admin-common.js if available, otherwise fallback to local impl
+    const api = async (path, options = {}) => {
+      if (typeof AdminAPI !== 'undefined') {
+        try {
+          return await AdminAPI.request(path, options);
+        } catch (e) {
+          throw e; // Let caller handle
+        }
+      } else {
+        return {};
+      }
+    };
+
+    const SUBSCRIPTION_STATUS_NAMES = {
+      none: '未订阅',
+      active: '订阅中',
+      on_trial: '试用中',
+      trialing: '试用中',
+      cancelled: '已取消',
+      expired: '已过期',
+      past_due: '付款异常',
+      paused: '已暂停',
+      unpaid: '未付款',
+    };
+
+    function renderSubscriptionLine(user) {
+      const status = String(user.subscription_status || 'none').toLowerCase();
+      const dateValue = user.subscription_end_date || user.membership_expires_at || null;
+      const dateText = dateValue ? AdminUtils.formatDate(dateValue) : '无周期';
+      return `${SUBSCRIPTION_STATUS_NAMES[status] || status} · ${dateText}`;
+    }
+
+    async function loadSummary() {
+      try {
+        const daysSel = document.getElementById('p-days');
+        const days = daysSel ? Number(daysSel.value) : 14;
+        const [data, pron] = await Promise.all([
+          api('/admin/users/summary'),
+          api(`/admin/usage/pronunciation?days=${days}`).catch(() => ({ summary: { avg_overall: 0, count: 0 } })),
+        ]);
+        const u = data.users || {};
+        document.getElementById('sum-total').textContent = AdminUtils.formatNumber(u.total ?? 0);
+        document.getElementById('sum-today').textContent = AdminUtils.formatNumber(u.new_today ?? 0);
+        document.getElementById('sum-7d').textContent = AdminUtils.formatNumber(u.new_7d ?? 0);
+        document.getElementById('sum-active').textContent = AdminUtils.formatNumber(u.active_7d ?? 0);
+        const ps = (pron && pron.summary) || { avg_overall: 0, count: 0 };
+        document.getElementById('p-avg').textContent = Math.round(ps.avg_overall || 0);
+        document.getElementById('p-count').textContent = (ps.count || 0) + ' 次评测';
+        const categories = data.categories || { video_watch_seconds: 0, vocab_study_seconds: 0, practice_seconds: 0 };
+        const parts = [
+          `视频: ${(categories.video_watch_seconds / 60).toFixed(1)} 分`,
+          `单词: ${(categories.vocab_study_seconds / 60).toFixed(1)} 分`,
+          `练习: ${(categories.practice_seconds / 60).toFixed(1)} 分`,
+        ];
+        document.getElementById('usage-line').textContent = '使用时长: ' + parts.join(' | ');
+      } catch (e) {
+        document.getElementById('usage-line').textContent = '统计加载失败';
+        console.error(e);
+      }
+    }
+
+    async function reloadPronCards() {
+      try {
+        const days = Number(document.getElementById('p-days').value || '14');
+        const pron = await api(`/admin/usage/pronunciation?days=${days}`).catch(() => ({ summary: { avg_overall: 0, count: 0 } }));
+        const ps = (pron && pron.summary) || { avg_overall: 0, count: 0 };
+        document.getElementById('p-avg').textContent = Math.round(ps.avg_overall || 0);
+        document.getElementById('p-count').textContent = (ps.count || 0) + ' 次评测';
+      } catch (_) { }
+    }
+
+    let usersCurrentPage = 1;
+    let usersPageSize = 50;
+    let usersTotalCount = 0;
+    let usersViewMode = 'normal'; // 'normal' or 'ip'
+    let usersSelectedIds = new Set();
+
+    function loadUsersIPView(users) {
+      const ipGroups = {};
+      for (const u of users) {
+        let ip = u.last_login_ip;
+        // Logic to extract IP
+        if (!ip) {
+          // ... existing fallback ...
+        }
+        // If IP is still missing, check properties if it exists or use '-'
+        if (!ip) ip = '-';
+
+        if (!ipGroups[ip]) {
+          ipGroups[ip] = {
+            users: [],
+            location: u.ip_location || '-'
+          };
+        }
+        ipGroups[ip].users.push(u);
+      }
+
+      renderIPGroups(ipGroups, 'users');
+    }
+
+    async function loadVisitsIPView(visits) {
+      const ipGroups = {};
+      for (const v of visits) {
+        let props = {}; try { props = JSON.parse(v.properties || '{}'); } catch { }
+        const ip = props.ip || v.login_ip || '-';
+
+        if (!ipGroups[ip]) {
+          ipGroups[ip] = {
+            visits: [],
+            location: v.ip_location || '-'
+          };
+        }
+        // Enhance visit object with parsed page
+        ipGroups[ip].visits.push({ ...v, page: props.page || '-' });
+      }
+      renderIPGroups(ipGroups, 'visits');
+    }
+
+    function renderIPGroups(ipGroups, type) {
+      const isUsers = type === 'users';
+      const sortedIPs = Object.keys(ipGroups).sort((a, b) => {
+        const lenA = isUsers ? ipGroups[a].users.length : ipGroups[a].visits.length;
+        const lenB = isUsers ? ipGroups[b].users.length : ipGroups[b].visits.length;
+        return lenB - lenA;
+      });
+
+      const container = document.getElementById(isUsers ? 'users-ip-view' : 'visits-ip-view');
+
+      container.innerHTML = sortedIPs.map(ip => {
+        const group = isUsers ? ipGroups[ip].users : ipGroups[ip].visits;
+        const location = ipGroups[ip].location;
+
+        let listHtml = '';
+        if (isUsers) {
+          listHtml = group.map(u => `
+                <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-100);">
+                    <input type="checkbox" class="user-checkbox" data-id="${u.id}" ${usersSelectedIds.has(u.id) ? 'checked' : ''} style="margin-right: 12px;" />
+                     <span class="admin-badge admin-badge-gray" style="margin-right: 8px;">#${u.id}</span>
+                     <div style="flex: 1; min-width: 0; margin-right: 12px;">
+                       <div style="font-weight: 500;">${u.email}</div>
+                       <div style="font-size: 0.75rem; color: var(--gray-500);">${u.username || '-'}</div>
+                     </div>
+                     <span class="admin-badge ${u.status === 'banned' ? 'admin-badge-danger' : 'admin-badge-success'}" style="margin-right: 12px;">${u.status}</span>
+                     <span style="font-size: 0.875rem; color: var(--gray-600); white-space: nowrap;">${u.last_login_at ? AdminUtils.formatDate(u.last_login_at) : '-'}</span>
+                </div>`).join('');
+        } else {
+          listHtml = group.map(v => {
+            const isGuest = inferVisitUserType(v) === 'guest';
+            const typeBadge = isGuest ? '<span class="admin-badge admin-badge-warning">游客</span>' : '<span class="admin-badge admin-badge-primary">用户</span>';
+            return `
+                 <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-100);">
+                    <span style="font-size: 0.875rem; color: var(--gray-600); width: 140px;">${new Date(v.event_time).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                    <div style="width: 60px; margin-right: 10px;">${typeBadge}</div>
+                    <div style="flex: 1; min-width: 0; margin-right: 12px;">
+                        <div style="font-weight: 500;">${v.email || (v.username || (isGuest ? 'Guest' : '-'))}</div>
+                        <div style="font-size: 0.75rem; color: var(--gray-500); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.page}</div>
+                    </div>
+                 </div>`;
+          }).join('');
+        }
+
+        // Check logic for delete button - mostly for users
+        const deleteBtn = isUsers ? `<button class="admin-btn admin-btn-sm admin-btn-danger delete-users-by-ip" onclick="deleteUsersByIP('${ip}')">删除该IP所有用户</button>` : '';
+
+        return `
+            <div class="admin-card" style="margin-bottom: 1rem; border: 1px solid var(--gray-200); box-shadow: none;">
+              <div class="admin-card-header" style="background: var(--gray-50); margin: -1.5rem -1.5rem 1rem -1.5rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--gray-200);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <span style="font-weight: 600; color: var(--primary-color);">IP: ${ip}</span>
+                  <span class="admin-badge admin-badge-secondary">${location}</span>
+                  <span class="admin-text-muted">共 ${group.length} ${isUsers ? '个用户' : '次访问'}</span>
+                </div>
+                ${deleteBtn}
+              </div>
+              <div>${listHtml}</div>
+            </div>
+           `;
+      }).join('') || '<div class="admin-empty-state">暂无数据</div>';
+    }
+
+    // Keep existing standalone loadUsersIPView for backward compatibility if called directly, 
+    // but internally direct to new helper or just replace logic.
+    // For minimal risk, I will replace the original loadUsersIPView with one that uses the shared render logic or simply update the file to use the new structure.
+    // However, since I cannot easily rewrite the HUGE chunk of loadUsersIPView in one go without potential mismatch, 
+    // I will stick to adding loadVisitsIPView as a separate function and NOT refactor loadUsersIPView to share code yet, 
+    // to avoid breaking the existing working User IP view.
+    // WAIT: The user asked to "add it back". 
+    // Refactoring might cause issues. 
+    // I will just implement `loadVisitsIPView` independently.
+
+    async function loadUsersIPView(users) {
+      const ipGroups = {};
+      for (const u of users) {
+        let ip = u.last_login_ip;
+        if (!ip) {
+          try {
+            const logs = await api(`/admin/users/${u.id}/logins?limit=1`).catch(() => ({ items: [] }));
+            ip = (logs.items && logs.items[0] && (logs.items[0].login_ip || logs.items[0].ip)) || '-';
+            u.last_login_ip = ip;
+          } catch (_) { ip = '-'; }
+        }
+        if (!ipGroups[ip]) {
+          ipGroups[ip] = {
+            users: [],
+            location: u.ip_location || '-'
+          };
+        }
+        ipGroups[ip].users.push(u);
+      }
+
+      const ipView = document.getElementById('users-ip-view');
+      const sortedIPs = Object.keys(ipGroups).sort((a, b) => ipGroups[b].users.length - ipGroups[a].users.length);
+
+      ipView.innerHTML = sortedIPs.map(ip => {
+        const group = ipGroups[ip].users;
+        const ipLocation = ipGroups[ip].location;
+        const usersList = group.map(u => `
+            <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-100);">
+              <input type="checkbox" class="user-checkbox" data-id="${u.id}" ${usersSelectedIds.has(u.id) ? 'checked' : ''} style="margin-right: 12px;" />
+              <span class="admin-badge admin-badge-gray" style="margin-right: 8px;">#${u.id}</span>
+              <div style="flex: 1; min-width: 0; margin-right: 12px;">
+                <div style="font-weight: 500;">${u.email}</div>
+                <div style="font-size: 0.75rem; color: var(--gray-500);">${u.username || '-'}</div>
+              </div>
+              <span class="admin-badge ${u.status === 'banned' ? 'admin-badge-danger' : 'admin-badge-success'}" style="margin-right: 12px;">${u.status}</span>
+              <span style="font-size: 0.875rem; color: var(--gray-600); white-space: nowrap;">${u.last_login_at ? AdminUtils.formatDate(u.last_login_at) : '-'}</span>
+            </div>
+          `).join('');
+
+        return `
+            <div class="admin-card" style="margin-bottom: 1rem; border: 1px solid var(--gray-200); box-shadow: none;">
+              <div class="admin-card-header" style="background: var(--gray-50); margin: -1.5rem -1.5rem 1rem -1.5rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--gray-200);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <span style="font-weight: 600; color: var(--primary-color);">IP: ${ip}</span>
+                  <span class="admin-badge admin-badge-secondary">${ipLocation}</span>
+                  <span class="admin-text-muted">共 ${group.length} 个用户</span>
+                </div>
+                <button class="admin-btn admin-btn-sm admin-btn-danger" onclick="deleteUsersByIP('${ip}')">删除该IP所有用户</button>
+              </div>
+              <div>${usersList}</div>
+            </div>
+          `;
+      }).join('') || '<div class="admin-empty-state">暂无数据</div>';
+    }
+
+    // Helper to safely parse properties
+    function parseProps(p) {
+      if (!p) return {};
+      if (typeof p === 'object') return p;
+      try { return JSON.parse(p); } catch { return {}; }
+    }
+
+    function inferVisitUserType(v) {
+      const explicit = v && v.user_type;
+      if (explicit === 'guest' || explicit === 'registered') return explicit;
+      const email = String((v && v.email) || '');
+      if (/^guest_.+@temp\.linglish\.local$/i.test(email)) return 'guest';
+      if (v && v.event_name === 'guest_visit') return 'guest';
+      return 'registered';
+    }
+
+    // New function for Visits IP View
+    function loadVisitsIPView(visits) {
+      const ipGroups = {};
+      for (const v of visits) {
+        const props = parseProps(v.properties);
+        const ip = props.ip || v.login_ip || '-';
+
+        if (!ipGroups[ip]) {
+          ipGroups[ip] = {
+            visits: [],
+            location: v.ip_location || '-'
+          };
+        }
+        ipGroups[ip].visits.push({ ...v, page: props.page || '-' });
+      }
+
+      const ipView = document.getElementById('visits-ip-view');
+      const sortedIPs = Object.keys(ipGroups).sort((a, b) => ipGroups[b].visits.length - ipGroups[a].visits.length);
+
+      ipView.innerHTML = sortedIPs.map(ip => {
+        const group = ipGroups[ip].visits;
+        const location = ipGroups[ip].location;
+
+        const listHtml = group.map(v => {
+          const isGuest = inferVisitUserType(v) === 'guest';
+          const typeBadge = isGuest ? '<span class="admin-badge admin-badge-warning">游客</span>' : '<span class="admin-badge admin-badge-primary">用户</span>';
+          return `
+             <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-100);">
+                <span style="font-size: 0.875rem; color: var(--gray-600); width: 170px;">${new Date(v.event_time).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                <div style="width: 60px; margin-right: 10px;">${typeBadge}</div>
+                <div style="flex: 1; min-width: 0; margin-right: 12px;">
+                    <div style="font-weight: 500;">${v.email || (v.username || (isGuest ? 'Guest' : '-'))}</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-500); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.page}</div>
+                </div>
+             </div>`;
+        }).join('');
+
+        // Escape IP for onclick handler
+        const escapedIP = ip.replace(/'/g, "\\'");
+
+        return `
+            <div class="admin-card" style="margin-bottom: 1rem; border: 1px solid var(--gray-200); box-shadow: none;">
+              <div class="admin-card-header" style="background: var(--gray-50); margin: -1.5rem -1.5rem 1rem -1.5rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--gray-200);">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <span style="font-weight: 600; color: var(--primary-color);">IP: ${ip}</span>
+                  <span class="admin-badge admin-badge-secondary">${location}</span>
+                  <span class="admin-text-muted">共 ${group.length} 次访问</span>
+                </div>
+                <button class="admin-btn admin-btn-sm admin-btn-danger" onclick="deleteVisitsByIP('${escapedIP}')">删除该IP所有记录</button>
+              </div>
+              <div>${listHtml}</div>
+            </div>
+           `;
+      }).join('') || '<div class="admin-empty-state">暂无数据</div>';
+    }
+
+    function updateUsersSelectedCount() {
+      const count = usersSelectedIds.size;
+      document.getElementById('users-selected-count').textContent = `已选择 ${count} 条`;
+      document.getElementById('users-batch-controls').style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    async function deleteUsersByIP(ip) {
+      if (!confirm(`确认删除IP ${ip} 下的所有用户吗？此操作不可恢复！`)) return;
+      try {
+        const result = await api(`/admin/users/by-ip/${ip}`, { method: 'DELETE' }).catch(async () => {
+          // Fallback to client-side iteration if backend endpoint is missing (simulating original logic)
+          const status = document.getElementById('filter-status').value || '';
+          const userType = document.getElementById('filter-user-type').value || '';
+          const q = document.getElementById('search-q').value || '';
+          const qs = new URLSearchParams({ limit: String(usersPageSize), offset: String(0) });
+          if (status) qs.set('status', status); if (q) qs.set('q', q); if (userType) qs.set('user_type', userType);
+          const data = await api(`/admin/users?${qs.toString()}`);
+          const usersToDelete = (data.items || []).filter(u => u.last_login_ip === ip);
+          for (const u of usersToDelete) await api(`/admin/users/${u.id}`, { method: 'DELETE' });
+          return { deleted: usersToDelete.length };
+        });
+
+        AdminUtils.showToast(`成功删除 ${result.deleted || '相关'} 个用户`, 'success');
+        loadUsers();
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    async function batchDeleteUsers() {
+      if (usersSelectedIds.size === 0) return;
+      if (!confirm(`确认删除选中的 ${usersSelectedIds.size} 个用户吗？此操作不可恢复！`)) return;
+
+      try {
+        const ids = Array.from(usersSelectedIds);
+        for (const id of ids) {
+          await api(`/admin/users/${id}`, { method: 'DELETE' });
+        }
+        AdminUtils.showToast(`成功删除 ${ids.length} 个用户`, 'success');
+        usersSelectedIds.clear();
+        updateUsersSelectedCount();
+        loadUsers();
+      } catch (e) {
+        alert('批量删除失败: ' + e.message);
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const status = document.getElementById('filter-status').value || '';
+        const userType = document.getElementById('filter-user-type').value || '';
+        const q = document.getElementById('search-q').value || '';
+        const offset = (usersCurrentPage - 1) * usersPageSize;
+
+        const qs = new URLSearchParams({
+          limit: String(usersPageSize),
+          offset: String(offset)
+        });
+        if (status) qs.set('status', status);
+        if (q) qs.set('q', q);
+        if (userType) qs.set('user_type', userType);
+
+        const data = await api(`/admin/users?${qs.toString()}`);
+        const tbody = document.getElementById('users-tbody');
+
+        usersTotalCount = data.total || 0;
+        const totalPages = Math.max(1, Math.ceil(usersTotalCount / usersPageSize));
+
+        if (usersViewMode === 'normal') {
+          const rows = (data.items || []).map(u => {
+            const memBadge = u.membership_type === 'vip' ? 'admin-badge-warning' :
+              u.membership_type === 'svip' ? 'admin-badge-danger' :
+                u.membership_type === 'family' ? 'admin-badge-primary' : 'admin-badge-gray';
+
+            const statusBadge = u.status === 'active' ? 'admin-badge-success' : 'admin-badge-danger';
+
+            return `
+              <tr>
+                <td><input type="checkbox" class="user-checkbox" data-id="${u.id}" ${usersSelectedIds.has(u.id) ? 'checked' : ''} /></td>
+                <td><span style="font-family:monospace;">${u.id}</span></td>
+                <td>
+                  <div style="font-weight:500;">${u.email}</div>
+                  <div style="font-size:12px;color:var(--gray-500);">${u.username || '-'}</div>
+                </td>
+                <td>
+                  <span class="admin-badge ${memBadge}">${u.membership_type || 'free'}</span>
+                  <div style="font-size:12px;color:var(--gray-500);margin-top:4px;">${renderSubscriptionLine(u)}</div>
+                </td>
+                <td><span class="admin-badge ${statusBadge}">${u.status}</span></td>
+                 <td>${u.video_upload_used || 0} / ${u.video_upload_limit || 0}</td>
+                <td><span title="${u.last_login_at}">${AdminUtils.formatDate(u.last_login_at)}</span></td>
+                <td>
+                  <div>${u.last_login_ip || '-'}</div>
+                  <div style="font-size:12px;color:var(--gray-500);">${u.ip_location || '-'}</div>
+                </td>
+                <td>
+                  <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                    <button class="admin-btn admin-btn-sm admin-btn-secondary" data-act="member" data-id="${u.id}" data-current="${u.membership_type || 'free'}">会员</button>
+                    
+                    <button class="admin-btn admin-btn-sm ${u.status === 'banned' ? 'admin-btn-success' : 'admin-btn-danger'}" data-act="${u.status === 'banned' ? 'unban' : 'ban'}" data-id="${u.id}">${u.status === 'banned' ? '解封' : '封禁'}</button>
+                    
+                    <div class="more-wrap" style="position: relative;">
+                      <button class="admin-btn admin-btn-sm admin-btn-secondary" data-act="more" data-id="${u.id}" aria-haspopup="true" aria-expanded="false">更多 ▾</button>
+                      <div id="more-${u.id}" class="more-menu" role="menu" aria-label="更多操作">
+                        <button class="admin-btn admin-btn-sm admin-btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:2px;" data-act="quota" data-id="${u.id}">配额</button>
+                        <button class="admin-btn admin-btn-sm admin-btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:2px;" data-act="assess" data-id="${u.id}">评测</button>
+                        <button class="admin-btn admin-btn-sm admin-btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:2px;" data-act="stats" data-id="${u.id}">统计</button>
+                        <button class="admin-btn admin-btn-sm admin-btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:2px;" data-act="logins" data-id="${u.id}">登录</button>
+                        <button class="admin-btn admin-btn-sm admin-btn-danger" style="display:block;width:100%;text-align:left;" data-act="delete" data-id="${u.id}">删除</button>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+          tbody.innerHTML = rows || '<tr><td colspan="9" class="admin-empty-state">暂无数据</td></tr>';
+        } else {
+          await loadUsersIPView(data.items || []);
+        }
+
+        document.getElementById('users-page-info').textContent =
+          `第 ${usersCurrentPage} 页 / 共 ${totalPages} 页 (共 ${usersTotalCount} 条记录)`;
+        document.getElementById('users-prev-page').disabled = usersCurrentPage <= 1;
+        document.getElementById('users-next-page').disabled = usersCurrentPage >= totalPages;
+      } catch (e) {
+        console.error('Failed to load users:', e);
+        document.getElementById('users-tbody').innerHTML = '<tr><td colspan="9" class="admin-alert admin-alert-error">加载失败</td></tr>';
+      }
+    }
+
+    async function setAdmin(id, flag) {
+      if (!confirm((flag ? '设为' : '取消') + '管理员？')) return;
+      await api(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify({ is_admin: !!flag }) });
+      loadUsers();
+    }
+
+    async function editMembership(id, current) {
+      const typeInput = prompt('设置会员类型（free, vip, svip, family）', current || 'free');
+      if (typeInput == null) return;
+      const t = String(typeInput).trim().toLowerCase();
+      const map = { pro: 'vip', vip: 'vip', svip: 'svip', family: 'family', free: 'free' };
+      const type = map[t] || 'free';
+      let defaultExpiry = '';
+      if (type !== 'free') {
+        const nextYear = new Date(); nextYear.setFullYear(nextYear.getFullYear() + 1);
+        defaultExpiry = nextYear.toISOString();
+      }
+      const expInput = prompt('会员到期时间(ISO，可留空使用默认)', defaultExpiry);
+      const payload = { membership_type: type };
+      if (expInput) payload.membership_expires_at = expInput;
+      try {
+        await api(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+        AdminUtils.showToast('会员已更新', 'success');
+        loadUsers();
+      } catch (e) { alert('更新失败: ' + e.message); }
+    }
+
+    async function editQuota(id) {
+      const limitStr = prompt('设置视频上传上限(月度)', '5');
+      if (limitStr == null) return;
+      const limit = Number(limitStr);
+      if (!Number.isFinite(limit)) return alert('请输入数字');
+      await api(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify({ quota: { video_upload_limit: limit } }) });
+      loadUsers();
+    }
+
+    async function banUser(id) {
+      if (!confirm('确认封禁该用户？')) return;
+      await api(`/admin/users/${id}/ban`, { method: 'POST' });
+      loadUsers();
+    }
+    async function unbanUser(id) {
+      if (!confirm('确认解封该用户？')) return;
+      await api(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'active' }) });
+      loadUsers();
+    }
+    async function delUser(id) {
+      if (!confirm('不可恢复，确认删除该用户及其数据？')) return;
+      await api(`/admin/users/${id}`, { method: 'DELETE' });
+      loadUsers();
+    }
+
+    async function viewUsage(id) {
+      const [res, focusRes, histRes] = await Promise.all([
+        api(`/admin/users/${id}/usage`),
+        api(`/admin/users/${id}/pronunciation/focus?limit=5`).catch(() => ({ items: [] })),
+        api(`/admin/users/${id}/pronunciation/history?limit=3&offset=0`).catch(() => ({ items: [] })),
+      ]);
+      const b = res.breakdown || { video_watch_seconds: 0, vocab_study_seconds: 0, practice_seconds: 0 };
+      const v = res.videos || [];
+      const fmt = (s) => (s / 60).toFixed(1) + ' 分钟';
+      const top = v.slice(0, 5).map(x => `视频ID ${x.video_resource_id}: ${fmt(x.seconds)}`).join('\n');
+      const phonemes = (focusRes.items || []).map(x => `${x.phoneme}(${x.issue_count})`).join(', ');
+      const latest = (histRes.items || []).map(a => `• ${new Date(a.created_at).toLocaleString()}  分:${Math.round(a.overall || 0)}`).join('\n');
+      const modal = document.getElementById('stats-modal');
+
+      const content = `使用统计\n- 视频观看: ${fmt(b.video_watch_seconds)}\n- 单词学习: ${fmt(b.vocab_study_seconds)}\n- 练习/实战: ${fmt(b.practice_seconds)}\n\nTop 视频:\n${top || '暂无'}\n\n问题音素Top: ${phonemes || '暂无'}\n\n最近评测:\n${latest || '暂无'}`;
+      document.getElementById('stats-summary').textContent = content;
+      modal.style.display = 'flex';
+
+      const closeBtn = document.getElementById('stats-close');
+      closeBtn.onclick = () => { modal.style.display = 'none'; };
+
+      const select = document.getElementById('p-days-user');
+      const render = async () => {
+        const days = Number(select.value || '14');
+        try {
+          const data = await api(`/admin/users/${id}/pronunciation/daily?days=${days}`);
+          const chart = document.getElementById('p-chart-user');
+          chart.innerHTML = '';
+          const daily = data.items || [];
+          const w = chart.clientWidth || 500; const h = chart.clientHeight || 120; const pad = 10;
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('width', String(w)); svg.setAttribute('height', String(h));
+          chart.appendChild(svg);
+          if (daily.length) {
+            const xs = daily.map((_, i) => pad + i * ((w - 2 * pad) / Math.max(1, daily.length - 1)));
+            const ys = daily.map(d => { const v = Math.max(0, Math.min(100, Number(d.avg_overall || 0))); return h - pad - (v / 100) * (h - 2 * pad); });
+            let dAttr = '';
+            for (let i = 0; i < xs.length; i++) {
+              const x = xs[i], y = ys[i];
+              if (i === 0) dAttr += `M ${x} ${y}`; else {
+                dAttr += ` L ${x} ${y}`;
+              }
+            }
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', dAttr);
+            path.setAttribute('fill', 'none'); path.setAttribute('stroke', '#667eea'); path.setAttribute('stroke-width', '2');
+            svg.appendChild(path);
+          }
+        } catch (_) { }
+      };
+      select.onchange = render;
+      render();
+    }
+
+    async function viewLogins(id) {
+      const res = await api(`/admin/users/${id}/logins?limit=10`);
+      const lines = (res.items || []).map(s => `${new Date(s.login_at).toLocaleString()} ${s.login_ip || ''} ${s.logout_at ? 'OUT' : ''}`);
+      alert(lines.join('\n') || '暂无数据');
+    }
+
+    async function loadVisitStats() {
+      try {
+        const days = Number(document.getElementById('visit-days').value || '30');
+        const stats = await api(`/admin/visits/stats?days=${days}`);
+        document.getElementById('visits-total').textContent = stats.total || 0;
+        document.getElementById('visits-guests').textContent = stats.guests || 0;
+        document.getElementById('visits-users').textContent = stats.users || 0;
+        document.getElementById('visits-ips').textContent = stats.unique_ips || 0;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    let visitsCurrentPage = 1; const visitsPageSize = 50; let visitsTotalCount = 0; let visitsViewMode = 'normal';
+
+    async function loadRecentVisits() {
+      try {
+        const eventName = document.getElementById('visit-event-filter').value || '';
+        const userType = document.getElementById('visit-user-type-filter').value || '';
+        const offset = (visitsCurrentPage - 1) * visitsPageSize;
+        const params = new URLSearchParams({ limit: String(visitsPageSize), offset: String(offset) });
+        if (eventName) params.set('event_name', eventName);
+        if (userType) params.set('user_type', userType);
+
+        const data = await api(`/admin/visits?${params.toString()}`);
+        const tbody = document.getElementById('visits-tbody');
+        visitsTotalCount = data.total || 0;
+        const totalPages = Math.max(1, Math.ceil(visitsTotalCount / visitsPageSize));
+
+        if (visitsViewMode === 'normal') {
+          tbody.innerHTML = (data.items || []).map(v => {
+            const isGuest = inferVisitUserType(v) === 'guest';
+            const typeBadge = isGuest ? '<span class="admin-badge admin-badge-warning">游客</span>' : '<span class="admin-badge admin-badge-primary">用户</span>';
+            const props = parseProps(v.properties);
+            const page = (props.page) || '-';
+            const vid = v.id || Math.random();
+            return `<tr>
+                  <td><input type="checkbox" class="visit-checkbox" data-id="${vid}" /></td>
+                  <td>${new Date(v.event_time).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+                  <td>${typeBadge}</td>
+                  <td>
+                    <div>${v.email || '-'}</div>
+                    <div style="font-size:12px;color:var(--gray-500);">${v.username || (isGuest ? 'Guest' : '')}</div>
+                  </td>
+                  <td>${props.ip || '-'}<br><span style="font-size:12px;color:var(--gray-500);">${v.ip_location || ''}</span></td>
+                  <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${page}">${page}</td>
+                </tr>`;
+          }).join('') || '<tr><td colspan="6" class="admin-empty-state">暂无记录</td></tr>';
+        } else {
+          loadVisitsIPView(data.items || []);
+        }
+        document.getElementById('visits-page-info').textContent = `第 ${visitsCurrentPage} 页 / 共 ${totalPages} 页`;
+        document.getElementById('visits-prev-page').disabled = visitsCurrentPage <= 1;
+        document.getElementById('visits-next-page').disabled = visitsCurrentPage >= totalPages;
+
+      } catch (e) { console.error(e); }
+    }
+
+
+    // ========== 访问记录批量选择和删除 ==========
+    let visitsSelectedIds = new Set();
+
+    function updateVisitsSelectedCount() {
+      const count = visitsSelectedIds.size;
+      document.getElementById('visits-selected-count').textContent = `已选择 ${count} 条`;
+      document.getElementById('visits-batch-controls').style.display = count > 0 ? 'flex' : 'none';
+    }
+
+    async function batchDeleteVisits() {
+      if (visitsSelectedIds.size === 0) return;
+      if (!confirm(`确认删除选中的 ${visitsSelectedIds.size} 条访问记录吗？`)) return;
+
+      try {
+        const ids = Array.from(visitsSelectedIds);
+        await api('/admin/visits/batch-delete', { method: 'POST', body: JSON.stringify({ ids }) });
+        AdminUtils.showToast(`成功删除 ${ids.length} 条记录`, 'success');
+        visitsSelectedIds.clear();
+        updateVisitsSelectedCount();
+        loadRecentVisits();
+        loadVisitStats();
+      } catch (e) {
+        alert('批量删除失败: ' + e.message);
+      }
+    }
+
+    async function deleteVisitsByIP(ip) {
+      if (!confirm(`确认删除IP ${ip} 的所有访问记录吗？`)) return;
+      try {
+        const result = await api('/admin/visits/delete-by-ip', { method: 'POST', body: JSON.stringify({ ip }) });
+        AdminUtils.showToast(`成功删除 ${result.deleted || 0} 条记录`, 'success');
+        loadRecentVisits();
+        loadVisitStats();
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSummary();
+      loadUsers();
+      loadVisitStats();
+      loadRecentVisits();
+
+      // ========== 用户列表 checkbox 事件 ==========
+      document.getElementById('users-select-all').addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        document.querySelectorAll('.user-checkbox').forEach(cb => {
+          cb.checked = checked;
+          const id = Number(cb.dataset.id);
+          if (checked) usersSelectedIds.add(id);
+          else usersSelectedIds.delete(id);
+        });
+        updateUsersSelectedCount();
+      });
+
+      document.getElementById('users-tbody').addEventListener('change', (e) => {
+        if (e.target.classList.contains('user-checkbox')) {
+          const id = Number(e.target.dataset.id);
+          if (e.target.checked) usersSelectedIds.add(id);
+          else usersSelectedIds.delete(id);
+          updateUsersSelectedCount();
+        }
+      });
+
+      document.getElementById('users-ip-view').addEventListener('change', (e) => {
+        if (e.target.classList.contains('user-checkbox')) {
+          const id = Number(e.target.dataset.id);
+          if (e.target.checked) usersSelectedIds.add(id);
+          else usersSelectedIds.delete(id);
+          updateUsersSelectedCount();
+        }
+      });
+
+      document.getElementById('users-batch-delete').addEventListener('click', batchDeleteUsers);
+
+      // ========== 访问记录 checkbox 事件 ==========
+      document.getElementById('visits-select-all').addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        document.querySelectorAll('.visit-checkbox').forEach(cb => {
+          cb.checked = checked;
+          const id = cb.dataset.id;
+          if (checked) visitsSelectedIds.add(id);
+          else visitsSelectedIds.delete(id);
+        });
+        updateVisitsSelectedCount();
+      });
+
+      document.getElementById('visits-tbody').addEventListener('change', (e) => {
+        if (e.target.classList.contains('visit-checkbox')) {
+          const id = e.target.dataset.id;
+          if (e.target.checked) visitsSelectedIds.add(id);
+          else visitsSelectedIds.delete(id);
+          updateVisitsSelectedCount();
+        }
+      });
+
+      document.getElementById('visits-batch-delete').addEventListener('click', batchDeleteVisits);
+
+      document.getElementById('users-tbody').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const act = btn.dataset.act;
+        const id = btn.dataset.id;
+        if (!act || !id) return;
+        if (act === 'more') {
+          const menu = document.getElementById(`more-${id}`);
+          if (!menu) return;
+          document.querySelectorAll('[id^=more-].show').forEach(el => {
+            if (el !== menu) {
+              el.classList.remove('show');
+              el.closest('.more-wrap')?.querySelector('button[data-act="more"]')?.setAttribute('aria-expanded', 'false');
+            }
+          });
+          const nextState = !menu.classList.contains('show');
+          menu.classList.toggle('show', nextState);
+          btn.setAttribute('aria-expanded', String(nextState));
+          return;
+        }
+        if (act === 'member') editMembership(Number(id), btn.dataset.current);
+        if (act === 'set-admin') setAdmin(Number(id), true);
+        if (act === 'ban') banUser(Number(id));
+        if (act === 'unban') unbanUser(Number(id));
+        if (act === 'quota') editQuota(Number(id));
+        if (act === 'assess') window.location.href = `admin-user-pronunciation.html?userId=${id}`;
+        if (act === 'stats') viewUsage(Number(id));
+        if (act === 'logins') viewLogins(Number(id));
+        if (act === 'delete') delUser(Number(id));
+        document.querySelectorAll('[id^=more-].show').forEach(el => el.classList.remove('show'));
+        document.querySelectorAll('button[data-act="more"][aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.more-wrap')) {
+          document.querySelectorAll('[id^=more-].show').forEach(el => el.classList.remove('show'));
+          document.querySelectorAll('button[data-act="more"][aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+        }
+      });
+      document.getElementById('btn-refresh').onclick = loadUsers;
+      document.getElementById('users-prev-page').onclick = () => { if (usersCurrentPage > 1) { usersCurrentPage--; loadUsers(); } };
+      document.getElementById('users-next-page').onclick = () => { usersCurrentPage++; loadUsers(); };
+
+      document.getElementById('btn-refresh-visits').onclick = () => { loadVisitStats(); loadRecentVisits(); };
+      document.getElementById('visits-prev-page').onclick = () => { if (visitsCurrentPage > 1) { visitsCurrentPage--; loadRecentVisits(); } };
+      document.getElementById('visits-next-page').onclick = () => { visitsCurrentPage++; loadRecentVisits(); };
+
+      const setView = (mode, type) => {
+        if (type === 'users') {
+          usersViewMode = mode;
+          document.getElementById('users-view-normal').className = `admin-btn admin-btn-sm ${mode === 'normal' ? 'admin-btn-primary' : 'admin-btn-secondary'}`;
+          document.getElementById('users-view-ip').className = `admin-btn admin-btn-sm ${mode === 'ip' ? 'admin-btn-primary' : 'admin-btn-secondary'}`;
+          document.getElementById('users-normal-view').style.display = mode === 'normal' ? 'block' : 'none';
+          document.getElementById('users-ip-view').style.display = mode === 'ip' ? 'block' : 'none';
+          loadUsers();
+        } else {
+          visitsViewMode = mode;
+          document.getElementById('visits-view-normal').className = `admin-btn admin-btn-sm ${mode === 'normal' ? 'admin-btn-primary' : 'admin-btn-secondary'}`;
+          document.getElementById('visits-view-ip').className = `admin-btn admin-btn-sm ${mode === 'ip' ? 'admin-btn-primary' : 'admin-btn-secondary'}`;
+          document.getElementById('visits-normal-view').style.display = mode === 'normal' ? 'block' : 'none';
+          document.getElementById('visits-ip-view').style.display = mode === 'ip' ? 'block' : 'none';
+          loadRecentVisits();
+        }
+      };
+      document.getElementById('users-view-normal').onclick = () => setView('normal', 'users');
+      document.getElementById('users-view-ip').onclick = () => setView('ip', 'users');
+      document.getElementById('visits-view-normal').onclick = () => setView('normal', 'visits');
+      document.getElementById('visits-view-ip').onclick = () => setView('ip', 'visits');
+    });
+  </script>
+</body>
+
+</html>

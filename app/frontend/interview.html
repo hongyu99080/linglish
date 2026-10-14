@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面试英语训练｜AI 跟读与真实场景练习 - Linglish</title>
+  <meta name="description" content="用 Linglish 练习英语面试中的自我介绍、行为问题和项目表达，通过真实场景、逐句跟读、录音回放与 AI 反馈提高回答熟练度。">
+  <meta name="keywords" content="英语面试,面试英语,英语口语练习,AI英语,影子跟读,英语面试练习">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.example.com/interview">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.example.com/interview">
+  <meta property="og:title" content="面试英语训练｜AI 跟读与真实场景练习 - Linglish">
+  <meta property="og:description" content="围绕常见英语面试场景进行逐句跟读、录音回放和 AI 反馈，让回答从准备稿变成能够自然说出的表达。">
+  <meta property="og:image" content="https://www.example.com/assets/lingbao_3d.jpg">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="面试英语训练｜Linglish AI 英语教练">
+  <meta name="twitter:description" content="练习自我介绍、行为问题和项目表达，获得逐句跟读与 AI 口语反馈。">
+
+  <!-- Schema.org Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "英语面试强化训练",
+    "description": "通过逐句跟读、录音回放和 AI 反馈练习英语面试，覆盖自我介绍、行为问题、项目经历和职业规划等场景。",
+    "provider": {
+      "@type": "Organization",
+      "name": "Linglish",
+      "url": "https://www.example.com/"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "CNY",
+      "availability": "https://schema.org/InStock"
+    },
+    "hasCourseInstance": {
+      "@type": "CourseInstance",
+      "courseMode": "online"
+    }
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #C41E3A;
+      --red-light: #e8294d;
+      --gold: #D4A017;
+      --dark: #0f172a;
+      --dark2: #1e293b;
+      --dark3: #0a0f1e;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: var(--dark3);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 60px;
+      background: rgba(10,15,30,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, #C41E3A 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-decoration: none;
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--red);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .nav-cta:hover { background: var(--red-light); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 24px 80px;
+      position: relative;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(196,30,58,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(212,160,23,0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #0a0f1e 0%, #0f172a 100%);
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(196,30,58,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(196,30,58,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(196,30,58,0.15);
+      border: 1px solid rgba(196,30,58,0.3);
+      color: #ff8099;
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 32px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .hero-badge-dot {
+      width: 7px; height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-title {
+      font-size: clamp(32px, 6vw, 68px);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      animation: fadeDown 0.6s ease 0.1s both;
+    }
+
+    .hero-title .accent {
+      background: linear-gradient(135deg, #C41E3A, #ff4d6d, #D4A017);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle-en {
+      font-size: clamp(15px, 2.5vw, 22px);
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-style: italic;
+      animation: fadeDown 0.6s ease 0.2s both;
+    }
+
+    .hero-subtitle-zh {
+      font-size: clamp(14px, 2vw, 18px);
+      color: #64748b;
+      margin-bottom: 48px;
+      animation: fadeDown 0.6s ease 0.25s both;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: fadeDown 0.6s ease 0.35s both;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #C41E3A, #e8294d);
+      color: #fff;
+      padding: 18px 36px;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 8px 32px rgba(196,30,58,0.4), 0 0 0 1px rgba(196,30,58,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 48px rgba(196,30,58,0.5), 0 0 0 1px rgba(196,30,58,0.3);
+    }
+    .btn-primary:active { transform: translateY(-1px); }
+
+    .btn-arrow {
+      font-size: 20px;
+      transition: transform 0.2s;
+    }
+    .btn-primary:hover .btn-arrow { transform: translateX(4px); }
+
+    .hero-trust {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .hero-stars { color: var(--gold); font-size: 15px; }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SECTION COMMONS ── */
+    section { padding: 80px 24px; }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(26px, 4vw, 42px);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 17px;
+      max-width: 560px;
+    }
+
+    /* ── PAIN POINTS ── */
+    .pain-section {
+      background: var(--dark);
+    }
+
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .pain-card {
+      background: var(--dark2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .pain-card:hover {
+      border-color: rgba(196,30,58,0.3);
+      transform: translateY(-4px);
+    }
+
+    .pain-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--red), transparent);
+    }
+
+    .pain-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .pain-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .pain-title .zh { color: var(--text); }
+    .pain-title .en { font-size: 14px; color: var(--text-muted); font-weight: 500; margin-left: 6px; }
+
+    .pain-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── DEMO / SHADOWING ── */
+    .demo-section {
+      background: var(--dark3);
+    }
+
+    .demo-box {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 48px;
+    }
+
+    .demo-header {
+      background: rgba(196,30,58,0.1);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .demo-dots { display: flex; gap: 6px; }
+    .demo-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .demo-dot:nth-child(1) { background: #ff5f57; }
+    .demo-dot:nth-child(2) { background: #ffbd2e; }
+    .demo-dot:nth-child(3) { background: #28ca41; }
+
+    .demo-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .demo-body {
+      padding: 32px;
+    }
+
+    .demo-scenario {
+      font-size: 13px;
+      color: var(--red);
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .demo-sentence {
+      font-size: clamp(18px, 3vw, 26px);
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+
+    .demo-words {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .demo-word {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: default;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .demo-word.mastered {
+      background: rgba(16,185,129,0.12);
+      border-color: rgba(16,185,129,0.3);
+      color: #34d399;
+    }
+
+    .demo-word.learning {
+      background: rgba(212,160,23,0.12);
+      border-color: rgba(212,160,23,0.3);
+      color: var(--gold);
+      animation: wordPulse 2s ease-in-out 0.5s infinite;
+    }
+
+    .demo-word.new {
+      background: rgba(196,30,58,0.1);
+      border-color: rgba(196,30,58,0.25);
+      color: #ff8099;
+    }
+
+    @keyframes wordPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212,160,23,0.2); }
+      50% { box-shadow: 0 0 0 6px rgba(212,160,23,0); }
+    }
+
+    .demo-translation {
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 16px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 10px;
+      border-left: 3px solid var(--red);
+    }
+
+    .demo-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .demo-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .demo-btn-play {
+      background: var(--red);
+      color: #fff;
+    }
+    .demo-btn-play:hover { background: var(--red-light); }
+
+    .demo-btn-record {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .demo-btn-record:hover { background: rgba(255,255,255,0.12); }
+
+    .demo-progress {
+      flex: 1;
+      min-width: 120px;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .demo-progress-bar {
+      height: 100%;
+      width: 45%;
+      background: linear-gradient(90deg, var(--red), var(--gold));
+      border-radius: 99px;
+      animation: progressPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes progressPulse {
+      0% { width: 0%; }
+      50% { width: 70%; }
+      80% { width: 45%; }
+      100% { width: 45%; }
+    }
+
+    /* ── SOCIAL PROOF ── */
+    .proof-section {
+      background: var(--dark);
+    }
+
+    .proof-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+      margin-bottom: 48px;
+    }
+
+    .proof-stat {
+      text-align: center;
+      padding: 28px 20px;
+      background: var(--dark2);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .proof-stat-num {
+      font-size: 42px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff, #C41E3A);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .proof-stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .proof-quotes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .quote-card {
+      background: var(--dark2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+    }
+
+    .quote-mark {
+      font-size: 48px;
+      color: var(--red);
+      opacity: 0.3;
+      line-height: 1;
+      margin-bottom: -10px;
+      font-family: Georgia, serif;
+    }
+
+    .quote-text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .quote-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .quote-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--red), var(--gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .quote-name { font-size: 13px; font-weight: 600; }
+    .quote-role { font-size: 12px; color: var(--text-muted); }
+
+    /* ── FINAL CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, rgba(196,30,58,0.15) 0%, rgba(212,160,23,0.08) 100%);
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .cta-title {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .cta-subtitle {
+      color: var(--text-muted);
+      font-size: 17px;
+      margin-bottom: 40px;
+    }
+
+    .cta-features {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .cta-feature {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .cta-feature-check { color: #34d399; font-size: 16px; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--dark3);
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      section { padding: 60px 16px; }
+      .demo-body { padding: 20px; }
+      .demo-sentence { font-size: 18px; }
+      .hero-cta-group { width: 100%; }
+      .btn-primary { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">Linglish</a>
+    <a href="/video-reader-desktop.html" class="nav-cta">
+      免费开始练习 <span>→</span>
+    </a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      AI 面试英语专项训练
+    </div>
+
+    <h1 class="hero-title">
+      明天英语面试？<br>
+      <span class="accent">AI帮你练到不紧张</span>
+    </h1>
+
+    <p class="hero-subtitle-en">Practice Answers You Can Actually Say</p>
+    <p class="hero-subtitle-zh">真实场景 · 逐句跟读 · AI 口语反馈</p>
+
+    <div class="hero-cta-group">
+      <a href="/video-reader-desktop.html" class="btn-primary">
+        立即免费练习
+        <span class="btn-arrow">→</span>
+      </a>
+      <div class="hero-trust">
+        <span class="hero-stars">★★★★★</span>
+        <span>可免费开始 · 真实问题 · 随时练习</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAIN POINTS -->
+  <section class="pain-section">
+    <div class="container">
+      <p class="section-label">真实痛点</p>
+      <h2 class="section-title">你是否也有这些困扰？</h2>
+      <p class="section-desc">英语面试前紧张很常见；把高频问题拆成可重复的听、读、录、改练习，会更容易建立熟练度。</p>
+
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="pain-icon">🤯</div>
+          <div class="pain-title">
+            <span class="zh">说到一半卡壳</span>
+            <span class="en">Going blank mid-sentence</span>
+          </div>
+          <p class="pain-desc">
+            明明知道怎么说，脑子一紧张就全忘了。
+            面试官盯着你，你的大脑一片空白……
+          </p>
+        </div>
+
+        <div class="pain-card">
+          <div class="pain-icon">😰</div>
+          <div class="pain-title">
+            <span class="zh">越紧张越说不出</span>
+            <span class="en">Anxiety blocks fluency</span>
+          </div>
+          <p class="pain-desc">
+            手心出汗，声音发抖，原本准备好的内容
+            一句也说不利索。
+          </p>
+        </div>
+
+        <div class="pain-card">
+          <div class="pain-icon">🔄</div>
+          <div class="pain-title">
+            <span class="zh">先想中文再翻译</span>
+            <span class="en">Translating in your head</span>
+          </div>
+          <p class="pain-desc">
+            脑子里先想好中文，再慢慢翻译成英文——
+            反应慢，口音重，还会说错。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO -->
+  <section class="demo-section">
+    <div class="container">
+      <p class="section-label">实战演练</p>
+      <h2 class="section-title">影子跟读法 — 7天建立面试自信</h2>
+      <p class="section-desc">像母语者一样直接用英语思考，而不是翻译。</p>
+
+      <div class="demo-box">
+        <div class="demo-header">
+          <div class="demo-dots">
+            <div class="demo-dot"></div>
+            <div class="demo-dot"></div>
+            <div class="demo-dot"></div>
+          </div>
+          <span class="demo-title">Linglish — 面试英语训练 · 第3天</span>
+        </div>
+        <div class="demo-body">
+          <div class="demo-scenario">🎯 场景：自我介绍</div>
+
+          <div class="demo-sentence">
+            "I've been working in product management for three years, focusing on B2B SaaS solutions."
+          </div>
+
+          <div class="demo-words">
+            <span class="demo-word mastered">I've been working</span>
+            <span class="demo-word mastered">in product management</span>
+            <span class="demo-word learning">for three years</span>
+            <span class="demo-word new">B2B SaaS solutions</span>
+            <span class="demo-word mastered">focusing on</span>
+          </div>
+
+          <div class="demo-translation">
+            💡 <strong>智能分析：</strong>"B2B SaaS solutions" 是你的薄弱点。AI 将在今天的练习中重点强化这个词组，直到你说得自然流畅。
+          </div>
+
+          <div class="demo-controls">
+            <button class="demo-btn demo-btn-play">▶ 听范例</button>
+            <button class="demo-btn demo-btn-record">🎙 开始跟读</button>
+            <div class="demo-progress">
+              <div class="demo-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF -->
+  <section class="proof-section">
+    <div class="container">
+      <p class="section-label">训练设计</p>
+      <h2 class="section-title">每一轮都留下可复用的回答</h2>
+
+      <div class="proof-stats">
+        <div class="proof-stat">
+          <div class="proof-stat-num">场景</div>
+          <div class="proof-stat-label">高频面试问题</div>
+        </div>
+        <div class="proof-stat">
+          <div class="proof-stat-num">逐句</div>
+          <div class="proof-stat-label">跟读与录音回放</div>
+        </div>
+        <div class="proof-stat">
+          <div class="proof-stat-num">15min</div>
+          <div class="proof-stat-label">每日练习时间</div>
+        </div>
+        <div class="proof-stat">
+          <div class="proof-stat-num">AI</div>
+          <div class="proof-stat-label">发音与表达反馈</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2 class="cta-title">开始你的面试英语训练</h2>
+      <p class="cta-subtitle">从一个高频问题开始，先听懂、再跟读，最后录下自己的完整回答。</p>
+
+      <div class="cta-features">
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> 可免费开始</span>
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> 真实面试场景</span>
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> AI即时反馈</span>
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> 逐句练习</span>
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> 随时随地练习</span>
+      </div>
+
+      <a href="/video-reader-desktop.html" class="btn-primary" style="font-size:20px;padding:20px 48px;">
+        立即免费开始
+        <span class="btn-arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <p style="margin-bottom:8px;">
+      <a href="/">Linglish</a> ·
+      <a href="/shadowing">影子跟读法</a> ·
+      <a href="/workplace">职场英语</a> ·
+      <a href="/video-reader-desktop.html">开始学习</a>
+    </p>
+    <p>© 2024 Linglish · AI 英语学习平台 · <a href="https://www.example.com/">example.com</a></p>
+  </footer>
+
+<script>(function(){var p=new URLSearchParams(location.search);var d={page:location.pathname,utm_source:p.get('utm_source'),utm_medium:p.get('utm_medium'),utm_campaign:p.get('utm_campaign'),utm_content:p.get('utm_content'),referrer:document.referrer};fetch('/api/track/visit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).catch(function(){});})()</script>
+</body>
+</html>

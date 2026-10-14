@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linglish — Learning Stats</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #ede9fe;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --danger: #ef4444;
+      --gray-50:  #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-400: #9ca3af;
+      --gray-600: #4b5563;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 12px;
+      --shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 56px;
+    }
+    .header a { color: var(--gray-600); text-decoration: none; font-size: 0.875rem; }
+    .header a:hover { color: var(--primary); }
+    .header .sep { color: var(--gray-400); }
+    .header h1 { font-size: 1rem; font-weight: 600; color: var(--gray-900); }
+
+    /* ── Layout ── */
+    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem; }
+
+    /* ── Overview cards ── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .stat-card .icon { font-size: 1.6rem; line-height: 1; }
+    .stat-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--gray-400); }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--gray-900); line-height: 1; }
+    .stat-card .sub { font-size: 0.8rem; color: var(--gray-600); }
+
+    /* ── Section headings ── */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .section-header h2 { font-size: 1.05rem; font-weight: 600; color: var(--gray-900); }
+    .section-header select {
+      font-size: 0.8rem;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--gray-600);
+      cursor: pointer;
+    }
+
+    /* ── Bar chart ── */
+    .chart-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 140px;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+    .bar-col {
+      flex: 1;
+      min-width: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      height: 100%;
+      justify-content: flex-end;
+      position: relative;
+    }
+    .bar-col .bar {
+      width: 100%;
+      background: var(--primary);
+      border-radius: 3px 3px 0 0;
+      min-height: 2px;
+      transition: opacity .15s;
+      cursor: pointer;
+    }
+    .bar-col .bar:hover { opacity: .75; }
+    .bar-col .bar-label {
+      font-size: 0.55rem;
+      color: var(--gray-400);
+      white-space: nowrap;
+      transform: rotate(-45deg) translateX(-4px);
+      transform-origin: top right;
+    }
+    /* tooltip */
+    .bar-col .tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gray-900);
+      color: #fff;
+      font-size: 0.7rem;
+      padding: 3px 7px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .bar-col:hover .tooltip { display: block; }
+    .chart-empty { text-align: center; padding: 2rem; color: var(--gray-400); font-size: 0.9rem; }
+
+    /* ── Leaderboard ── */
+    .leaderboard-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .leaderboard-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .leaderboard-table th {
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--gray-400);
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .leaderboard-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--gray-100); }
+    .leaderboard-table tr:last-child td { border-bottom: none; }
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.8rem;
+      background: var(--gray-100);
+      color: var(--gray-600);
+    }
+    .rank-badge.gold   { background: #fef3c7; color: #92400e; }
+    .rank-badge.silver { background: #f3f4f6; color: #374151; }
+    .rank-badge.bronze { background: #fed7aa; color: #92400e; }
+
+    /* ── Log activity button ── */
+    .fab {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 0.8rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79,70,229,.4);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: transform .15s, box-shadow .15s;
+      z-index: 100;
+    }
+    .fab:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(79,70,229,.45); }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 420px;
+      margin: 1rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--gray-900); }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--gray-600); margin-bottom: 0.4rem; }
+    .form-group select,
+    .form-group input {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--gray-900);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-group select:focus,
+    .form-group input:focus { border-color: var(--primary); }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; }
+    .btn-cancel {
+      padding: 0.55rem 1.1rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: var(--gray-600);
+    }
+    .btn-submit {
+      padding: 0.55rem 1.3rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* ── Loading skeleton ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+      height: 2rem;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+
+    /* ── Toast ── */
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gray-900);
+      color: #fff;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      z-index: 300;
+    }
+    .toast.show { display: block; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .overview-grid { grid-template-columns: repeat(2, 1fr); }
+      .stat-card .value { font-size: 1.6rem; }
+      .fab { bottom: 1rem; right: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <a href="router.html">Home</a>
+    <span class="sep">›</span>
+    <h1>Learning Stats</h1>
+  </div>
+
+  <div class="container">
+
+    <!-- Overview cards -->
+    <div class="overview-grid" id="overview-grid">
+      <div class="stat-card"><div class="skeleton" style="height:80px"></div></div>
+      <div class="stat-card"><div class="skeleton" style="height:80px"></div></div>
+      <div class="stat-card"><div class="skeleton" style="height:80px"></div></div>
+      <div class="stat-card"><div class="skeleton" style="height:80px"></div></div>
+    </div>
+
+    <!-- Daily activity chart -->
+    <div class="chart-card">
+      <div class="section-header">
+        <h2>Daily Activity</h2>
+        <select id="days-select">
+          <option value="7">Last 7 days</option>
+          <option value="14">Last 14 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+      </div>
+      <div class="bar-chart" id="bar-chart">
+        <div class="chart-empty">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="leaderboard-card">
+      <div class="section-header">
+        <h2>Weekly Leaderboard</h2>
+        <span style="font-size:0.8rem;color:var(--gray-400)">This week · XP</span>
+      </div>
+      <table class="leaderboard-table">
+        <thead>
+          <tr><th>#</th><th>Learner</th><th>XP this week</th></tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <tr><td colspan="3" style="text-align:center;color:var(--gray-400);padding:1rem">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /container -->
+
+  <!-- Log Activity FAB -->
+  <button class="fab" id="log-btn" onclick="openModal()">
+    <span>+</span> Log Activity
+  </button>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal">
+      <h3>Log Learning Activity</h3>
+
+      <div class="form-group">
+        <label for="act-type">Activity Type</label>
+        <select id="act-type">
+          <option value="reading">Reading</option>
+          <option value="vocabulary">Vocabulary</option>
+          <option value="training">Training (shadowing / dictogloss)</option>
+          <option value="video">Video</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="act-minutes">Duration (minutes)</label>
+        <input type="number" id="act-minutes" min="1" max="480" value="15" />
+      </div>
+
+      <div class="form-group">
+        <label for="act-words-learned">Words learned (optional)</label>
+        <input type="number" id="act-words-learned" min="0" value="0" />
+      </div>
+
+      <div class="form-group">
+        <label for="act-words-reviewed">Words reviewed (optional)</label>
+        <input type="number" id="act-words-reviewed" min="0" value="0" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-submit" id="submit-btn" onclick="submitLog()">Log</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_BASE = '';
+    let currentDays = 30;
+
+    function getToken() {
+      return localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token')
+        || localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+    }
+
+    async function apiFetch(path, opts = {}) {
+      const token = getToken();
+      const res = await fetch(API_BASE + path, {
+        ...opts,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+          ...(opts.headers || {}),
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+      return res.json();
+    }
+
+    function showToast(msg, duration = 3000) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), duration);
+    }
+
+    // ── Overview ──────────────────────────────────────────────
+    async function loadOverview() {
+      try {
+        const data = await apiFetch('/api/stats/overview');
+        const grid = document.getElementById('overview-grid');
+        grid.innerHTML = `
+          <div class="stat-card">
+            <div class="icon">🔥</div>
+            <div class="label">Current Streak</div>
+            <div class="value">${data.streak.current}</div>
+            <div class="sub">days &nbsp;·&nbsp; best ${data.streak.longest}</div>
+          </div>
+          <div class="stat-card">
+            <div class="icon">📖</div>
+            <div class="label">Words Known</div>
+            <div class="value">${data.total_words_learned.toLocaleString()}</div>
+            <div class="sub">${data.total_words_reviewed.toLocaleString()} reviewed</div>
+          </div>
+          <div class="stat-card">
+            <div class="icon">⏱️</div>
+            <div class="label">Study Time</div>
+            <div class="value">${fmtMinutes(data.total_minutes_studied)}</div>
+            <div class="sub">${data.total_articles_read} articles read</div>
+          </div>
+          <div class="stat-card">
+            <div class="icon">⭐</div>
+            <div class="label">Level</div>
+            <div class="value">${data.level}</div>
+            <div class="sub">${data.total_xp.toLocaleString()} XP total</div>
+          </div>
+        `;
+      } catch (err) {
+        document.getElementById('overview-grid').innerHTML =
+          `<div style="grid-column:1/-1;color:var(--gray-400);font-size:.9rem">
+            Could not load stats. ${err.message}
+           </div>`;
+      }
+    }
+
+    function fmtMinutes(m) {
+      if (m < 60) return m + 'm';
+      const h = Math.floor(m / 60);
+      const rem = m % 60;
+      return rem ? `${h}h ${rem}m` : `${h}h`;
+    }
+
+    // ── Bar chart ──────────────────────────────────────────────
+    async function loadChart(days) {
+      const chart = document.getElementById('bar-chart');
+      chart.innerHTML = '<div class="chart-empty">Loading…</div>';
+      try {
+        const { data } = await apiFetch(`/api/stats/daily?days=${days}`);
+        if (!data.length) {
+          chart.innerHTML = '<div class="chart-empty">No activity in this period. Start learning!</div>';
+          return;
+        }
+        // Build a full date range
+        const byDate = {};
+        data.forEach(r => { byDate[r.date.slice(0, 10)] = r; });
+        const dates = [];
+        for (let i = days - 1; i >= 0; i--) {
+          const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+          dates.push(d);
+        }
+        const maxXp = Math.max(...dates.map(d => byDate[d]?.xp_earned || 0), 1);
+
+        chart.innerHTML = '';
+        dates.forEach(d => {
+          const row = byDate[d] || {};
+          const xp = row.xp_earned || 0;
+          const pct = Math.round((xp / maxXp) * 100);
+          const label = d.slice(5); // MM-DD
+          const col = document.createElement('div');
+          col.className = 'bar-col';
+          col.innerHTML = `
+            <div class="tooltip">${d}<br>${xp} XP · ${row.minutes_studied || 0}m</div>
+            <div class="bar" style="height:${Math.max(pct, xp > 0 ? 3 : 0)}%"></div>
+            <div class="bar-label">${label}</div>
+          `;
+          chart.appendChild(col);
+        });
+      } catch (err) {
+        chart.innerHTML = `<div class="chart-empty">Could not load chart. ${err.message}</div>`;
+      }
+    }
+
+    // ── Leaderboard ────────────────────────────────────────────
+    async function loadLeaderboard() {
+      const tbody = document.getElementById('leaderboard-body');
+      try {
+        const { leaderboard } = await apiFetch('/api/stats/leaderboard?limit=10');
+        if (!leaderboard.length) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--gray-400);padding:1rem">No data yet</td></tr>';
+          return;
+        }
+        const rankClass = (r) => r === 1 ? 'gold' : r === 2 ? 'silver' : r === 3 ? 'bronze' : '';
+        tbody.innerHTML = leaderboard.map(entry => `
+          <tr>
+            <td><span class="rank-badge ${rankClass(entry.rank)}">${entry.rank}</span></td>
+            <td>${escHtml(entry.username)}</td>
+            <td>${entry.weekly_xp.toLocaleString()} XP</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--gray-400);padding:1rem">Could not load leaderboard</td></tr>`;
+      }
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Modal ──────────────────────────────────────────────────
+    function openModal() {
+      document.getElementById('modal-backdrop').classList.add('open');
+    }
+    function closeModal() {
+      document.getElementById('modal-backdrop').classList.remove('open');
+    }
+
+    async function submitLog() {
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      try {
+        const payload = {
+          type: document.getElementById('act-type').value,
+          duration_minutes: parseInt(document.getElementById('act-minutes').value) || 0,
+          details: {
+            words_learned:  parseInt(document.getElementById('act-words-learned').value) || 0,
+            words_reviewed: parseInt(document.getElementById('act-words-reviewed').value) || 0,
+          },
+        };
+        const result = await apiFetch('/api/stats/log', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        closeModal();
+        showToast(`Logged! +${result.xp_earned} XP · streak ${result.current_streak} days`);
+        // Refresh overview and chart
+        loadOverview();
+        loadChart(currentDays);
+      } catch (err) {
+        showToast('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('modal-backdrop').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    // Days selector
+    document.getElementById('days-select').addEventListener('change', function() {
+      currentDays = parseInt(this.value);
+      loadChart(currentDays);
+    });
+
+    // ── Init ───────────────────────────────────────────────────
+    loadOverview();
+    loadChart(currentDays);
+    loadLeaderboard();
+  </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <title>AI 场景口语任务 - Linglish</title>
+  <meta name="description" content="在真实英语场景中完成沟通目标，获得清晰、可执行的 AI 口语反馈。">
+  <link rel="stylesheet" href="./styles/tokens.css?v=2">
+  <link rel="stylesheet" href="./styles/ai-roleplay.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#conversation">跳到当前对话</a>
+
+  <div class="roleplay-app">
+    <nav class="product-bar" aria-label="页面导航">
+      <a class="brand-link" href="./today.html" aria-label="返回 Linglish 今日训练">
+        <span>Linglish</span>
+      </a>
+      <div class="product-bar__actions">
+        <span id="connection-state" class="connection-state" role="status">准备连接</span>
+        <a class="quiet-link" href="./today.html">退出任务</a>
+      </div>
+    </nav>
+
+    <header id="scenario-header" class="scenario-header" aria-label="场景信息">
+      <div>
+        <p class="eyebrow">AI 场景任务</p>
+        <h1 id="scenario-title">选择一个今天能完成的口语任务</h1>
+        <p id="scenario-role" class="scenario-role">围绕真实目的开口，而不是和 AI 漫无目的地聊天。</p>
+      </div>
+      <div class="scenario-meta" aria-label="任务状态">
+        <span id="level-chip">匹配你的等级</span>
+        <span id="turn-chip">尚未开始</span>
+      </div>
+    </header>
+
+    <div class="roleplay-workspace">
+      <aside class="mission-panel" aria-label="任务进度">
+        <div class="mission-panel__heading">
+          <div>
+            <p class="eyebrow">任务轨道</p>
+            <h2>沟通目标</h2>
+          </div>
+          <span id="goal-count" class="goal-count">0 / 0</span>
+        </div>
+        <section id="mission-goals" aria-label="沟通目标">
+          <p class="empty-guidance">选择场景后，这里会显示本次需要完成的目标。</p>
+        </section>
+        <div class="turn-rail" aria-label="剩余轮次">
+          <div class="turn-rail__label">
+            <span>剩余轮次</span>
+            <strong id="turns-remaining">—</strong>
+          </div>
+          <div id="turn-markers" class="turn-markers" aria-hidden="true"></div>
+        </div>
+      </aside>
+
+      <div class="practice-stack">
+        <main id="conversation" class="conversation" aria-live="polite" aria-busy="false">
+          <section class="catalog-intro" aria-labelledby="catalog-title">
+            <p class="eyebrow">先明确目的</p>
+            <h2 id="catalog-title">先选目的，再开口</h2>
+            <p>每次只处理一个真实场景，完成 2–4 个目标后进入复盘。</p>
+          </section>
+          <div id="scenario-catalog" class="scenario-catalog" aria-live="polite"></div>
+        </main>
+
+        <section id="answer-panel" class="answer-panel" aria-label="录音与回答" hidden>
+          <div class="answer-panel__status">
+            <span id="answer-state" class="answer-state">轮到你回答</span>
+            <span id="recording-time" class="recording-time" aria-live="polite">最长 45 秒</span>
+          </div>
+
+          <div id="transcript-editor" class="transcript-editor" hidden>
+            <label for="transcript-input">识别结果，可修改一次</label>
+            <textarea id="transcript-input" rows="3" maxlength="1000"></textarea>
+            <div class="transcript-actions">
+              <button id="rerecord-button" class="button button--quiet" type="button" aria-label="放弃识别结果并重新录音">重新录音</button>
+              <button id="submit-transcript" class="button button--secondary" type="button" aria-label="提交修改后的英文回答">提交回答</button>
+            </div>
+          </div>
+
+          <div class="answer-actions">
+            <button id="record-button" class="button button--record" type="button" aria-label="开始录音">开始录音</button>
+            <button id="repeat-button" class="button button--quiet" type="button" aria-label="重新播放 AI 当前句">播放本句</button>
+            <button id="slow-button" class="button button--quiet" type="button" aria-label="慢速播放 AI 当前句">慢速播放</button>
+            <button id="hint-button" class="button button--quiet" type="button" aria-label="显示中文和句型提示" aria-expanded="false">需要提示</button>
+            <button id="finish-button" class="button button--quiet" type="button" aria-label="结束并查看复盘">完成练习</button>
+          </div>
+
+          <div id="hint-panel" class="hint-panel" hidden>
+            <div>
+              <span class="hint-label">中文</span>
+              <p id="translation-text"></p>
+            </div>
+            <div>
+              <span class="hint-label">可用表达</span>
+              <p id="phrase-text">先说清楚你的目的，再补充一个具体信息。</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="review" class="review" aria-label="会话复盘" hidden>
+          <div class="review__heading">
+            <p class="eyebrow">任务复盘</p>
+            <h2>这次对话留下什么</h2>
+            <p>只保留下一次最值得继续练的内容。</p>
+          </div>
+          <div id="review-content" class="review-grid"></div>
+          <div class="review-actions">
+            <button id="restart-button" class="button button--secondary" type="button" aria-label="重新练习当前场景">再练一次</button>
+            <a class="button button--primary" href="./today.html">回到今日训练</a>
+          </div>
+        </section>
+
+        <section id="error-panel" class="error-panel" role="alert" hidden>
+          <h2>这一步没有完成</h2>
+          <p id="error-message">请检查网络或麦克风，然后重试。</p>
+          <div class="error-actions">
+            <button id="retry-button" class="button button--secondary" type="button">重试当前步骤</button>
+            <a class="button button--quiet" href="./today.html">返回今日训练</a>
+          </div>
+        </section>
+
+        <p id="live-status" class="sr-only" aria-live="assertive"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/auth-manager.js"></script>
+  <script src="./js/ai-roleplay/state-machine.js"></script>
+  <script src="./js/ai-roleplay/api.js"></script>
+  <script src="./js/ai-roleplay/recorder.js"></script>
+  <script src="./js/ai-roleplay/main.js"></script>
+</body>
+</html>

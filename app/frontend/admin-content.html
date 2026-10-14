@@ -1,0 +1,2189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - 内容管理</title>
+  <link rel="stylesheet" href="./admin-styles.css?v=20251125">
+  <script src="./admin-common.js?v=20251125"></script>
+  <script src="./global-ui.js?v=20250108"></script>
+  <script src="./video-tag-system.js?v=20251223"></script>
+</head>
+<body>
+  <div class="admin-content">
+    <!-- 统计卡片 -->
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">视频总数</span>
+          <div class="admin-stat-icon success">📹</div>
+        </div>
+        <div class="admin-stat-value" id="stat-total-videos">-</div>
+        <div class="admin-stat-change">
+          <span>加载中...</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">文章总数</span>
+          <div class="admin-stat-icon primary">📄</div>
+        </div>
+        <div class="admin-stat-value" id="stat-total-articles">-</div>
+        <div class="admin-stat-change">
+          <span>加载中...</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">播放列表</span>
+          <div class="admin-stat-icon warning">📚</div>
+        </div>
+        <div class="admin-stat-value" id="stat-total-playlists">-</div>
+        <div class="admin-stat-change">
+          <span>加载中...</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">总浏览量</span>
+          <div class="admin-stat-icon primary">👁️</div>
+        </div>
+        <div class="admin-stat-value" id="stat-total-views">-</div>
+        <div class="admin-stat-change">
+          <span>加载中...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 内容管理卡片 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">📹 视频管理</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="admin-btn admin-btn-secondary admin-btn-sm" id="batch-tag-btn" onclick="openBatchTagModal()">
+            🏷️ 批量打全局标签
+          </button>
+          <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="openBatchTagAndCollectionModal()">
+            📚 批量标签+合集
+          </button>
+          <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="openBatchTagModal('student')">
+            🎒 学生模式标签
+          </button>
+          <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="openBatchTagModal('advanced')">
+            💼 进阶模式标签
+          </button>
+          <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="openBatchTranscribeModal()">
+            🎙️ 批量提取字幕
+          </button>
+          <button class="admin-btn admin-btn-secondary admin-btn-sm" id="toggle-sort-mode" onclick="toggleSortMode()">
+            🔀 排序模式
+          </button>
+          <button class="admin-btn admin-btn-success admin-btn-sm" id="save-order-btn" style="display:none;" onclick="saveVideoOrder()">
+            💾 保存排序
+          </button>
+          <button class="admin-btn admin-btn-danger admin-btn-sm" id="cancel-order-btn" style="display:none;" onclick="cancelSortMode()">
+            ✖️ 取消
+          </button>
+          <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="window.location.href='./upload-video.html'">
+            + 添加视频
+          </button>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div id="videos-loading" class="admin-empty-state">
+          <div class="admin-empty-icon">⏳</div>
+          <p class="admin-empty-text">加载视频列表中...</p>
+        </div>
+        <div id="videos-error" class="admin-empty-state" style="display: none;">
+          <div class="admin-empty-icon">⚠️</div>
+          <p class="admin-empty-text">加载失败</p>
+          <p id="error-message" style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.5rem;"></p>
+        </div>
+        <div id="videos-list" style="display: none;">
+          <div id="video-search-bar" style="display:flex; gap:10px; align-items:center; justify-content:space-between; padding: 10px 4px 14px 4px; flex-wrap: wrap;">
+            <div style="display:flex; gap:10px; align-items:center; flex:1; min-width: 320px; flex-wrap: wrap;">
+              <input
+                id="video-search-input"
+                type="text"
+                placeholder="搜索：标题/文件名/上传者/YouTube ID/合集"
+                style="flex:1; min-width: 260px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none;"
+              />
+              <select id="difficulty-filter" onchange="applyAdminVideoSearch()" style="padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; background: white; cursor: pointer;">
+                <option value="">全部等级</option>
+                <option value="beginner">🌱 初级</option>
+                <option value="intermediate">🌿 中级</option>
+                <option value="advanced">🌳 高级</option>
+                <option value="null">⚪ 未设置</option>
+              </select>
+              <select id="status-filter" onchange="applyAdminVideoSearch()" style="padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; background: white; cursor: pointer;">
+                <option value="">全部状态</option>
+                <option value="ready">✅ 就绪</option>
+                <option value="processing">⏳ 处理中</option>
+                <option value="failed">❌ 失败</option>
+              </select>
+              <select id="bilingual-filter" onchange="applyAdminVideoSearch()" style="padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; background: white; cursor: pointer;">
+                <option value="">全部字幕</option>
+                <option value="bilingual">🇨🇳 双语</option>
+                <option value="monolingual">🇬🇧 单语</option>
+              </select>
+              <select id="date-filter" onchange="handleDateFilterChange()" style="padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; background: white; cursor: pointer;">
+                <option value="">全部时间</option>
+                <option value="today">📅 今天</option>
+                <option value="7days">📅 近7天</option>
+                <option value="30days">📅 近30天</option>
+                <option value="90days">📅 近3个月</option>
+                <option value="365days">📅 近1年</option>
+                <option value="custom">📅 自定义日期</option>
+              </select>
+              <div id="custom-date-range" style="display: none; gap: 6px; align-items: center;">
+                <input id="date-from" type="date" onchange="applyAdminVideoSearch()" style="padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; background: white;">
+                <span style="color: #64748b;">至</span>
+                <input id="date-to" type="date" onchange="applyAdminVideoSearch()" style="padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 10px; outline: none; background: white;">
+              </div>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="clearVideoSearch()">清空搜索</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="selectAllSearchResults()">全选当前结果</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="clearSelection()">清空选择</button>
+            </div>
+            <div id="selection-summary" style="font-size: 12px; color:#64748b; white-space:nowrap;"></div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th id="drag-handle-header" style="display:none; width: 40px;">⋮⋮</th>
+                  <th id="order-number-header" style="display:none; width: 60px;">序号</th>
+                  <th style="width: 42px;">
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                      <span>选择</span>
+                      <input id="select-all-checkbox" type="checkbox" title="全选/全不选当前列表" style="width:18px;height:18px;cursor:pointer;">
+                    </div>
+                  </th>
+                  <th>ID</th>
+                  <th>缩略图</th>
+                  <th>标题</th>
+                  <th>等级</th>
+                  <th>时长</th>
+                  <th>文件大小</th>
+                  <th>上传者</th>
+                  <th>状态</th>
+                  <th>双语</th>
+                  <th>会员专属</th>
+                  <th>上传时间</th>
+                  <th>热度</th>
+                  <th style="min-width: 220px;">标签</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="videos-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 快速操作 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🚀 计划功能</h2>
+      </div>
+      <div class="admin-card-body">
+        <div style="display: grid; gap: 1rem;">
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">📹 视频资源管理</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              管理所有视频资源，包括上传、编辑、删除、分类等功能
+            </p>
+          </div>
+
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">📄 文章/PDF 管理</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              管理文章和 PDF 资源，支持在线编辑和预览
+            </p>
+          </div>
+
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">📚 播放列表管理</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              创建和管理播放列表，组织学习内容
+            </p>
+          </div>
+
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">🏷️ 标签和分类</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              管理内容标签和分类，方便用户浏览和搜索
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 标签选择模态框 -->
+  <div id="tag-select-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; padding:24px; max-width:480px; width:90%; max-height:80vh; overflow:hidden; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:1.1rem;">🏷️ 选择标签</h3>
+        <button onclick="closeTagSelectModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#64748b;">&times;</button>
+      </div>
+      <div id="tag-select-current" style="margin-bottom:12px; padding:8px; background:#f8fafc; border-radius:8px; font-size:13px; color:#64748b;">
+        当前标签：<span id="tag-select-current-tags">无</span>
+      </div>
+      <div style="flex:1; overflow-y:auto; margin-bottom:16px;">
+        <div id="tag-select-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="admin-btn admin-btn-secondary" onclick="closeTagSelectModal()">取消</button>
+        <button class="admin-btn admin-btn-primary" onclick="confirmTagSelection()">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量「主标签 + 合集」模态框 -->
+  <div id="batch-tag-collection-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1001; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; padding:24px; max-width:560px; width:92%; max-height:82vh; overflow:hidden; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:1.1rem;">📚 批量标签 + 合集（二级标签）</h3>
+        <button onclick="closeBatchTagCollectionModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#64748b;">&times;</button>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <div style="font-size:13px; color:#64748b;">
+          已选择视频：<span id="batch-selected-count">0</span>
+        </div>
+        <input id="batch-tag-search" type="text" placeholder="搜索主标签（例如：课程/动画）"
+          style="flex:1; min-width: 220px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:10px; outline:none;">
+      </div>
+      <div style="margin-bottom:12px; padding:10px 12px; background:#f8fafc; border-radius:10px; font-size:13px; color:#475569;">
+        主标签：<span id="batch-primary-tag-name" style="font-weight:600;">未选择</span>
+      </div>
+      <div style="flex:1; overflow-y:auto; margin-bottom:14px;">
+        <div id="batch-primary-tag-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-weight:600; color:#334155; margin-bottom:8px; font-size:14px;">合集（二级标签）</label>
+        <input id="batch-collection-name" type="text" maxlength="120" placeholder="例如：RAZ分级阅读 / 小猪佩奇" list="batch-collection-datalist"
+          style="width:100%; padding:12px; border:1px solid #e2e8f0; border-radius:10px; outline:none;">
+        <datalist id="batch-collection-datalist"></datalist>
+        <div id="batch-collection-suggestions" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px;"></div>
+        <div style="margin-top:8px; font-size:12px; color:#64748b;">会写入视频的 <code>collection_name</code> 字段，用于「课程 → RAZ分级阅读」这类二级归类。</div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="admin-btn admin-btn-secondary" onclick="closeBatchTagCollectionModal()">取消</button>
+        <button class="admin-btn admin-btn-danger" id="batch-tag-collection-clear-btn" onclick="confirmBatchClearCollection()">清空合集</button>
+        <button class="admin-btn admin-btn-primary" id="batch-tag-collection-apply-btn" onclick="confirmBatchTagCollection()">应用到选中视频</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 初始化页面
+    initAdminPage('内容管理');
+    // 支持通过全局 API_BASE 指定后端域名（用于从同源接口获取缩略图）
+    if (typeof window !== 'undefined' && window.API_BASE) {
+      AdminAPI.baseURL = window.API_BASE;
+    }
+
+    let videosData = [];
+    let isSortMode = false;
+    let draggedElement = null;
+    let selectedVideoIds = new Set();
+    let globalTagsCache = null;
+    let duplicateIds = new Set();
+    let currentFilteredVideos = [];
+    let currentSearchQuery = '';
+    const videoTagIdCache = new Map(); // videoId -> { globalIds: string[], userIds: string[] }
+    let batchPrimaryTagId = null;
+
+    function normalizeCollectionName(value) {
+      try {
+        const name = String(value || '').trim();
+        return name ? name.slice(0, 120) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function normalizeText(s) {
+      try { return String(s || '').toLowerCase(); } catch (_) { return ''; }
+    }
+
+    function getVideoSearchText(video) {
+      const tagNames = (() => {
+        const fromField = Array.isArray(video?.tags) ? video.tags : [];
+        const fromCache = (() => {
+          try {
+            const cached = videoTagIdCache.get(String(video?.id));
+            if (!cached) return [];
+            const ids = (cached.global_tag_ids || []).map(String).filter(id => /^\d+$/.test(id));
+            const map = new Map((globalTagsCache || []).map(t => [String(t.id), String(t.name || '')]));
+            return ids.map(id => map.get(id)).filter(Boolean);
+          } catch (_) {
+            return [];
+          }
+        })();
+        return Array.from(new Set([...fromField, ...fromCache].map(s => String(s || '').trim()).filter(Boolean)));
+      })();
+
+      const parts = [
+        video?.id,
+        video?.title,
+        video?.original_filename,
+        video?.youtube_video_id,
+        video?.video_path,
+        video?.username,
+        video?.email,
+        video?.display_name,
+        video?.collection_name,
+        ...(tagNames.length ? [`tags:${tagNames.join('|')}`] : [])
+      ];
+      return normalizeText(parts.filter(Boolean).join(' | '));
+    }
+
+    function filterVideosByQuery(videos, query, difficultyFilter = '', statusFilter = '', bilingualFilter = '', dateFilter = '') {
+      let result = Array.isArray(videos) ? videos : [];
+
+      // Filter by difficulty level
+      if (difficultyFilter) {
+        if (difficultyFilter === 'null') {
+          result = result.filter(v => !v.difficulty_level);
+        } else {
+          result = result.filter(v => v.difficulty_level === difficultyFilter);
+        }
+      }
+
+      // Filter by status
+      if (statusFilter) {
+        result = result.filter(v => v.status === statusFilter);
+      }
+
+      // Filter by bilingual/monolingual
+      if (bilingualFilter) {
+        if (bilingualFilter === 'bilingual') {
+          result = result.filter(v => v.has_chinese_translation === true);
+        } else if (bilingualFilter === 'monolingual') {
+          result = result.filter(v => !v.has_chinese_translation);
+        }
+      }
+
+      // Filter by upload date
+      if (dateFilter) {
+        const now = new Date();
+        let cutoffDate = null;
+        let endDate = null;
+
+        switch (dateFilter) {
+          case 'today':
+            cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            break;
+          case '7days':
+            cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30days':
+            cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case '90days':
+            cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+          case '365days':
+            cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+            break;
+          case 'custom':
+            const fromInput = document.getElementById('date-from');
+            const toInput = document.getElementById('date-to');
+            if (fromInput && fromInput.value) {
+              cutoffDate = new Date(fromInput.value);
+              cutoffDate.setHours(0, 0, 0, 0);
+            }
+            if (toInput && toInput.value) {
+              endDate = new Date(toInput.value);
+              endDate.setHours(23, 59, 59, 999);
+            }
+            break;
+        }
+
+        if (cutoffDate || endDate) {
+          result = result.filter(v => {
+            const uploadDate = v.created_at ? new Date(v.created_at) : null;
+            if (!uploadDate) return false;
+            if (cutoffDate && uploadDate < cutoffDate) return false;
+            if (endDate && uploadDate > endDate) return false;
+            return true;
+          });
+        }
+      }
+
+      // Filter by search query
+      const q = normalizeText(query).trim();
+      if (!q) return result;
+      const terms = q.split(/\s+/).filter(Boolean);
+      return result.filter(v => {
+        const hay = getVideoSearchText(v);
+        return terms.every(t => hay.includes(t));
+      });
+    }
+
+    function updateSelectionSummary() {
+      const el = document.getElementById('selection-summary');
+      if (!el) return;
+      const selected = selectedVideoIds.size;
+      const visible = Array.isArray(currentFilteredVideos) ? currentFilteredVideos.length : 0;
+      const total = Array.isArray(videosData) ? videosData.length : 0;
+      const q = (currentSearchQuery || '').trim();
+      el.textContent = `已选 ${selected}｜当前 ${visible}｜总计 ${total}${q ? `｜搜索：${q}` : ''}`;
+    }
+
+    function applyAdminVideoSearch() {
+      const input = document.getElementById('video-search-input');
+      const difficultySelect = document.getElementById('difficulty-filter');
+      const statusSelect = document.getElementById('status-filter');
+      const bilingualSelect = document.getElementById('bilingual-filter');
+      const dateSelect = document.getElementById('date-filter');
+      currentSearchQuery = input ? String(input.value || '') : '';
+      const difficultyFilter = difficultySelect ? difficultySelect.value : '';
+      const statusFilter = statusSelect ? statusSelect.value : '';
+      const bilingualFilter = bilingualSelect ? bilingualSelect.value : '';
+      const dateFilter = dateSelect ? dateSelect.value : '';
+      currentFilteredVideos = filterVideosByQuery(videosData, currentSearchQuery, difficultyFilter, statusFilter, bilingualFilter, dateFilter);
+      renderVideos(currentFilteredVideos);
+      updateSelectionSummary();
+    }
+
+    function debounce(fn, delayMs = 200) {
+      let t = null;
+      return (...args) => {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => fn(...args), delayMs);
+      };
+    }
+
+    function handleDateFilterChange() {
+      const dateSelect = document.getElementById('date-filter');
+      const customDateRange = document.getElementById('custom-date-range');
+      if (dateSelect && customDateRange) {
+        if (dateSelect.value === 'custom') {
+          customDateRange.style.display = 'flex';
+        } else {
+          customDateRange.style.display = 'none';
+        }
+      }
+      applyAdminVideoSearch();
+    }
+
+    function clearVideoSearch() {
+      const input = document.getElementById('video-search-input');
+      const difficultySelect = document.getElementById('difficulty-filter');
+      const statusSelect = document.getElementById('status-filter');
+      const bilingualSelect = document.getElementById('bilingual-filter');
+      const dateSelect = document.getElementById('date-filter');
+      const dateFrom = document.getElementById('date-from');
+      const dateTo = document.getElementById('date-to');
+      const customDateRange = document.getElementById('custom-date-range');
+      if (input) input.value = '';
+      if (difficultySelect) difficultySelect.value = '';
+      if (statusSelect) statusSelect.value = '';
+      if (bilingualSelect) bilingualSelect.value = '';
+      if (dateSelect) dateSelect.value = '';
+      if (dateFrom) dateFrom.value = '';
+      if (dateTo) dateTo.value = '';
+      if (customDateRange) customDateRange.style.display = 'none';
+      applyAdminVideoSearch();
+    }
+
+    function clearSelection() {
+      selectedVideoIds = new Set();
+      // Update visible checkboxes without rerender
+      document.querySelectorAll('#videos-tbody input[type="checkbox"][data-video-id]').forEach(cb => {
+        cb.checked = false;
+      });
+      const headerCb = document.getElementById('select-all-checkbox');
+      if (headerCb) headerCb.checked = false;
+      updateSelectionSummary();
+    }
+
+    function selectAllSearchResults() {
+      const list = Array.isArray(currentFilteredVideos) ? currentFilteredVideos : [];
+      list.forEach(v => { if (v && v.id) selectedVideoIds.add(Number(v.id)); });
+      document.querySelectorAll('#videos-tbody input[type="checkbox"][data-video-id]').forEach(cb => {
+        cb.checked = true;
+      });
+      const headerCb = document.getElementById('select-all-checkbox');
+      if (headerCb) headerCb.checked = true;
+      updateSelectionSummary();
+    }
+
+    function formatTitle(video) {
+      const safeTitle = (video && video.title && String(video.title).trim()) || '';
+      if (safeTitle) return AdminUtils.escapeHtml(safeTitle);
+      const filename = (video && video.original_filename) || '';
+      if (filename) return AdminUtils.escapeHtml(filename);
+      const ytId = (video && video.youtube_video_id) || '';
+      if (ytId) return `YouTube ${AdminUtils.escapeHtml(ytId)}`;
+      return `未命名视频 #${video && video.id ? AdminUtils.escapeHtml(String(video.id)) : '-'}`;
+    }
+
+    async function fetchGlobalTags(refresh = false) {
+      if (globalTagsCache && !refresh) return globalTagsCache;
+      console.log('[Admin BatchTag] Fetching global tags...');
+      const res = await AdminAPI.get('/tags');
+      if (res && res.global_tags) {
+        globalTagsCache = res.global_tags;
+        console.log('[Admin BatchTag] Loaded global tags:', globalTagsCache);
+        return globalTagsCache;
+      }
+      console.warn('[Admin BatchTag] No global tags returned from /tags', res);
+      return [];
+    }
+
+    async function openBatchTagModal(preset = null) {
+      console.log('[Admin BatchTag] Selected videos:', Array.from(selectedVideoIds));
+      if (!selectedVideoIds.size) {
+        alert('请先勾选要打标签的视频');
+        return;
+      }
+      const tags = await fetchGlobalTags();
+      if (!tags.length) {
+        alert('未获取到全局标签，请稍后重试');
+        return;
+      }
+      const options = tags.map(t => `${t.id}:${t.name}`).join('\\n');
+      const presetStudent = ['儿童', '动画', '校园', '亲子'];
+      const presetAdvanced = ['职场', '商务', '邮件', '会议'];
+      const presetInput = preset === 'student'
+        ? presetStudent.join(', ')
+        : preset === 'advanced'
+          ? presetAdvanced.join(', ')
+          : '';
+      const hint = preset
+        ? `已为你填入推荐标签，可按需增删。\\n\\n`
+        : `快捷：学生=儿童,动画,校园,亲子 | 进阶=职场,商务,邮件,会议\\n\\n`;
+      const input = prompt(`${hint}选择要应用的全局标签（输入ID或名称，逗号分隔）\\n${options}`, presetInput);
+      console.log('[Admin BatchTag] User input:', input);
+      if (input == null) { console.warn('[Admin BatchTag] 操作取消'); return; }
+
+      const tokens = input.split(',').map(s => s.trim()).filter(Boolean);
+      const resolvedIds = [];
+      const unresolved = [];
+      const toCreateNames = [];
+      const allNames = tags.map(t => (t.name || '').trim().toLowerCase());
+      console.log('[Admin BatchTag] Available tag names:', allNames);
+      console.log('[Admin BatchTag] Tokens:', tokens);
+      tokens.forEach(tok => {
+        if (/^\\d+$/.test(tok)) {
+          resolvedIds.push(Number(tok));
+          return;
+        }
+        const normTok = tok.toLowerCase();
+        const found = tags.find(t => ((t.name || '').trim().toLowerCase()) === normTok);
+        if (found) {
+          resolvedIds.push(Number(found.id));
+        } else {
+          unresolved.push(tok);
+          toCreateNames.push(tok);
+        }
+      });
+
+      // Create missing tags on demand (batch tagging should be fast)
+      if (toCreateNames.length) {
+        const ok = confirm(`以下标签不存在，是否自动创建为全局标签？\\n\\n${toCreateNames.join(', ')}\\n\\n（建议：学生=儿童/动画/校园，进阶=职场/商务/邮件）`);
+        if (ok) {
+          for (const name of toCreateNames) {
+            try {
+              const created = await AdminAPI.post('/tags', { name });
+              if (created && created.tag && created.tag.id) {
+                tags.push(created.tag);
+                resolvedIds.push(Number(created.tag.id));
+              }
+            } catch (e) {
+              console.warn('[Admin BatchTag] Failed to create tag:', name, e);
+            }
+          }
+          globalTagsCache = tags;
+        }
+      }
+
+      const uniqueIds = Array.from(new Set(resolvedIds.filter(n => Number.isFinite(n))));
+      if (!uniqueIds.length) {
+        alert('未选择有效标签，请输入ID或标签名称');
+        console.warn('[Admin BatchTag] 无有效标签，输入：', input, '解析ID：', resolvedIds, '未识别：', unresolved);
+        return;
+      }
+      if (unresolved.length) {
+        console.warn('[Admin BatchTag] 未识别的标签名称:', unresolved);
+      }
+      console.log('[Admin BatchTag] Parsed tag IDs:', uniqueIds);
+      const idToName = {};
+      tags.forEach(t => { idToName[String(t.id)] = t.name; });
+      const labels = uniqueIds.map(id => `${id}:${idToName[String(id)] || '?'}`).join(', ');
+      const confirmMsg = `将全局标签 [${labels}] 应用到 ${selectedVideoIds.size} 个视频，确认吗？`;
+      if (!confirm(confirmMsg)) return;
+      try {
+        console.log('[Admin BatchTag] Applying tags', uniqueIds, 'to videos', Array.from(selectedVideoIds));
+        for (const vid of Array.from(selectedVideoIds)) {
+          console.log('[Admin BatchTag] Posting tags to video', vid);
+          const resp = await AdminAPI.post(`/videos/${vid}/tags`, { global_tag_ids: uniqueIds, user_tag_ids: [] });
+          console.log('[Admin BatchTag] Response for video', vid, resp);
+        }
+        alert('批量打标签完成');
+      } catch (e) {
+        console.error('批量打标签失败:', e);
+        alert('批量打标签失败，请稍后重试');
+      }
+    }
+
+    async function ensureGlobalTagByName(name, fallbackIcon = '🏷️', fallbackColor = '#64748b') {
+      const tags = await fetchGlobalTags(true);
+      const norm = String(name || '').trim().toLowerCase();
+      const found = tags.find(t => ((t.name || '').trim().toLowerCase()) === norm);
+      if (found && found.id) return Number(found.id);
+      try {
+        const created = await AdminAPI.post('/tags', { name: String(name || '').trim(), icon: fallbackIcon, color: fallbackColor });
+        if (created && created.tag && created.tag.id) {
+          globalTagsCache = [...tags, created.tag];
+          return Number(created.tag.id);
+        }
+      } catch (e) {
+        console.warn('[Admin] Failed to create global tag:', name, e);
+      }
+      // Refresh and retry lookup
+      const refreshed = await fetchGlobalTags(true);
+      const again = refreshed.find(t => ((t.name || '').trim().toLowerCase()) === norm);
+      return again && again.id ? Number(again.id) : null;
+    }
+
+    async function openBatchTagAndCollectionModal(defaultTagName = '课程') {
+      if (!selectedVideoIds.size) {
+        alert('请先勾选要操作的视频');
+        return;
+      }
+      await fetchGlobalTags(true);
+      batchPrimaryTagId = null;
+      const tags = globalTagsCache || [];
+      const defaultTag = tags.find(t => String(t.name || '') === String(defaultTagName));
+      if (defaultTag?.id) batchPrimaryTagId = Number(defaultTag.id);
+
+      const modal = document.getElementById('batch-tag-collection-modal');
+      const countEl = document.getElementById('batch-selected-count');
+      const searchEl = document.getElementById('batch-tag-search');
+      const collectionEl = document.getElementById('batch-collection-name');
+      if (countEl) countEl.textContent = String(selectedVideoIds.size);
+      if (searchEl) searchEl.value = '';
+      if (collectionEl) collectionEl.value = (collectionEl.value || 'RAZ分级阅读');
+      renderBatchPrimaryTagList();
+      updateBatchPrimaryTagLabel();
+      prefetchVideoTagIdsForCollections().then(() => updateBatchCollectionSuggestions()).catch(() => updateBatchCollectionSuggestions());
+      if (modal) modal.style.display = 'flex';
+      // Focus for fast operation
+      try { searchEl?.focus(); } catch (_) {}
+    }
+
+    // Backward-compatible alias (older button/action references)
+    async function openBatchCourseCollectionModal() {
+      return openBatchTagAndCollectionModal('课程');
+    }
+
+    function closeBatchTagCollectionModal() {
+      const modal = document.getElementById('batch-tag-collection-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+      }
+    }
+
+    function updateBatchPrimaryTagLabel() {
+      const el = document.getElementById('batch-primary-tag-name');
+      if (!el) return;
+      const tags = globalTagsCache || [];
+      const t = tags.find(x => String(x.id) === String(batchPrimaryTagId));
+      el.textContent = t?.name || '未选择';
+    }
+
+	    function updateBatchCollectionSuggestions() {
+	      const datalist = document.getElementById('batch-collection-datalist');
+	      const chips = document.getElementById('batch-collection-suggestions');
+	      const input = document.getElementById('batch-collection-name');
+	      if (!datalist || !chips) return;
+
+      const tags = globalTagsCache || [];
+      const primaryName = tags.find(x => String(x.id) === String(batchPrimaryTagId))?.name || '';
+      const primaryIdStr = String(batchPrimaryTagId || '');
+      const q = String(input?.value || '').trim().toLowerCase();
+
+      const hasPrimaryTag = (v) => {
+        try {
+          if (!primaryIdStr || !/^\d+$/.test(primaryIdStr)) return false;
+          const cached = videoTagIdCache.get(String(v?.id));
+          if (cached && Array.isArray(cached.global_tag_ids)) {
+            return cached.global_tag_ids.map(String).includes(primaryIdStr);
+          }
+          const names = Array.isArray(v?.tags) ? v.tags.map(s => String(s || '').trim()) : [];
+          if (primaryName && names.includes(primaryName)) return true;
+          return false;
+        } catch (_) {
+          return false;
+        }
+      };
+
+	      const counts = new Map();
+	      (videosData || []).forEach(v => {
+	        try {
+	          if (!primaryIdStr || !/^\d+$/.test(primaryIdStr)) return;
+	          if (!hasPrimaryTag(v)) return;
+	          const cname = String(v?.collection_name || '').trim();
+	          if (!cname) return;
+	          counts.set(cname, (counts.get(cname) || 0) + 1);
+	        } catch (_) {}
+	      });
+
+	      let collections = Array.from(counts.entries())
+	        .map(([name, count]) => ({ name, count }))
+	        .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name, 'zh-Hans-CN'));
+	      let hintPrefix = '';
+
+	      // Fallback: if we can't derive "主标签下的合集"（例如标签未同步），至少展示全局已有合集供选择
+	      if (!collections.length) {
+	        const allCounts = new Map();
+	        (videosData || []).forEach(v => {
+	          try {
+	            const cname = String(v?.collection_name || '').trim();
+	            if (!cname) return;
+	            allCounts.set(cname, (allCounts.get(cname) || 0) + 1);
+	          } catch (_) {}
+	        });
+	        collections = Array.from(allCounts.entries())
+	          .map(([name, count]) => ({ name, count }))
+	          .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name, 'zh-Hans-CN'));
+	        if (collections.length) hintPrefix = '未找到该主标签下的合集，以下为所有已有合集：';
+	      }
+
+	      datalist.innerHTML = collections
+	        .filter(c => !q || c.name.toLowerCase().includes(q))
+	        .slice(0, 80)
+	        .map(c => `<option value="${AdminUtils.escapeHtml(c.name)}"></option>`)
+	        .join('');
+
+	      chips.innerHTML = '';
+	      if (!collections.length) {
+	        chips.innerHTML = `<div style="font-size:12px; color:#94a3b8;">暂无已有合集，可直接输入新合集名称</div>`;
+	        return;
+	      }
+	      if (hintPrefix) {
+	        const hint = document.createElement('div');
+	        hint.textContent = hintPrefix;
+	        hint.style.fontSize = '12px';
+	        hint.style.color = '#94a3b8';
+	        hint.style.width = '100%';
+	        chips.appendChild(hint);
+	      }
+
+	      collections
+	        .filter(c => !q || c.name.toLowerCase().includes(q))
+	        .slice(0, 16)
+	        .forEach(c => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+          btn.style.padding = '6px 10px';
+          btn.style.borderRadius = '999px';
+          btn.style.display = 'inline-flex';
+          btn.style.alignItems = 'center';
+          btn.style.gap = '6px';
+          btn.innerHTML = `<span>📚</span><span>${AdminUtils.escapeHtml(c.name)}</span><span style="opacity:0.7;">(${c.count})</span>`;
+          btn.addEventListener('click', () => {
+            if (input) input.value = c.name;
+            updateBatchCollectionSuggestions();
+          });
+          chips.appendChild(btn);
+        });
+    }
+
+    let __batchCollectionPrefetching = false;
+    async function prefetchVideoTagIdsForCollections(maxToFetch = 80) {
+      if (__batchCollectionPrefetching) return;
+      if (!Number.isFinite(Number(batchPrimaryTagId))) return;
+      const primaryIdStr = String(batchPrimaryTagId);
+      if (!/^\d+$/.test(primaryIdStr)) return;
+      const ids = (videosData || [])
+        .filter(v => v && v.id && String(v.collection_name || '').trim())
+        .map(v => String(v.id))
+        .filter(id => !videoTagIdCache.has(id))
+        .slice(0, maxToFetch);
+      if (!ids.length) return;
+      __batchCollectionPrefetching = true;
+      try {
+        const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size));
+        const batches = chunk(ids, 10);
+        for (const batch of batches) {
+          await Promise.all(batch.map(async (vid) => {
+            try {
+              const data = await AdminAPI.get(`/videos/${vid}/tags`);
+              videoTagIdCache.set(String(vid), {
+                global_tag_ids: (data.global_tag_ids || []).map(String),
+                user_tag_ids: (data.user_tag_ids || []).map(String)
+              });
+            } catch (_) {}
+          }));
+        }
+      } finally {
+        __batchCollectionPrefetching = false;
+      }
+    }
+
+    function renderBatchPrimaryTagList() {
+      const container = document.getElementById('batch-primary-tag-list');
+      if (!container) return;
+      const q = normalizeText(document.getElementById('batch-tag-search')?.value || '').trim();
+      const tags = (globalTagsCache || []).slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hans-CN'));
+      const filtered = q ? tags.filter(t => normalizeText(t?.name).includes(q) || normalizeText(t?.id).includes(q)) : tags;
+
+      container.innerHTML = filtered.map(tag => {
+        const active = String(tag.id) === String(batchPrimaryTagId);
+        return `
+          <div class="tag-select-item" data-tag-id="${tag.id}"
+               onclick="selectBatchPrimaryTag('${tag.id}')"
+               style="
+                 display:inline-flex;
+                 align-items:center;
+                 gap:6px;
+                 padding:8px 14px;
+                 border-radius:20px;
+                 cursor:pointer;
+                 transition:all 0.2s;
+                 font-size:13px;
+                 ${active
+                   ? 'background: linear-gradient(135deg, #0ea5e9, #2dd4bf); color: white; box-shadow: 0 2px 8px rgba(99,102,241,0.3);'
+                   : 'background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;'}
+               ">
+            <span style="font-size: 16px;">${tag.icon || '🏷️'}</span>
+            <span>${AdminUtils.escapeHtml(tag.name)}</span>
+            <span style="opacity:0.7; font-size:11px;">#${AdminUtils.escapeHtml(String(tag.id))}</span>
+            ${active ? '<span style="margin-left:4px;">✓</span>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectBatchPrimaryTag(tagId) {
+      const id = Number(tagId);
+      if (!Number.isFinite(id)) return;
+      batchPrimaryTagId = id;
+      updateBatchPrimaryTagLabel();
+      renderBatchPrimaryTagList();
+      // Prime caches so collection suggestions can be derived even if /admin/videos didn't include tag names
+      prefetchVideoTagIdsForCollections().then(() => updateBatchCollectionSuggestions()).catch(() => updateBatchCollectionSuggestions());
+    }
+
+	    async function confirmBatchTagCollection() {
+	      if (!selectedVideoIds.size) return closeBatchTagCollectionModal();
+	      if (!Number.isFinite(Number(batchPrimaryTagId))) {
+	        alert('请先选择主标签');
+	        return;
+	      }
+      const collectionEl = document.getElementById('batch-collection-name');
+      const collection = normalizeCollectionName(collectionEl?.value || '');
+      if (!collection) {
+        alert('请填写合集（二级标签）名称');
+        collectionEl?.focus();
+        return;
+      }
+
+      const ids = Array.from(selectedVideoIds);
+      const tags = globalTagsCache || [];
+      const primaryName = tags.find(x => String(x.id) === String(batchPrimaryTagId))?.name || String(batchPrimaryTagId);
+      const confirmMsg = `将「${primaryName}」+ 合集「${collection}」应用到 ${ids.length} 个视频？\n\n会追加标签，不覆盖原有标签。`;
+      if (!confirm(confirmMsg)) return;
+
+	      if (window.__adminBatchTagCollectionRunning) return;
+	      window.__adminBatchTagCollectionRunning = true;
+	      const applyBtn = document.getElementById('batch-tag-collection-apply-btn');
+	      const clearBtn = document.getElementById('batch-tag-collection-clear-btn');
+	      const prevBtnText = applyBtn ? applyBtn.textContent : '';
+	      const prevClearText = clearBtn ? clearBtn.textContent : '';
+	      if (applyBtn) {
+	        applyBtn.disabled = true;
+	        applyBtn.textContent = '处理中...';
+	      }
+	      if (clearBtn) clearBtn.disabled = true;
+
+	      let hadAnySuccess = false;
+	      try {
+	        for (const vid of ids) {
+          // 1) Merge tags (append primary tag without removing existing)
+          try {
+            const cur = await AdminAPI.get(`/videos/${vid}/tags`);
+            const nextGlobals = Array.from(new Set([...(cur.global_tag_ids || []).map(Number).filter(n => Number.isFinite(n)), Number(batchPrimaryTagId)]));
+            const nextUsers = Array.from(new Set([...(cur.user_tag_ids || []).map(Number).filter(n => Number.isFinite(n))]));
+	            await AdminAPI.post(`/videos/${vid}/tags`, { global_tag_ids: nextGlobals, user_tag_ids: nextUsers });
+            // Update cache so UI doesn't flicker back to old tags
+            videoTagIdCache.set(String(vid), { global_tag_ids: nextGlobals.map(String), user_tag_ids: nextUsers.map(String) });
+            try {
+              const map = new Map((globalTagsCache || []).map(t => [String(t.id), String(t.name || '')]));
+              const nextNames = nextGlobals.map(id => map.get(String(id))).filter(Boolean);
+              const idx = videosData.findIndex(v => String(v.id) === String(vid));
+              if (idx >= 0) videosData[idx].tags = nextNames;
+            } catch (_) {}
+	            hadAnySuccess = true;
+	          } catch (e) {
+	            console.warn('[Admin] Failed to merge tags for video', vid, e);
+	          }
+
+          // 2) Set collection name
+	          try {
+	            await AdminAPI.patch(`/video-resources/${vid}`, { collection_name: collection });
+            const idx = videosData.findIndex(v => String(v.id) === String(vid));
+            if (idx >= 0) videosData[idx].collection_name = collection;
+            const cell = document.getElementById(`tags-${vid}`);
+            if (cell) cell.dataset.collectionName = collection || '';
+	            hadAnySuccess = true;
+	          } catch (e) {
+	            console.warn('[Admin] Failed to set collection_name for video', vid, e);
+	          }
+
+	          loadVideoTags(vid);
+	        }
+	        AdminUtils.showToast(hadAnySuccess ? '批量标签+合集已应用' : '操作完成（部分可能失败）', hadAnySuccess ? 'success' : 'warning');
+	        // Close after UI toast queue flush
+	        setTimeout(() => closeBatchTagCollectionModal(), 50);
+	      } catch (e) {
+	        console.error('[Admin] Batch tag+collection failed:', e);
+	        AdminUtils.showToast('批量操作失败', 'danger');
+	      } finally {
+	        window.__adminBatchTagCollectionRunning = false;
+	        if (applyBtn) {
+	          applyBtn.disabled = false;
+	          applyBtn.textContent = prevBtnText || '应用到选中视频';
+	        }
+	        if (clearBtn) {
+	          clearBtn.disabled = false;
+	          clearBtn.textContent = prevClearText || '清空合集';
+	        }
+	        // Safety: ensure modal can close even if earlier code threw
+	        if (hadAnySuccess) {
+	          try { setTimeout(() => closeBatchTagCollectionModal(), 50); } catch (_) {}
+	        }
+	      }
+	    }
+
+    function formatFileSize(bytes, fallback) {
+      const size = Number(bytes);
+      if (!Number.isFinite(size) || size <= 0) return fallback || '-';
+      const mb = size / (1024 * 1024);
+      if (mb >= 1024) return (mb / 1024).toFixed(2) + ' GB';
+      return mb.toFixed(2) + ' MB';
+    }
+
+    function resolveThumbnail(video) {
+      const base = (AdminAPI && AdminAPI.baseURL) || '';
+      const normalizeUrl = (path) => {
+        if (!path) return null;
+        if (/^https?:\/\//i.test(path)) return path;
+        const trimmedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+        const trimmedPath = path.startsWith('/') ? path : `/${path}`;
+        return `${trimmedBase}${trimmedPath}`;
+      };
+
+      // 尝试提取 YouTube video ID
+      let youtubeVideoId = video.youtube_video_id;
+
+      // 如果没有 youtube_video_id，尝试从 youtube_url 提取
+      if (!youtubeVideoId && video.youtube_url) {
+        const url = video.youtube_url;
+        const patterns = [
+          /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+          /^([a-zA-Z0-9_-]{11})$/
+        ];
+
+        for (const pattern of patterns) {
+          const match = url.match(pattern);
+          if (match && match[1]) {
+            youtubeVideoId = match[1];
+            break;
+          }
+        }
+      }
+
+      // 候选按可靠性排序，逐个交给 <img> 试；前一个 404 就自动走下一个。
+      // 单靠 thumbnail_path 的话，本地封面文件一丢就只能显示"暂无封面"，
+      // 哪怕这是个 YouTube 视频、CDN 上明明有图。
+      const candidates = [];
+      if (video.thumbnail_path) candidates.push(normalizeUrl(video.thumbnail_path));
+      if (youtubeVideoId) {
+        candidates.push(`https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`);
+        candidates.push(`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`);
+      }
+      return candidates.filter(Boolean);
+    }
+
+    // 格式化时长
+    function formatDuration(seconds) {
+      if (!Number.isFinite(seconds) || seconds <= 0) return '-';
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+
+      if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+      return `${minutes}:${String(secs).padStart(2, '0')}`;
+    }
+
+    // 格式化状态
+    function formatStatus(video) {
+      const status = video?.status;
+      const reason = video?.failure_reason || '';
+      const statusMap = {
+        'ready': '<span class="admin-badge admin-badge-success">就绪</span>',
+        'processing': '<span class="admin-badge admin-badge-warning">处理中</span>',
+        'failed': `<span class="admin-badge admin-badge-danger" title="${AdminUtils.escapeHtml(reason)}">失败</span>`,
+      };
+      return statusMap[status] || `<span class="admin-badge admin-badge-secondary">${status}</span>`;
+    }
+
+    // 加载视频列表
+    async function loadVideos() {
+      try {
+        const data = await AdminAPI.get('/admin/videos');
+        videosData = data.items || [];
+        duplicateIds = computeDuplicateIds(videosData);
+
+        // 更新统计数据
+        document.getElementById('stat-total-videos').textContent = videosData.length;
+
+        // 如果没有视频
+        if (videosData.length === 0) {
+          document.getElementById('videos-loading').style.display = 'none';
+          document.getElementById('videos-error').style.display = 'block';
+          document.getElementById('error-message').textContent = '暂无视频';
+          return;
+        }
+
+        // 渲染视频列表（支持搜索过滤）
+        currentFilteredVideos = videosData;
+        applyAdminVideoSearch();
+
+        // 显示列表，隐藏加载提示
+        document.getElementById('videos-loading').style.display = 'none';
+        document.getElementById('videos-list').style.display = 'block';
+      } catch (err) {
+        console.error('Failed to load videos:', err);
+        document.getElementById('videos-loading').style.display = 'none';
+        document.getElementById('videos-error').style.display = 'block';
+        document.getElementById('error-message').textContent = err.message || '加载失败';
+      }
+    }
+
+    // 计算重复视频（优先使用 file_hash，其次标题+时长）
+    function computeDuplicateIds(videos) {
+      const dupSet = new Set();
+      const buckets = {};
+      const pushKey = (key, id) => {
+        if (!key) return;
+        if (!buckets[key]) buckets[key] = [];
+        buckets[key].push(id);
+      };
+      videos.forEach(v => {
+        const hashKey = v.file_hash ? `hash:${v.file_hash}` : null;
+        const title = (v.title || v.original_filename || '').trim().toLowerCase();
+        const dur = Number.isFinite(v.duration_sec) ? Math.round(v.duration_sec) : null;
+        const titleKey = title ? `title:${title}|dur:${dur || 'na'}` : null;
+        pushKey(hashKey, v.id);
+        pushKey(titleKey, v.id);
+      });
+      Object.values(buckets).forEach(arr => {
+        if (arr.length > 1) arr.forEach(id => dupSet.add(id));
+      });
+      return dupSet;
+    }
+
+    // 渲染视频列表
+    function renderVideos(videos) {
+      const tbody = document.getElementById('videos-tbody');
+      tbody.innerHTML = '';
+
+      videos.forEach((video, index) => {
+        const tr = document.createElement('tr');
+        tr.dataset.videoId = video.id;
+        tr.dataset.index = index;
+        if (duplicateIds.has(video.id)) {
+          tr.style.background = '#fff7ed';
+        }
+
+        // 拖拽手柄或选择框
+        if (isSortMode) {
+          const tdDrag = document.createElement('td');
+          tdDrag.className = 'drag-handle-cell';
+          tdDrag.style.display = isSortMode ? 'table-cell' : 'none';
+          tdDrag.innerHTML = '<span style="cursor: move; font-size: 1.5rem;">⋮⋮</span>';
+          tdDrag.style.textAlign = 'center';
+          tr.appendChild(tdDrag);
+
+          // 序号输入框
+          const tdOrder = document.createElement('td');
+          tdOrder.style.textAlign = 'center';
+          const orderInput = document.createElement('input');
+          orderInput.type = 'number';
+          orderInput.min = '1';
+          orderInput.value = index + 1;
+          orderInput.style.width = '50px';
+          orderInput.style.textAlign = 'center';
+          orderInput.style.padding = '4px';
+          orderInput.style.border = '1px solid #ddd';
+          orderInput.style.borderRadius = '4px';
+          orderInput.addEventListener('change', (e) => {
+            const newPosition = parseInt(e.target.value);
+            if (newPosition >= 1 && newPosition <= videos.length) {
+              moveVideoToPosition(tr, newPosition - 1);
+            } else {
+              e.target.value = index + 1;
+              AdminUtils.showToast('序号范围：1-' + videos.length, 'warning');
+            }
+          });
+          tdOrder.appendChild(orderInput);
+          tr.appendChild(tdOrder);
+        } else {
+          const tdSelect = document.createElement('td');
+          tdSelect.style.textAlign = 'center';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.dataset.videoId = String(video.id);
+          cb.checked = selectedVideoIds.has(video.id);
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedVideoIds.add(video.id);
+            else selectedVideoIds.delete(video.id);
+            updateSelectionSummary();
+            const headerCb = document.getElementById('select-all-checkbox');
+            if (headerCb) {
+              const all = Array.isArray(currentFilteredVideos) ? currentFilteredVideos : [];
+              headerCb.checked = all.length > 0 && all.every(v => selectedVideoIds.has(Number(v.id)));
+            }
+          });
+          tdSelect.appendChild(cb);
+          tr.appendChild(tdSelect);
+        }
+
+        // ID
+        const tdId = document.createElement('td');
+        tdId.textContent = video.id;
+        tr.appendChild(tdId);
+
+        // 缩略图
+        const tdThumb = document.createElement('td');
+        const candidates = resolveThumbnail(video);
+        const placeholderSvg = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#667eea"/><stop offset="100%" style="stop-color:#764ba2"/></linearGradient></defs><rect width="160" height="90" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="14" fill="white">暂无封面</text></svg>`)}`;
+        const link = document.createElement('a');
+        link.href = 'javascript:void(0)';
+        link.title = '点击观看';
+        link.onclick = () => viewVideo(video.id);
+        const img = document.createElement('img');
+        img.alt = '缩略图';
+        img.style.cssText = 'width: 80px; height: 45px; object-fit: cover; border-radius: 4px; cursor:pointer;';
+        // 逐个候选往下试，全部失败才落到占位图
+        let attempt = 0;
+        img.onerror = () => {
+          attempt += 1;
+          if (attempt < candidates.length) img.src = candidates[attempt];
+          else { img.onerror = null; img.src = placeholderSvg; }
+        };
+        img.src = candidates.length ? candidates[0] : placeholderSvg;
+        link.appendChild(img);
+        tdThumb.appendChild(link);
+        tr.appendChild(tdThumb);
+
+        // 标题
+        const tdTitle = document.createElement('td');
+        const dupBadge = duplicateIds.has(video.id)
+          ? `<span class="admin-badge admin-badge-warning" style="margin-left:6px;">重复</span>`
+          : '';
+        tdTitle.innerHTML = `
+          <div style="max-width: 250px;">
+            <div style="font-weight: 500; margin-bottom: 4px;">
+              <a href="javascript:void(0)" onclick="viewVideo(${video.id})" style="color: inherit; text-decoration: none;">${formatTitle(video)}</a>${dupBadge}
+            </div>
+            ${(video.description && String(video.description).trim())
+              ? `<div style="font-size: 0.875rem; color: var(--gray-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${AdminUtils.escapeHtml(video.description)}</div>`
+              : ''}
+          </div>
+        `;
+        tr.appendChild(tdTitle);
+
+        // 等级
+        const tdLevel = document.createElement('td');
+        tdLevel.style.textAlign = 'center';
+        const levelConfig = {
+          beginner: { icon: '🌱', name: '初级', color: '#22c55e', bg: '#f0fdf4' },
+          intermediate: { icon: '🌿', name: '中级', color: '#3b82f6', bg: '#eff6ff' },
+          advanced: { icon: '🌳', name: '高级', color: '#a855f7', bg: '#faf5ff' }
+        };
+        const level = video.difficulty_level;
+        if (level && levelConfig[level]) {
+          const cfg = levelConfig[level];
+          tdLevel.innerHTML = `
+            <span style="display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:500; background:${cfg.bg}; color:${cfg.color};">
+              ${cfg.icon} ${cfg.name}
+            </span>`;
+        } else {
+          tdLevel.innerHTML = `<span style="color:#94a3b8; font-size:12px;">未设置</span>`;
+        }
+        tr.appendChild(tdLevel);
+
+        // 时长
+        const tdDuration = document.createElement('td');
+        tdDuration.textContent = formatDuration(video.duration_sec);
+        tr.appendChild(tdDuration);
+
+        // 文件大小
+        const tdSize = document.createElement('td');
+        tdSize.textContent = video.file_size_formatted || formatFileSize(video.file_size, '-');
+        tr.appendChild(tdSize);
+
+        // 上传者
+        const tdUploader = document.createElement('td');
+        if (video.username) {
+          tdUploader.innerHTML = `
+            <div style="max-width: 150px;">
+              <div style="font-weight: 500;">${AdminUtils.escapeHtml(video.display_name || video.username)}</div>
+              <div style="font-size: 0.875rem; color: var(--gray-600);">@${AdminUtils.escapeHtml(video.username)}</div>
+            </div>
+          `;
+        } else {
+          tdUploader.textContent = '未知';
+        }
+        tr.appendChild(tdUploader);
+
+        // 状态
+        const tdStatus = document.createElement('td');
+        tdStatus.innerHTML = formatStatus(video);
+        tr.appendChild(tdStatus);
+
+        // 双语字幕
+        const tdBilingual = document.createElement('td');
+        tdBilingual.style.textAlign = 'center';
+        if (video.has_bilingual) {
+          tdBilingual.innerHTML = '<span class="admin-badge admin-badge-success" title="包含中文翻译">🇨🇳 双语</span>';
+        } else {
+          tdBilingual.innerHTML = '<span class="admin-badge admin-badge-secondary" title="仅英文字幕">单语</span>';
+        }
+        tr.appendChild(tdBilingual);
+
+        // 会员专属
+        const tdVipOnly = document.createElement('td');
+        tdVipOnly.style.textAlign = 'center';
+        tdVipOnly.innerHTML = `
+          <label style="display: inline-flex; align-items: center; cursor: pointer;">
+            <input
+              type="checkbox"
+              ${video.is_vip_only ? 'checked' : ''}
+              onchange="toggleVipOnly(${video.id}, this.checked)"
+              style="width: 18px; height: 18px; cursor: pointer;"
+            >
+            ${video.is_vip_only ? '<span style="margin-left: 4px; color: #f59e0b;">🔒</span>' : ''}
+          </label>
+        `;
+        tr.appendChild(tdVipOnly);
+
+        // 上传时间
+        const tdTime = document.createElement('td');
+        tdTime.textContent = AdminUtils.formatDate(video.created_at);
+        tr.appendChild(tdTime);
+
+        // 热度（观看次数）
+        const tdViews = document.createElement('td');
+        tdViews.textContent = video.view_count || 0;
+        tdViews.style.textAlign = 'center';
+        tr.appendChild(tdViews);
+
+        // 标签
+        const tdTags = document.createElement('td');
+        tdTags.id = `tags-${video.id}`;
+        tdTags.dataset.collectionName = video.collection_name || '';
+        tdTags.innerHTML = `<div style="color:#94a3b8; font-size:0.9rem;">加载中...</div>`;
+        tr.appendChild(tdTags);
+
+        // 操作
+        const tdActions = document.createElement('td');
+        tdActions.innerHTML = `
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="viewVideo(${video.id})">查看</button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="retranscribeVideo(${video.id})">提取文本</button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="openTranscriptImport(${video.id})">导入字幕</button>
+            <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="deleteVideo(${video.id}, '${AdminUtils.escapeHtml(video.title).replace(/'/g, "\\'")}')">删除</button>
+          </div>
+        `;
+        tr.appendChild(tdActions);
+
+        tbody.appendChild(tr);
+        // 异步加载标签
+        loadVideoTags(video.id);
+
+        // 在排序模式下添加拖拽事件
+        if (isSortMode) {
+          tr.draggable = true;
+          tr.addEventListener('dragstart', handleDragStart);
+          tr.addEventListener('dragover', handleDragOver);
+          tr.addEventListener('drop', handleDrop);
+          tr.addEventListener('dragend', handleDragEnd);
+        }
+      });
+      currentFilteredVideos = Array.isArray(videos) ? videos : [];
+      updateSelectionSummary();
+
+      const headerCb = document.getElementById('select-all-checkbox');
+      if (headerCb) {
+        const all = currentFilteredVideos;
+        headerCb.checked = all.length > 0 && all.every(v => selectedVideoIds.has(Number(v.id)));
+      }
+    }
+
+    // 渲染标签 chips
+    function renderTagCell(videoId, tagIds = []) {
+      const container = document.getElementById(`tags-${videoId}`);
+      if (!container) return;
+      const collectionName = normalizeCollectionName(container.dataset.collectionName || '');
+      const tags = globalTagsCache || [];
+      const tagMap = {};
+      tags.forEach(t => tagMap[String(t.id)] = t);
+
+      const chips = tagIds.map(id => {
+        const t = tagMap[String(id)];
+        const name = t ? AdminUtils.escapeHtml(t.name) : `标签${id}`;
+        return `
+          <span class="admin-tag-chip" data-tag-id="${id}" style="display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border-radius:8px; background:#f1f5f9; margin:2px; font-size:12px;">
+            <span>${name}</span>
+            <button class="admin-btn admin-btn-danger admin-btn-xs" style="padding:2px 6px; font-size:11px;" onclick="removeTagFromVideo(${videoId}, '${id}')">×</button>
+          </span>
+        `;
+      }).join('');
+
+      const collectionChip = collectionName
+        ? `<span class="admin-tag-chip" title="二级标签/合集（点击「清空」删除）"
+                style="display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:8px; background:#ecfeff; border:1px solid #a5f3fc; color:#c2410c; margin:2px; font-size:12px;">
+            <span>📚 合集</span>
+            <span style="font-weight:600;">${AdminUtils.escapeHtml(collectionName)}</span>
+            <button class="admin-btn admin-btn-danger admin-btn-xs" style="padding:2px 8px; font-size:11px;" onclick="clearCollectionName(${videoId})">清空</button>
+          </span>`
+        : '';
+
+      container.innerHTML = `
+        <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+          ${chips || '<span style="color:#94a3b8; font-size:0.9rem;">暂无标签</span>'}
+          ${collectionChip}
+          <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="promptAddTag(${videoId})">+ 标签</button>
+        </div>
+      `;
+      container.dataset.tagIds = JSON.stringify(tagIds);
+      videoTagIdCache.set(String(videoId), {
+        global_tag_ids: (tagIds || []).map(String).filter(id => /^\d+$/.test(id)),
+        user_tag_ids: []
+      });
+    }
+
+    async function clearCollectionName(videoId) {
+      const vid = Number(videoId);
+      if (!Number.isFinite(vid)) return;
+      if (!confirm('确定要清空该视频的合集（二级标签）吗？')) return;
+      try {
+        await AdminAPI.patch(`/video-resources/${vid}`, { collection_name: null });
+        const idx = videosData.findIndex(v => String(v.id) === String(vid));
+        if (idx >= 0) videosData[idx].collection_name = null;
+        const cell = document.getElementById(`tags-${vid}`);
+        if (cell) cell.dataset.collectionName = '';
+        AdminUtils.showToast('合集已清空', 'success');
+        // Re-render cell with existing tag ids
+        const currentIds = JSON.parse(document.getElementById(`tags-${vid}`).dataset.tagIds || '[]').map(String);
+        renderTagCell(vid, currentIds);
+      } catch (e) {
+        console.error('[Admin] Failed to clear collection_name', e);
+        AdminUtils.showToast(e?.message || '清空失败', 'danger');
+      }
+    }
+
+    async function confirmBatchClearCollection() {
+      const ids = Array.from(selectedVideoIds).map(Number).filter(n => Number.isFinite(n));
+      if (!ids.length) {
+        alert('请先勾选要操作的视频');
+        return;
+      }
+      if (!confirm(`清空 ${ids.length} 个视频的合集（二级标签）？\\n\\n不会修改一级标签。`)) return;
+
+      if (window.__adminBatchClearCollectionRunning) return;
+      window.__adminBatchClearCollectionRunning = true;
+      const clearBtn = document.getElementById('batch-tag-collection-clear-btn');
+      const applyBtn = document.getElementById('batch-tag-collection-apply-btn');
+      const prevClearText = clearBtn ? clearBtn.textContent : '';
+      try {
+        if (clearBtn) {
+          clearBtn.disabled = true;
+          clearBtn.textContent = '处理中...';
+        }
+        if (applyBtn) applyBtn.disabled = true;
+
+        for (const vid of ids) {
+          try {
+            await AdminAPI.patch(`/video-resources/${vid}`, { collection_name: null });
+            const idx = videosData.findIndex(v => String(v.id) === String(vid));
+            if (idx >= 0) videosData[idx].collection_name = null;
+            const cell = document.getElementById(`tags-${vid}`);
+            if (cell) cell.dataset.collectionName = '';
+            loadVideoTags(vid);
+          } catch (e) {
+            console.warn('[Admin] Failed to clear collection_name for video', vid, e);
+          }
+        }
+        AdminUtils.showToast('合集已清空', 'success');
+        setTimeout(() => closeBatchTagCollectionModal(), 50);
+      } catch (e) {
+        console.error('[Admin] Batch clear collection failed:', e);
+        AdminUtils.showToast('批量清空失败', 'danger');
+      } finally {
+        window.__adminBatchClearCollectionRunning = false;
+        if (clearBtn) {
+          clearBtn.disabled = false;
+          clearBtn.textContent = prevClearText || '清空合集';
+        }
+        if (applyBtn) applyBtn.disabled = false;
+      }
+    }
+
+    async function loadVideoTags(videoId) {
+      const container = document.getElementById(`tags-${videoId}`);
+      if (!container) return;
+      try {
+        const cached = videoTagIdCache.get(String(videoId));
+        if (cached && (cached.global_tag_ids || cached.user_tag_ids)) {
+          const ids = [
+            ...((cached.global_tag_ids || []).map(String)),
+            ...((cached.user_tag_ids || []).map(String))
+          ];
+          renderTagCell(videoId, ids);
+          return;
+        }
+        const data = await AdminAPI.get(`/videos/${videoId}/tags`);
+        videoTagIdCache.set(String(videoId), {
+          global_tag_ids: (data.global_tag_ids || []).map(String),
+          user_tag_ids: (data.user_tag_ids || []).map(String)
+        });
+        const ids = [
+          ...((data.global_tag_ids || []).map(String)),
+          ...((data.user_tag_ids || []).map(String))
+        ];
+        renderTagCell(videoId, ids);
+      } catch (e) {
+        container.innerHTML = `<span style="color:#f43f5e;">加载失败</span>`;
+      }
+    }
+
+    // 标签选择模态框相关
+    let currentTagVideoId = null;
+    let selectedTagIds = new Set();
+
+    async function promptAddTag(videoId) {
+      try {
+        await fetchGlobalTags(true);
+      } catch (_) {}
+
+      currentTagVideoId = videoId;
+      const currentIds = JSON.parse(document.getElementById(`tags-${videoId}`).dataset.tagIds || '[]').map(String);
+      selectedTagIds = new Set(currentIds);
+
+      renderTagSelectModal();
+      document.getElementById('tag-select-modal').style.display = 'flex';
+    }
+
+    function renderTagSelectModal() {
+      const tags = globalTagsCache || [];
+      const container = document.getElementById('tag-select-list');
+      const currentTagsSpan = document.getElementById('tag-select-current-tags');
+
+      // 显示当前选中的标签
+      const selectedNames = Array.from(selectedTagIds).map(id => {
+        const tag = tags.find(t => String(t.id) === String(id));
+        return tag ? tag.name : `ID:${id}`;
+      });
+      currentTagsSpan.textContent = selectedNames.length ? selectedNames.join(', ') : '无';
+
+      // 渲染标签列表
+      container.innerHTML = tags.map(tag => {
+        const isSelected = selectedTagIds.has(String(tag.id));
+        return `
+          <div class="tag-select-item" data-tag-id="${tag.id}"
+               onclick="toggleTagSelection('${tag.id}')"
+               style="
+                 display: inline-flex;
+                 align-items: center;
+                 gap: 6px;
+                 padding: 8px 14px;
+                 border-radius: 20px;
+                 cursor: pointer;
+                 transition: all 0.2s;
+                 font-size: 13px;
+                 ${isSelected
+                   ? 'background: linear-gradient(135deg, #0ea5e9, #2dd4bf); color: white; box-shadow: 0 2px 8px rgba(99,102,241,0.3);'
+                   : 'background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;'}
+               ">
+            <span style="font-size: 16px;">${tag.icon || '🏷️'}</span>
+            <span>${AdminUtils.escapeHtml(tag.name)}</span>
+            ${isSelected ? '<span style="margin-left:4px;">✓</span>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleTagSelection(tagId) {
+      const id = String(tagId);
+      if (selectedTagIds.has(id)) {
+        selectedTagIds.delete(id);
+      } else {
+        selectedTagIds.add(id);
+      }
+      renderTagSelectModal();
+    }
+
+    function closeTagSelectModal() {
+      document.getElementById('tag-select-modal').style.display = 'none';
+      currentTagVideoId = null;
+      selectedTagIds.clear();
+    }
+
+    async function confirmTagSelection() {
+      if (!currentTagVideoId) return;
+      await saveTagsToServer(currentTagVideoId, Array.from(selectedTagIds));
+      closeTagSelectModal();
+    }
+
+    // 保留旧的 prompt 方式作为备用（已弃用）
+    async function promptAddTagOld(videoId) {
+      try {
+        await fetchGlobalTags(true);
+      } catch (_) {}
+      const input = prompt('输入要添加的标签名称或ID，多个用逗号分隔');
+      if (!input) return;
+      const tokens = input.split(',').map(s => s.trim()).filter(Boolean);
+      if (!tokens.length) return;
+      const tagMapByName = {};
+      (globalTagsCache || []).forEach(t => {
+        tagMapByName[String(t.name).trim()] = t.id;
+        tagMapByName[String(t.id)] = t.id;
+      });
+      const currentIds = JSON.parse(document.getElementById(`tags-${videoId}`).dataset.tagIds || '[]').map(String);
+      const newIds = new Set(currentIds);
+      for (const tok of tokens) {
+        const match = tagMapByName[tok];
+        if (match) {
+          newIds.add(String(match));
+          continue;
+        }
+        // 若不存在则尝试创建全局标签（管理员接口）
+        try {
+          const created = await AdminAPI.post('/tags', { name: tok });
+          if (created?.tag?.id) {
+            console.log('[Admin Tags] created new tag', created.tag);
+            await fetchGlobalTags(true);
+            tagMapByName[String(created.tag.name).trim()] = created.tag.id;
+            tagMapByName[String(created.tag.id)] = created.tag.id;
+            newIds.add(String(created.tag.id));
+          } else {
+            AdminUtils.showToast(`创建标签失败: ${tok}`, 'danger');
+          }
+        } catch (e) {
+          console.error('Create tag failed', e);
+          const msg = e?.response ? `${e.response.status}` : (e?.message || '未知错误');
+          AdminUtils.showToast(`创建标签失败: ${tok} (${msg})`, 'danger');
+        }
+      }
+      await saveTagsToServer(videoId, Array.from(newIds));
+    }
+
+    async function removeTagFromVideo(videoId, tagId) {
+      const currentIds = JSON.parse(document.getElementById(`tags-${videoId}`).dataset.tagIds || '[]').map(String);
+      const nextIds = currentIds.filter(id => id !== String(tagId));
+      await saveTagsToServer(videoId, nextIds);
+    }
+
+    async function saveTagsToServer(videoId, globalIds) {
+      try {
+        const numericGlobals = globalIds
+          .map(id => String(id))
+          .filter(id => /^\d+$/.test(id))
+          .map(id => Number(id));
+        const dedupGlobals = Array.from(new Set(numericGlobals));
+        const payload = { global_tag_ids: dedupGlobals, user_tag_ids: [] };
+        console.log('[Admin Tags] Saving tags', { videoId, payload });
+        await AdminAPI.post(`/videos/${videoId}/tags`, payload);
+        AdminUtils.showToast('标签已更新', 'success');
+        try {
+          const map = new Map((globalTagsCache || []).map(t => [String(t.id), String(t.name || '')]));
+          const nextNames = dedupGlobals.map(id => map.get(String(id))).filter(Boolean);
+          const idx = videosData.findIndex(v => String(v.id) === String(videoId));
+          if (idx >= 0) videosData[idx].tags = nextNames;
+          videoTagIdCache.set(String(videoId), { global_tag_ids: dedupGlobals.map(String), user_tag_ids: [] });
+        } catch (_) {}
+        renderTagCell(videoId, dedupGlobals);
+      } catch (e) {
+        console.error('Failed to update tags', e);
+        if (e?.response && e.response.status) {
+          try {
+            const text = await e.response.text();
+            console.error('[Admin Tags] server response', e.response.status, text);
+          } catch (_) { }
+        }
+        AdminUtils.showToast(e.message || '更新标签失败', 'danger');
+      }
+    }
+
+    // 重新触发文本提取/转写
+    async function retranscribeVideo(videoId) {
+      const lang = prompt('重新提取文本。可选：输入语言代码（如 en、zh、auto），留空则自动检测。', '');
+      const payload = {};
+      if (lang && lang.trim() && lang.trim().toLowerCase() !== 'auto') {
+        payload.language = lang.trim();
+      }
+      try {
+        AdminUtils.showToast('已提交后台提取任务，稍后刷新查看状态', 'info');
+        await AdminAPI.post(`/video-resources/${videoId}/retranscribe`, payload);
+        // 重新加载以刷新状态/失败原因
+        await loadVideos();
+        AdminUtils.showToast('文本提取任务已开始', 'success');
+      } catch (err) {
+        console.error('Failed to retranscribe:', err);
+        const msg = err?.message || '提取失败';
+        AdminUtils.showToast(msg, 'danger');
+      }
+    }
+
+    // 批量提取字幕模态框
+    let batchTranscribeState = {
+      running: false,
+      cancelled: false,
+      processed: 0,
+      total: 0,
+      success: 0,
+      failed: 0,
+      language: 'en'
+    };
+
+    function openBatchTranscribeModal() {
+      if (!selectedVideoIds.size) {
+        alert('请先勾选要提取字幕的视频');
+        return;
+      }
+
+      // Remove existing modal
+      const existing = document.getElementById('batch-transcribe-modal');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'batch-transcribe-modal';
+      overlay.style.cssText = `
+        position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+        display: flex; align-items: center; justify-content: center; z-index: 1002; padding: 1rem;
+      `;
+
+      overlay.innerHTML = `
+        <div style="background: #fff; border-radius: 12px; max-width: 520px; width: 100%; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 1.1rem;">🎙️ 批量提取字幕</h3>
+            <button onclick="closeBatchTranscribeModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b;">&times;</button>
+          </div>
+
+          <div style="margin-bottom: 16px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+            <div style="font-size: 13px; color: #475569;">
+              已选择视频：<span style="font-weight: 600; color: #1e293b;">${selectedVideoIds.size}</span> 个
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 0.9rem; color: #475569; margin-bottom: 8px;">语言代码</label>
+            <select id="batch-transcribe-language" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: white;">
+              <option value="en">英语 (en)</option>
+              <option value="zh">中文 (zh)</option>
+              <option value="auto">自动检测 (auto)</option>
+              <option value="ja">日语 (ja)</option>
+              <option value="ko">韩语 (ko)</option>
+              <option value="fr">法语 (fr)</option>
+              <option value="de">德语 (de)</option>
+              <option value="es">西班牙语 (es)</option>
+            </select>
+          </div>
+
+          <div id="batch-transcribe-progress" style="display: none; margin-bottom: 16px;">
+            <div style="margin-bottom: 8px; font-size: 13px; color: #475569;">
+              进度：<span id="batch-transcribe-current">0</span> / <span id="batch-transcribe-total">0</span>
+              <span style="margin-left: 12px;">
+                ✅ <span id="batch-transcribe-success">0</span>
+                ❌ <span id="batch-transcribe-failed">0</span>
+              </span>
+            </div>
+            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+              <div id="batch-transcribe-bar" style="height: 100%; background: linear-gradient(90deg, #22c55e, #16a34a); width: 0%; transition: width 0.3s;"></div>
+            </div>
+            <div id="batch-transcribe-status" style="margin-top: 8px; font-size: 12px; color: #64748b;"></div>
+          </div>
+
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button id="batch-transcribe-cancel-btn" class="admin-btn admin-btn-secondary" onclick="closeBatchTranscribeModal()">取消</button>
+            <button id="batch-transcribe-stop-btn" class="admin-btn admin-btn-warning" style="display: none;" onclick="stopBatchTranscribe()">停止</button>
+            <button id="batch-transcribe-start-btn" class="admin-btn admin-btn-primary" onclick="startBatchTranscribe()">开始提取</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+    }
+
+    function closeBatchTranscribeModal() {
+      if (batchTranscribeState.running) {
+        if (!confirm('正在批量提取中，确定要取消吗？')) return;
+        batchTranscribeState.cancelled = true;
+      }
+      const modal = document.getElementById('batch-transcribe-modal');
+      if (modal) modal.remove();
+    }
+
+    function stopBatchTranscribe() {
+      batchTranscribeState.cancelled = true;
+      AdminUtils.showToast('正在停止...', 'warning');
+    }
+
+    async function startBatchTranscribe() {
+      if (batchTranscribeState.running) return;
+
+      const ids = Array.from(selectedVideoIds);
+      if (!ids.length) {
+        AdminUtils.showToast('没有选中的视频', 'warning');
+        return;
+      }
+
+      const langSelect = document.getElementById('batch-transcribe-language');
+      const language = langSelect?.value || 'en';
+
+      // Reset state
+      batchTranscribeState = {
+        running: true,
+        cancelled: false,
+        processed: 0,
+        total: ids.length,
+        success: 0,
+        failed: 0,
+        language: language
+      };
+
+      // Update UI
+      document.getElementById('batch-transcribe-start-btn').style.display = 'none';
+      document.getElementById('batch-transcribe-cancel-btn').style.display = 'none';
+      document.getElementById('batch-transcribe-stop-btn').style.display = 'inline-block';
+      document.getElementById('batch-transcribe-progress').style.display = 'block';
+      document.getElementById('batch-transcribe-total').textContent = ids.length;
+
+      const updateProgress = () => {
+        const { processed, total, success, failed } = batchTranscribeState;
+        document.getElementById('batch-transcribe-current').textContent = processed;
+        document.getElementById('batch-transcribe-success').textContent = success;
+        document.getElementById('batch-transcribe-failed').textContent = failed;
+        const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+        document.getElementById('batch-transcribe-bar').style.width = pct + '%';
+      };
+
+      const setStatus = (msg) => {
+        const el = document.getElementById('batch-transcribe-status');
+        if (el) el.textContent = msg;
+      };
+
+      for (const videoId of ids) {
+        if (batchTranscribeState.cancelled) {
+          setStatus('已停止');
+          break;
+        }
+
+        const video = videosData.find(v => v.id === videoId);
+        const title = video?.title || video?.original_filename || `#${videoId}`;
+        setStatus(`正在处理: ${title.slice(0, 30)}...`);
+
+        try {
+          const payload = {};
+          if (language && language !== 'auto') {
+            payload.language = language;
+          }
+          await AdminAPI.post(`/video-resources/${videoId}/retranscribe`, payload);
+          batchTranscribeState.success++;
+        } catch (err) {
+          console.error(`[Batch Transcribe] Failed for video ${videoId}:`, err);
+          batchTranscribeState.failed++;
+        }
+
+        batchTranscribeState.processed++;
+        updateProgress();
+      }
+
+      // Completed
+      batchTranscribeState.running = false;
+
+      const { success, failed, cancelled } = batchTranscribeState;
+      if (cancelled) {
+        setStatus(`已停止。成功: ${success}, 失败: ${failed}`);
+      } else {
+        setStatus(`完成！成功: ${success}, 失败: ${failed}`);
+      }
+
+      // Update buttons
+      document.getElementById('batch-transcribe-stop-btn').style.display = 'none';
+      document.getElementById('batch-transcribe-cancel-btn').textContent = '关闭';
+      document.getElementById('batch-transcribe-cancel-btn').style.display = 'inline-block';
+
+      // Reload videos to reflect updated status
+      await loadVideos();
+
+      AdminUtils.showToast(
+        `批量提取完成: ${success} 成功, ${failed} 失败`,
+        failed > 0 ? 'warning' : 'success'
+      );
+    }
+
+    // 导入字幕（手动粘贴）
+    function openTranscriptImport(videoId) {
+      // Remove existing modal if present
+      const existing = document.getElementById('transcript-import-modal');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'transcript-import-modal';
+      overlay.style.cssText = `
+        position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+        display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 1rem;
+      `;
+
+      overlay.innerHTML = `
+        <div style="background: #fff; border-radius: 12px; max-width: 720px; width: 100%; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+          <h3 style="margin:0 0 12px 0;">导入字幕</h3>
+          <p style="margin:0 0 8px 0; color:#475569; font-size: 0.9rem;">从 Relingo 或其他来源复制字幕（带时间戳的文本亦可）。</p>
+          <label style="display:block; font-size:0.85rem; color:#475569; margin-bottom:6px;">语言代码（默认 en）</label>
+          <input id="transcript-import-lang" type="text" placeholder="en / zh / auto..." value="en"
+            style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:10px; font-size:0.95rem;">
+          <label style="display:block; font-size:0.85rem; color:#475569; margin-bottom:6px;">字幕内容</label>
+          <textarea id="transcript-import-input" rows="12" placeholder="(00:02) I need to clean the house today..."
+            style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:10px; font-size:0.95rem; resize:vertical; box-sizing:border-box;"></textarea>
+          <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="document.getElementById('transcript-import-modal')?.remove();">取消</button>
+            <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="submitTranscriptImport(${videoId})">导入</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+    }
+
+    async function submitTranscriptImport(videoId) {
+      const overlay = document.getElementById('transcript-import-modal');
+      const text = (document.getElementById('transcript-import-input')?.value || '').trim();
+      const lang = (document.getElementById('transcript-import-lang')?.value || 'en').trim() || 'en';
+      if (!text) {
+        AdminUtils.showToast('请粘贴字幕内容', 'warning');
+        return;
+      }
+      try {
+        AdminUtils.showToast('正在导入字幕...', 'info');
+        await AdminAPI.post(`/video-resources/${videoId}/import-transcript`, {
+          transcript: text,
+          language: lang,
+        });
+        AdminUtils.showToast('字幕导入成功', 'success');
+        overlay?.remove();
+        await loadVideos();
+      } catch (err) {
+        console.error('Import transcript failed:', err);
+        const msg = err?.message || '导入失败';
+        AdminUtils.showToast(msg, 'danger');
+      }
+    }
+
+    // 查看视频
+    function viewVideo(videoId) {
+      // 使用 PC 阅读页以保证存在（video-player.html 在某些部署可能未暴露）
+      window.location.href = `./video-reader-desktop.html?videoId=${videoId}`;
+    }
+
+    // 删除视频
+    async function deleteVideo(videoId, title) {
+      if (!confirm(`确定要删除视频 "${title}" 吗？此操作不可恢复！`)) {
+        return;
+      }
+
+      try {
+        await AdminAPI.delete(`/video-resources/${videoId}`);
+        AdminUtils.showToast('视频删除成功', 'success');
+        // 重新加载列表
+        loadVideos();
+      } catch (err) {
+        console.error('Failed to delete video:', err);
+        AdminUtils.showToast(err.message || '删除失败', 'danger');
+      }
+    }
+
+    // 切换会员专属状态
+    async function toggleVipOnly(videoId, isVipOnly) {
+      try {
+        await AdminAPI.patch(`/video-resources/${videoId}`, {
+          is_vip_only: isVipOnly
+        });
+        AdminUtils.showToast(
+          isVipOnly ? '已设置为会员专属' : '已设置为公开可见',
+          'success'
+        );
+      } catch (err) {
+        console.error('Failed to toggle VIP-only status:', err);
+        AdminUtils.showToast(err.message || '设置失败', 'danger');
+        // 恢复 checkbox 状态
+        loadVideos();
+      }
+    }
+
+    // 切换排序模式
+    function toggleSortMode() {
+      // Sorting based on DOM order conflicts with filtered views; require clearing search first
+      if (!isSortMode && String(currentSearchQuery || '').trim()) {
+        AdminUtils.showToast('请先清空搜索再进入排序模式', 'warning');
+        return;
+      }
+      isSortMode = !isSortMode;
+
+      if (isSortMode) {
+        // 进入排序模式
+        document.getElementById('toggle-sort-mode').style.display = 'none';
+        document.getElementById('save-order-btn').style.display = 'inline-block';
+        document.getElementById('cancel-order-btn').style.display = 'inline-block';
+        document.getElementById('drag-handle-header').style.display = 'table-cell';
+        document.getElementById('order-number-header').style.display = 'table-cell';
+        AdminUtils.showToast('拖拽视频行或输入序号调整顺序', 'info');
+      } else {
+        // 退出排序模式
+        document.getElementById('toggle-sort-mode').style.display = 'inline-block';
+        document.getElementById('save-order-btn').style.display = 'none';
+        document.getElementById('cancel-order-btn').style.display = 'none';
+        document.getElementById('drag-handle-header').style.display = 'none';
+        document.getElementById('order-number-header').style.display = 'none';
+      }
+
+      // 重新渲染列表
+      if (isSortMode) renderVideos(videosData);
+      else applyAdminVideoSearch();
+    }
+
+    // 取消排序模式
+    function cancelSortMode() {
+      isSortMode = false;
+      // 重新加载原始顺序
+      loadVideos();
+      document.getElementById('toggle-sort-mode').style.display = 'inline-block';
+      document.getElementById('save-order-btn').style.display = 'none';
+      document.getElementById('cancel-order-btn').style.display = 'none';
+      document.getElementById('drag-handle-header').style.display = 'none';
+      document.getElementById('order-number-header').style.display = 'none';
+    }
+
+    // 移动视频到指定位置
+    function moveVideoToPosition(row, newIndex) {
+      const tbody = document.getElementById('videos-tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const currentIndex = rows.indexOf(row);
+
+      if (currentIndex === newIndex) return;
+
+      // 移除该行
+      tbody.removeChild(row);
+
+      // 插入到新位置
+      if (newIndex >= rows.length - 1) {
+        tbody.appendChild(row);
+      } else {
+        const referenceRow = rows[newIndex];
+        tbody.insertBefore(row, referenceRow);
+      }
+
+      // 更新所有序号输入框的值
+      updateOrderNumbers();
+
+      AdminUtils.showToast('位置已调整', 'success');
+    }
+
+    // 更新所有序号输入框的值
+    function updateOrderNumbers() {
+      const tbody = document.getElementById('videos-tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+
+      rows.forEach((row, index) => {
+        const orderInput = row.querySelector('input[type="number"]');
+        if (orderInput) {
+          orderInput.value = index + 1;
+        }
+      });
+    }
+
+    // 保存视频排序
+    async function saveVideoOrder() {
+      try {
+        // 构建更新数据：按当前 DOM 顺序设置 manual_order
+        const tbody = document.getElementById('videos-tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const updates = rows.map((row, index) => ({
+          id: parseInt(row.dataset.videoId),
+          manual_order: index + 1
+        }));
+
+        // 调用批量更新 API
+        const response = await AdminAPI.patch('/video-resources/batch-order', { updates });
+
+        if (response.success) {
+          AdminUtils.showToast('视频排序已保存', 'success');
+          // 退出排序模式并重新加载
+          isSortMode = false;
+          loadVideos();
+          document.getElementById('toggle-sort-mode').style.display = 'inline-block';
+          document.getElementById('save-order-btn').style.display = 'none';
+          document.getElementById('cancel-order-btn').style.display = 'none';
+          document.getElementById('drag-handle-header').style.display = 'none';
+        } else {
+          AdminUtils.showToast(response.message || '保存失败', 'danger');
+        }
+      } catch (err) {
+        console.error('Failed to save video order:', err);
+        AdminUtils.showToast(err.message || '保存失败', 'danger');
+      }
+    }
+
+    // 拖拽开始
+    function handleDragStart(e) {
+      draggedElement = e.currentTarget;
+      e.currentTarget.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+    }
+
+    // 拖拽经过
+    function handleDragOver(e) {
+      if (e.preventDefault) {
+        e.preventDefault();
+      }
+      e.dataTransfer.dropEffect = 'move';
+
+      const targetRow = e.currentTarget;
+      if (draggedElement !== targetRow) {
+        const tbody = document.getElementById('videos-tbody');
+        const allRows = Array.from(tbody.querySelectorAll('tr'));
+        const draggedIndex = allRows.indexOf(draggedElement);
+        const targetIndex = allRows.indexOf(targetRow);
+
+        if (draggedIndex < targetIndex) {
+          targetRow.parentNode.insertBefore(draggedElement, targetRow.nextSibling);
+        } else {
+          targetRow.parentNode.insertBefore(draggedElement, targetRow);
+        }
+      }
+
+      return false;
+    }
+
+    // 放置
+    function handleDrop(e) {
+      if (e.stopPropagation) {
+        e.stopPropagation();
+      }
+      return false;
+    }
+
+    // 拖拽结束
+    function handleDragEnd(e) {
+      e.currentTarget.style.opacity = '1';
+
+      // 更新所有行的视觉状态
+      const tbody = document.getElementById('videos-tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      rows.forEach(row => {
+        row.style.opacity = '1';
+      });
+
+      // 更新序号输入框
+      updateOrderNumbers();
+    }
+
+    // 页面加载时先获取全局标签，再获取视频列表
+    (async () => {
+      try {
+        await fetchGlobalTags(true);
+        console.log('[Admin] Global tags loaded:', globalTagsCache?.length || 0);
+      } catch (e) {
+        console.warn('[Admin] Failed to load global tags:', e);
+      }
+      loadVideos();
+      // 搜索框监听（防抖）
+      try {
+        const input = document.getElementById('video-search-input');
+        if (input) {
+          input.addEventListener('input', debounce(() => {
+            if (isSortMode) return;
+            applyAdminVideoSearch();
+          }, 200));
+        }
+      } catch (_) {}
+
+      // 批量主标签搜索
+      try {
+        const tagSearch = document.getElementById('batch-tag-search');
+        if (tagSearch) {
+          tagSearch.addEventListener('input', debounce(() => {
+            renderBatchPrimaryTagList();
+          }, 120));
+        }
+      } catch (_) {}
+
+      // 批量合集输入：自动补全已有合集
+      try {
+        const collectionInput = document.getElementById('batch-collection-name');
+        if (collectionInput) {
+          collectionInput.addEventListener('input', debounce(() => {
+            updateBatchCollectionSuggestions();
+          }, 120));
+          collectionInput.addEventListener('focus', () => {
+            updateBatchCollectionSuggestions();
+          });
+        }
+      } catch (_) {}
+
+      // 表头全选：只对“当前列表”（搜索过滤后的列表）生效
+      try {
+        const headerCb = document.getElementById('select-all-checkbox');
+        if (headerCb) {
+          headerCb.addEventListener('change', () => {
+            const list = Array.isArray(currentFilteredVideos) ? currentFilteredVideos : [];
+            if (!list.length) {
+              headerCb.checked = false;
+              return;
+            }
+            if (headerCb.checked) {
+              list.forEach(v => { if (v && v.id) selectedVideoIds.add(Number(v.id)); });
+            } else {
+              list.forEach(v => { if (v && v.id) selectedVideoIds.delete(Number(v.id)); });
+            }
+            document.querySelectorAll('#videos-tbody input[type="checkbox"][data-video-id]').forEach(cb => {
+              cb.checked = headerCb.checked;
+            });
+            updateSelectionSummary();
+          });
+        }
+      } catch (_) {}
+    })();
+
+    // 模拟加载统计数据
+    setTimeout(() => {
+      document.getElementById('stat-total-articles').textContent = '-';
+      document.getElementById('stat-total-playlists').textContent = '-';
+      document.getElementById('stat-total-views').textContent = '-';
+
+      const changes = document.querySelectorAll('.admin-stat-change span');
+      changes.forEach(el => el.textContent = '开发中');
+    }, 100);
+  </script>
+</body>
+</html>

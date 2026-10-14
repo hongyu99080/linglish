@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "media_id": 1,
+    "start_ms": 0,
+    "end_ms": 4000,
+    "text": "Good morning! Welcome back to your daily speaking warmup."
+  },
+  {
+    "id": 2,
+    "media_id": 1,
+    "start_ms": 4000,
+    "end_ms": 8000,
+    "text": "Focus on clear vowels and relaxed shoulders."
+  },
+  {
+    "id": 3,
+    "media_id": 2,
+    "start_ms": 0,
+    "end_ms": 6000,
+    "text": "Cities are transforming transportation to stay green."
+  },
+  {
+    "id": 4,
+    "media_id": 2,
+    "start_ms": 6000,
+    "end_ms": 12000,
+    "text": "Shared bikes and electric buses reduce the noise on streets."
+  }
+]

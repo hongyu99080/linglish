@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>清除缓存 - Linglish</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-width: 500px;
+      text-align: center;
+    }
+    h1 { color: #333; margin-bottom: 1rem; }
+    #status {
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 8px;
+      background: #f0f0f0;
+      font-family: monospace;
+      font-size: 0.9rem;
+      text-align: left;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .success { color: #22c55e; }
+    .error { color: #ef4444; }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧹 清除缓存</h1>
+    <p>正在清除所有缓存和 Service Worker...</p>
+    <div id="status"></div>
+    <button id="redirect" style="display:none;">返回主页</button>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const redirectBtn = document.getElementById('redirect');
+
+    function log(message, type = 'info') {
+      const className = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+      statusEl.innerHTML += `<div class="${className}">${message}</div>`;
+      console.log(message);
+    }
+
+    async function clearEverything() {
+      try {
+        log('开始清除缓存...');
+
+        // 1. Unregister all service workers
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          log(`找到 ${registrations.length} 个 Service Worker`);
+
+          for (const registration of registrations) {
+            await registration.unregister();
+            log(`✓ 注销 Service Worker: ${registration.scope}`, 'success');
+          }
+        }
+
+        // 2. Clear all caches
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          log(`找到 ${cacheNames.length} 个缓存`);
+
+          for (const cacheName of cacheNames) {
+            await caches.delete(cacheName);
+            log(`✓ 删除缓存: ${cacheName}`, 'success');
+          }
+        }
+
+        // 3. Clear localStorage
+        const localStorageKeys = Object.keys(localStorage);
+        log(`清除 ${localStorageKeys.length} 个 localStorage 项`);
+        localStorage.clear();
+        log('✓ localStorage 已清除', 'success');
+
+        // 4. Clear sessionStorage
+        const sessionStorageKeys = Object.keys(sessionStorage);
+        log(`清除 ${sessionStorageKeys.length} 个 sessionStorage 项`);
+        sessionStorage.clear();
+        log('✓ sessionStorage 已清除', 'success');
+
+        // 5. Clear IndexedDB
+        if ('indexedDB' in window) {
+          const dbs = await indexedDB.databases();
+          log(`找到 ${dbs.length} 个 IndexedDB 数据库`);
+          for (const db of dbs) {
+            if (db.name) {
+              indexedDB.deleteDatabase(db.name);
+              log(`✓ 删除数据库: ${db.name}`, 'success');
+            }
+          }
+        }
+
+        log('');
+        log('='.repeat(50));
+        log('✅ 所有缓存已清除完毕！', 'success');
+        log('='.repeat(50));
+        log('');
+        log('3秒后将自动跳转到主页...');
+
+        redirectBtn.style.display = 'block';
+        redirectBtn.onclick = () => {
+          window.location.href = '/index-desktop.html?_t=' + Date.now();
+        };
+
+        setTimeout(() => {
+          window.location.href = '/index-desktop.html?_t=' + Date.now();
+        }, 3000);
+
+      } catch (error) {
+        log(`❌ 错误: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Start clearing immediately
+    clearEverything();
+  </script>
+</body>
+</html>

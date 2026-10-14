@@ -1,0 +1,44 @@
+{
+  "name": "linglish-backend",
+  "version": "0.1.0",
+  "description": "Self-hosted English learning with video practice, vocabulary review, and optional AI coaching",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test --test-force-exit test/*.test.js",
+    "db:init": "node scripts/init-local-db.js"
+  },
+  "dependencies": {
+    "@danielxceron/youtube-transcript": "^1.2.2",
+    "@distube/ytdl-core": "^4.16.12",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@vitalets/google-translate-api": "^9.2.1",
+    "axios": "^1.19.0",
+    "dotenv": "^17.2.3",
+    "edge-tts": "^1.0.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "form-data": "^4.0.6",
+    "https-proxy-agent": "^7.0.6",
+    "ioredis": "^5.8.2",
+    "nodemailer": "^9.0.5",
+    "openai": "^6.6.0",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.11.5",
+    "redis": "^4.7.1",
+    "say.js": "^1.4.0",
+    "stripe": "^21.0.1",
+    "tesseract.js": "^6.0.1",
+    "uuid": "^13.0.0",
+    "ws": "^8.21.3",
+    "youtubei.js": "^16.0.1",
+    "yt-dlp-exec": "^1.0.2"
+  },
+  "overrides": {
+    "undici": "7.29.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

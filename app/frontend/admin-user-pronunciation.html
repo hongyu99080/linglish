@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>用户发音评测详情</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .container { max-width: 1100px; margin: 1rem auto; padding: 1rem; }
+      .card { background:#fff; border-radius:8px; padding:1rem; box-shadow:0 2px 6px rgba(0,0,0,0.08); margin-bottom: 1rem; }
+      table { width:100%; border-collapse: collapse; }
+      th, td { padding:8px; border-bottom:1px solid #eee; font-size:14px; }
+      th { background:#fafbfc; text-align:left; }
+      .toolbar { display:flex; gap:8px; align-items:center; }
+      .btn { padding:6px 10px; border:0; border-radius:6px; cursor:pointer; }
+      .btn.primary { background:#2b6cb0; color:#fff; }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <h1>用户发音评测详情</h1>
+        <p id="sub">加载中…</p>
+      </div>
+      <div>
+        <a href="./admin-users.html" style="color:#fff; text-decoration:none;" title="返回用户管理">←</a>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="card">
+        <div class="toolbar">
+          <label>每页</label>
+          <select id="page-size">
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <button class="btn" id="btn-prev">上一页</button>
+          <button class="btn" id="btn-next">下一页</button>
+          <span class="muted" id="page-info"></span>
+          <button class="btn primary" id="btn-export">导出CSV(本页)</button>
+          <button class="btn" id="btn-export-all">导出全部</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>总体</th>
+              <th>准确</th>
+              <th>流利</th>
+              <th>完整</th>
+              <th>文本</th>
+              <th>Provider</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <script>
+      const token = localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token) { alert('请先登录'); location.href = './index.html'; }
+      const qs = new URLSearchParams(location.search);
+      const userId = Number(qs.get('userId')) || 0;
+      document.getElementById('sub').textContent = `用户ID: ${userId}`;
+
+      async function api(path, options={}) {
+        const res = await fetch(path, { ...options, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json', ...(options.headers||{}) } });
+        const data = await res.json().catch(()=>({}));
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            // Clear token and redirect to login page
+            try {
+              localStorage.removeItem('linglish_token');
+              localStorage.removeItem('authToken');
+              sessionStorage.removeItem('linglish_token');
+              sessionStorage.removeItem('authToken');
+            } catch (e) {}
+
+            // Only redirect if we haven't already started redirecting
+            if (!window.__redirecting) {
+              window.__redirecting = true;
+              window.location.href = './index.html';
+            }
+            return;
+          }
+          throw new Error(data.message || res.statusText);
+        }
+        return data;
+      }
+
+      const state = { page: 0, size: 20, total: 0, items: [] };
+
+      function truncate(s, n=60) { s = String(s||''); return s.length>n ? s.slice(0,n) + '…' : s; }
+      function csvEscape(s){ s=String(s??''); if (s.includes('"') || s.includes(',') || s.includes('\n')) return '"'+s.replace(/"/g,'""')+'"'; return s; }
+
+      async function loadPage() {
+        const offset = state.page * state.size;
+        const data = await api(`/admin/users/${userId}/pronunciation/history?limit=${state.size}&offset=${offset}`);
+        state.items = data.items || [];
+        state.total = data.total || (offset + state.items.length);
+        const tb = document.getElementById('tb');
+        tb.innerHTML = state.items.map(a => `
+          <tr>
+            <td>${new Date(a.created_at).toLocaleString()}</td>
+            <td>${Math.round(a.overall||0)}</td>
+            <td>${Math.round(a.accuracy||0)}</td>
+            <td>${Math.round(a.fluency||0)}</td>
+            <td>${Math.round(a.completeness||0)}</td>
+            <td title="${(a.text||'').replace(/\"/g,'&quot;')}">${truncate(a.text)}</td>
+            <td>${a.provider || '-'}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="7" class="muted">暂无数据</td></tr>';
+        document.getElementById('page-info').textContent = `第 ${state.page+1} 页 / 共 ~${Math.max(1, Math.ceil(state.total/state.size))} 页`;
+        document.getElementById('btn-prev').disabled = state.page <= 0;
+        document.getElementById('btn-next').disabled = state.items.length < state.size;
+      }
+
+      document.getElementById('page-size').addEventListener('change', (e)=>{ state.size = Number(e.target.value); state.page = 0; loadPage(); });
+      document.getElementById('btn-prev').addEventListener('click', ()=>{ if (state.page>0){ state.page--; loadPage(); }});
+      document.getElementById('btn-next').addEventListener('click', ()=>{ if (state.items.length === state.size){ state.page++; loadPage(); }});
+
+      document.getElementById('btn-export').addEventListener('click', ()=>{
+        const rows = state.items.map(a => [a.created_at, a.overall, a.accuracy, a.fluency, a.completeness, a.text, a.provider]);
+        const header = ['created_at','overall','accuracy','fluency','completeness','text','provider'];
+        const csv = [header, ...rows].map(r => r.map(csvEscape).join(',')).join('\n');
+        const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `user_${userId}_pronunciations_page${state.page+1}.csv`; a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      document.getElementById('btn-export-all').addEventListener('click', async ()=>{
+        // 直接调用服务端流式导出
+        const url = `/admin/users/${userId}/pronunciation/export.csv`;
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) { const t = await res.text(); alert('导出失败: ' + t); return; }
+        const blob = await res.blob();
+        const dl = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = dl; a.download = `user_${userId}_pronunciations_all.csv`; a.click();
+        URL.revokeObjectURL(dl);
+      });
+
+      loadPage();
+    </script>
+  </body>
+  </html>

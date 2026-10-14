@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - 系统监控</title>
+  <link rel="stylesheet" href="./admin-styles.css">
+  <script src="./admin-common.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .system-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .gauge-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+    }
+    .gauge-value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .gauge-label {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--gray-600);
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      background: var(--gray-50);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+    }
+    .metric-row:last-child {
+      margin-bottom: 0;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+    .status-dot.healthy {
+      background: var(--success-color);
+      box-shadow: 0 0 8px rgba(72, 187, 120, 0.5);
+    }
+    .status-dot.warning {
+      background: var(--warning-color);
+      box-shadow: 0 0 8px rgba(237, 137, 54, 0.5);
+    }
+    .status-dot.danger {
+      background: var(--danger-color);
+      box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+    }
+    .log-entry {
+      padding: 0.5rem 0.75rem;
+      border-left: 3px solid var(--gray-300);
+      margin-bottom: 0.5rem;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.75rem;
+      background: var(--gray-50);
+      border-radius: 4px;
+    }
+    .log-entry.info { border-left-color: var(--info-color); }
+    .log-entry.success { border-left-color: var(--success-color); }
+    .log-entry.warning { border-left-color: var(--warning-color); }
+    .log-entry.error { border-left-color: var(--danger-color); }
+  </style>
+</head>
+<body>
+  <div class="admin-content">
+    <!-- 系统健康状态 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">💚 系统健康状态</h2>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span id="system-health-status" class="admin-badge admin-badge-success">正常运行</span>
+          <button class="admin-btn admin-btn-sm admin-btn-primary" onclick="refreshSystemMetrics()">
+            <span>🔄</span>
+            <span>刷新</span>
+          </button>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div class="system-grid">
+          <!-- CPU使用率 -->
+          <div>
+            <div class="gauge-container">
+              <canvas id="cpuGauge"></canvas>
+              <div class="gauge-value" id="cpu-value">-</div>
+            </div>
+            <div class="gauge-label">CPU 使用率</div>
+          </div>
+
+          <!-- 内存使用率 -->
+          <div>
+            <div class="gauge-container">
+              <canvas id="memoryGauge"></canvas>
+              <div class="gauge-value" id="memory-value">-</div>
+            </div>
+            <div class="gauge-label">内存使用率</div>
+          </div>
+
+          <!-- API响应时间 -->
+          <div>
+            <div class="gauge-container">
+              <canvas id="apiGauge"></canvas>
+              <div class="gauge-value" id="api-value">-</div>
+            </div>
+            <div class="gauge-label">API 平均响应时间 (ms)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 服务状态 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🔧 服务状态监控</h2>
+      </div>
+      <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+          <div class="metric-row">
+            <div>
+              <span class="status-dot healthy"></span>
+              <span>数据库连接</span>
+            </div>
+            <span class="admin-badge admin-badge-success" id="db-status">正常</span>
+          </div>
+          <div class="metric-row">
+            <div>
+              <span class="status-dot healthy"></span>
+              <span>Redis缓存</span>
+            </div>
+            <span class="admin-badge admin-badge-success" id="redis-status">正常</span>
+          </div>
+          <div class="metric-row">
+            <div>
+              <span class="status-dot healthy"></span>
+              <span>文件存储</span>
+            </div>
+            <span class="admin-badge admin-badge-success" id="storage-status">正常</span>
+          </div>
+          <div class="metric-row">
+            <div>
+              <span class="status-dot healthy"></span>
+              <span>翻译API</span>
+            </div>
+            <span class="admin-badge admin-badge-success" id="translation-api-status">正常</span>
+          </div>
+          <div class="metric-row">
+            <div>
+              <span class="status-dot healthy"></span>
+              <span>AI服务</span>
+            </div>
+            <span class="admin-badge admin-badge-success" id="ai-status">正常</span>
+          </div>
+          <div class="metric-row">
+            <div>
+              <span class="status-dot healthy"></span>
+              <span>邮件服务</span>
+            </div>
+            <span class="admin-badge admin-badge-success" id="email-status">正常</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API调用统计 -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">📊 API调用统计</h2>
+        </div>
+        <div class="admin-card-body">
+          <div style="height: 300px;">
+            <canvas id="apiCallsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">⏱️ 响应时间趋势</h2>
+        </div>
+        <div class="admin-card-body">
+          <div style="height: 300px;">
+            <canvas id="responseTimeChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据库性能 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🗄️ 数据库性能指标</h2>
+      </div>
+      <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div class="metric-row">
+            <span>活跃连接数</span>
+            <strong id="db-connections">-</strong>
+          </div>
+          <div class="metric-row">
+            <span>查询执行/秒</span>
+            <strong id="db-queries-per-sec">-</strong>
+          </div>
+          <div class="metric-row">
+            <span>平均查询时间</span>
+            <strong id="db-avg-query-time">-</strong>
+          </div>
+          <div class="metric-row">
+            <span>慢查询数</span>
+            <strong id="db-slow-queries">-</strong>
+          </div>
+          <div class="metric-row">
+            <span>缓存命中率</span>
+            <strong id="db-cache-hit-rate">-</strong>
+          </div>
+          <div class="metric-row">
+            <span>数据库大小</span>
+            <strong id="db-size">-</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 系统日志 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">📝 系统日志（最近50条）</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <select id="log-level-filter" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="filterLogs()">
+            <option value="all">全部日志</option>
+            <option value="error">错误</option>
+            <option value="warning">警告</option>
+            <option value="info">信息</option>
+            <option value="success">成功</option>
+          </select>
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="exportLogs()">
+            <span>📥</span>
+            <span>导出</span>
+          </button>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div id="system-logs" style="max-height: 400px; overflow-y: auto;">
+          <div style="text-align: center; color: var(--gray-500); padding: 2rem;">
+            <div>加载中...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 初始化页面
+    initAdminPage('系统监控');
+
+    let cpuGauge, memoryGauge, apiGauge;
+    let apiCallsChart, responseTimeChart;
+    let systemLogs = [];
+    let autoRefreshTimer = null;
+
+    // 初始化仪表盘
+    function initGauges() {
+      // CPU仪表盘
+      const cpuCtx = document.getElementById('cpuGauge');
+      cpuGauge = new Chart(cpuCtx, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [0, 100],
+            backgroundColor: ['rgb(72, 187, 120)', 'rgba(200, 200, 200, 0.2)'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: '80%',
+          plugins: { legend: { display: false }, tooltip: { enabled: false } }
+        }
+      });
+
+      // 内存仪表盘
+      const memoryCtx = document.getElementById('memoryGauge');
+      memoryGauge = new Chart(memoryCtx, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [0, 100],
+            backgroundColor: ['rgb(14, 165, 233)', 'rgba(200, 200, 200, 0.2)'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: '80%',
+          plugins: { legend: { display: false }, tooltip: { enabled: false } }
+        }
+      });
+
+      // API响应时间仪表盘
+      const apiCtx = document.getElementById('apiGauge');
+      apiGauge = new Chart(apiCtx, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [0, 1000],
+            backgroundColor: ['rgb(237, 137, 54)', 'rgba(200, 200, 200, 0.2)'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: '80%',
+          plugins: { legend: { display: false }, tooltip: { enabled: false } }
+        }
+      });
+    }
+
+    // 初始化API调用图表
+    function initAPICallsChart() {
+      const ctx = document.getElementById('apiCallsChart');
+      apiCallsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['用户', '视频', '翻译', '反馈', 'AI', '其他'],
+          datasets: [{
+            label: 'API调用次数',
+            data: [0, 0, 0, 0, 0, 0],
+            backgroundColor: [
+              'rgba(14, 165, 233, 0.8)',
+              'rgba(72, 187, 120, 0.8)',
+              'rgba(237, 137, 54, 0.8)',
+              'rgba(160, 174, 192, 0.8)',
+              'rgba(190, 24, 93, 0.8)',
+              'rgba(14, 165, 233, 0.8)'
+            ],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } }
+          }
+        }
+      });
+    }
+
+    // 初始化响应时间图表
+    function initResponseTimeChart() {
+      const ctx = document.getElementById('responseTimeChart');
+      const now = new Date();
+      const labels = [];
+      for (let i = 9; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * 60000);
+        labels.push(time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+      }
+
+      responseTimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '响应时间 (ms)',
+            data: Array(10).fill(0),
+            borderColor: 'rgb(14, 165, 233)',
+            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } }
+          }
+        }
+      });
+    }
+
+    // 刷新系统指标
+    async function refreshSystemMetrics() {
+      try {
+        AdminUtils.showToast('正在刷新系统指标...', 'info');
+
+        // 模拟系统指标数据（实际应从后端API获取）
+        const metrics = {
+          cpu: Math.random() * 60 + 20, // 20-80%
+          memory: Math.random() * 50 + 30, // 30-80%
+          apiResponseTime: Math.random() * 100 + 50, // 50-150ms
+          dbConnections: Math.floor(Math.random() * 20 + 5),
+          dbQueriesPerSec: Math.floor(Math.random() * 100 + 50),
+          dbAvgQueryTime: (Math.random() * 10 + 2).toFixed(2) + ' ms',
+          dbSlowQueries: Math.floor(Math.random() * 5),
+          dbCacheHitRate: (Math.random() * 20 + 75).toFixed(1) + '%',
+          dbSize: (Math.random() * 500 + 100).toFixed(0) + ' MB',
+          apiCalls: {
+            users: Math.floor(Math.random() * 500 + 100),
+            videos: Math.floor(Math.random() * 300 + 50),
+            translations: Math.floor(Math.random() * 200 + 30),
+            feedback: Math.floor(Math.random() * 100 + 10),
+            ai: Math.floor(Math.random() * 150 + 20),
+            other: Math.floor(Math.random() * 80 + 10)
+          }
+        };
+
+        // 更新仪表盘
+        updateGauge(cpuGauge, 'cpu-value', metrics.cpu, '%');
+        updateGauge(memoryGauge, 'memory-value', metrics.memory, '%');
+        updateGauge(apiGauge, 'api-value', metrics.apiResponseTime, 'ms');
+
+        // 更新数据库指标
+        document.getElementById('db-connections').textContent = metrics.dbConnections;
+        document.getElementById('db-queries-per-sec').textContent = metrics.dbQueriesPerSec;
+        document.getElementById('db-avg-query-time').textContent = metrics.dbAvgQueryTime;
+        document.getElementById('db-slow-queries').textContent = metrics.dbSlowQueries;
+        document.getElementById('db-cache-hit-rate').textContent = metrics.dbCacheHitRate;
+        document.getElementById('db-size').textContent = metrics.dbSize;
+
+        // 更新API调用图表
+        apiCallsChart.data.datasets[0].data = [
+          metrics.apiCalls.users,
+          metrics.apiCalls.videos,
+          metrics.apiCalls.translations,
+          metrics.apiCalls.feedback,
+          metrics.apiCalls.ai,
+          metrics.apiCalls.other
+        ];
+        apiCallsChart.update('none');
+
+        // 更新响应时间图表
+        const newResponseTime = Math.random() * 100 + 50;
+        responseTimeChart.data.datasets[0].data.shift();
+        responseTimeChart.data.datasets[0].data.push(newResponseTime);
+        const now = new Date();
+        responseTimeChart.data.labels.shift();
+        responseTimeChart.data.labels.push(now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+        responseTimeChart.update('none');
+
+        // 添加日志
+        addSystemLog('info', '系统指标已刷新');
+
+        AdminUtils.showToast('系统指标已更新', 'success');
+
+        // 更新系统健康状态
+        updateSystemHealth(metrics);
+
+      } catch (error) {
+        console.error('刷新系统指标失败:', error);
+        AdminUtils.showToast('刷新失败: ' + error.message, 'error');
+        addSystemLog('error', '刷新系统指标失败: ' + error.message);
+      }
+    }
+
+    // 更新仪表盘
+    function updateGauge(chart, valueElId, value, unit) {
+      const displayValue = Math.round(value);
+      document.getElementById(valueElId).textContent = displayValue + (unit || '');
+
+      const maxValue = unit === '%' ? 100 : 1000;
+      let color;
+      if (unit === '%') {
+        color = value > 80 ? 'rgb(220, 38, 38)' : value > 60 ? 'rgb(237, 137, 54)' : 'rgb(72, 187, 120)';
+      } else {
+        color = value > 200 ? 'rgb(220, 38, 38)' : value > 100 ? 'rgb(237, 137, 54)' : 'rgb(72, 187, 120)';
+      }
+
+      chart.data.datasets[0].data = [value, maxValue - value];
+      chart.data.datasets[0].backgroundColor = [color, 'rgba(200, 200, 200, 0.2)'];
+      chart.update('none');
+    }
+
+    // 更新系统健康状态
+    function updateSystemHealth(metrics) {
+      const statusEl = document.getElementById('system-health-status');
+
+      if (metrics.cpu > 80 || metrics.memory > 80) {
+        statusEl.className = 'admin-badge admin-badge-danger';
+        statusEl.textContent = '高负载';
+      } else if (metrics.cpu > 60 || metrics.memory > 60) {
+        statusEl.className = 'admin-badge admin-badge-warning';
+        statusEl.textContent = '中等负载';
+      } else {
+        statusEl.className = 'admin-badge admin-badge-success';
+        statusEl.textContent = '正常运行';
+      }
+    }
+
+    // 添加系统日志
+    function addSystemLog(level, message) {
+      const log = {
+        timestamp: new Date().toISOString(),
+        level: level,
+        message: message
+      };
+
+      systemLogs.unshift(log);
+      if (systemLogs.length > 50) {
+        systemLogs = systemLogs.slice(0, 50);
+      }
+
+      renderLogs();
+    }
+
+    // 渲染日志
+    function renderLogs() {
+      const logsEl = document.getElementById('system-logs');
+      const filter = document.getElementById('log-level-filter').value;
+
+      let filtered = systemLogs;
+      if (filter !== 'all') {
+        filtered = systemLogs.filter(log => log.level === filter);
+      }
+
+      if (filtered.length === 0) {
+        logsEl.innerHTML = '<div style="text-align: center; color: var(--gray-500); padding: 2rem;">暂无日志</div>';
+        return;
+      }
+
+      const html = filtered.map(log => {
+        const time = new Date(log.timestamp).toLocaleTimeString('zh-CN');
+        return `
+          <div class="log-entry ${log.level}">
+            <span style="color: var(--gray-500);">[${time}]</span>
+            <span style="text-transform: uppercase; font-weight: 600; margin: 0 0.5rem;">[${log.level}]</span>
+            <span>${AdminUtils.escapeHtml(log.message)}</span>
+          </div>
+        `;
+      }).join('');
+
+      logsEl.innerHTML = html;
+    }
+
+    // 筛选日志
+    function filterLogs() {
+      renderLogs();
+    }
+
+    // 导出日志
+    function exportLogs() {
+      const exportData = systemLogs.map(log => ({
+        '时间': log.timestamp,
+        '级别': log.level,
+        '消息': log.message
+      }));
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      AdminUtils.exportToCSV(exportData, `linglish-system-logs-${timestamp}.csv`);
+    }
+
+    // 模拟初始日志
+    function generateInitialLogs() {
+      const messages = [
+        { level: 'info', msg: '系统启动完成' },
+        { level: 'success', msg: '数据库连接成功' },
+        { level: 'success', msg: 'Redis缓存已连接' },
+        { level: 'info', msg: '开始加载配置文件' },
+        { level: 'success', msg: '配置文件加载完成' },
+        { level: 'info', msg: 'API服务器启动在端口4000' },
+        { level: 'warning', msg: '检测到3个慢查询' },
+        { level: 'info', msg: '用户登录: user@example.com' },
+        { level: 'success', msg: '视频上传完成: video_123.mp4' },
+        { level: 'info', msg: '翻译任务完成: 150条记录' }
+      ];
+
+      messages.forEach((item, index) => {
+        setTimeout(() => {
+          addSystemLog(item.level, item.msg);
+        }, index * 100);
+      });
+    }
+
+    // 自动刷新
+    function startAutoRefresh() {
+      autoRefreshTimer = setInterval(() => {
+        refreshSystemMetrics();
+      }, 30000); // 30秒
+    }
+
+    function stopAutoRefresh() {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
+
+    // 页面加载后执行
+    initGauges();
+    initAPICallsChart();
+    initResponseTimeChart();
+    generateInitialLogs();
+
+    // 初始加载数据
+    setTimeout(() => {
+      refreshSystemMetrics();
+      startAutoRefresh();
+    }, 500);
+
+    // 页面卸载时清理
+    window.addEventListener('beforeunload', () => {
+      stopAutoRefresh();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1122 @@
+/**
+ * Celebration & Streak Styles
+ * 庆祝动画和连胜相关样式
+ */
+
+/* ============================================================================
+   CSS Variables
+   ============================================================================ */
+
+:root {
+  --celebration-primary: #0ea5e9;
+  --celebration-secondary: #2dd4bf;
+  --celebration-success: #10b981;
+  --celebration-warning: #f59e0b;
+  --celebration-danger: #ef4444;
+  --celebration-gold: #ffd700;
+  --celebration-silver: #c0c0c0;
+  --celebration-bronze: #cd7f32;
+  --celebration-diamond: #b9f2ff;
+  --celebration-master: #9b30ff;
+}
+
+/* ============================================================================
+   Modal Overlay
+   ============================================================================ */
+
+.celebration-modal-overlay,
+.streak-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.celebration-modal-overlay.visible,
+.streak-modal-overlay.visible {
+  opacity: 1;
+}
+
+.celebration-modal-overlay.fade-out,
+.streak-modal-overlay.fade-out {
+  opacity: 0;
+}
+
+/* ============================================================================
+   Base Modal Styles
+   ============================================================================ */
+
+.celebration-modal,
+.streak-modal {
+  background: white;
+  border-radius: 24px;
+  max-width: 360px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+.celebration-modal-overlay.visible .celebration-modal,
+.streak-modal-overlay.visible .streak-modal {
+  transform: scale(1);
+}
+
+.streak-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+/* ============================================================================
+   Streak Danger Modal
+   ============================================================================ */
+
+.streak-modal-header {
+  padding: 24px 24px 16px;
+  text-align: center;
+}
+
+.streak-modal-header.danger {
+  background: linear-gradient(135deg, #ff6b6b, #ee5253);
+  color: white;
+}
+
+.streak-modal-header.shop {
+  background: linear-gradient(135deg, var(--celebration-primary), var(--celebration-secondary));
+  color: white;
+}
+
+.streak-fire-icon {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.fire-emoji {
+  font-size: 64px;
+  display: block;
+}
+
+.fire-emoji.pulse {
+  animation: firePulse 1s ease-in-out infinite;
+}
+
+@keyframes firePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.streak-count {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: white;
+  color: #ff6b6b;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.streak-modal-header h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.danger-text {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.streak-modal-body {
+  padding: 24px;
+}
+
+.streak-info-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.info-row:not(:last-child) {
+  border-bottom: 1px solid #eee;
+}
+
+.info-row .label {
+  color: #666;
+  font-size: 14px;
+}
+
+.info-row .value {
+  font-weight: 600;
+  color: #333;
+}
+
+.streak-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 16px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--celebration-primary), var(--celebration-secondary));
+  color: white;
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+.sub-text {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.freeze-icon {
+  font-size: 20px;
+}
+
+/* ============================================================================
+   Freeze Shop Modal
+   ============================================================================ */
+
+.balance-display {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.balance-display span {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.freeze-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.freeze-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.freeze-item:hover {
+  border-color: var(--celebration-primary);
+}
+
+.freeze-item.premium {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+
+.freeze-item-icon {
+  font-size: 32px;
+}
+
+.freeze-item-info {
+  flex: 1;
+}
+
+.freeze-item-info h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.freeze-item-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.freeze-item-info .duration {
+  font-size: 11px;
+  color: var(--celebration-primary);
+  font-weight: 500;
+}
+
+.freeze-item-price {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.price {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-buy {
+  padding: 8px 16px;
+  background: var(--celebration-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-buy.disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   Celebration Content
+   ============================================================================ */
+
+.celebration-content {
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.celebration-content h2 {
+  margin: 16px 0 8px;
+  font-size: 28px;
+  color: #333;
+}
+
+.celebration-subtitle {
+  color: #666;
+  font-size: 16px;
+  margin: 0 0 24px;
+}
+
+.celebration-icon {
+  position: relative;
+  display: inline-block;
+}
+
+.celebration-icon .icon-main {
+  font-size: 80px;
+  display: block;
+  animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.celebration-icon .icon-secondary {
+  position: absolute;
+  font-size: 24px;
+  top: -10px;
+  right: -10px;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.5; transform: scale(1.2) rotate(180deg); }
+}
+
+.celebration-stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin: 24px 0;
+}
+
+.celebration-stats .stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.celebration-stats .stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--celebration-primary);
+}
+
+.celebration-stats .stat-label {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.bonus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  padding: 12px 20px;
+  border-radius: 30px;
+  margin-bottom: 24px;
+}
+
+.bonus-badge .badge-icon {
+  font-size: 24px;
+}
+
+.bonus-badge .badge-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.btn-celebration-continue {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--celebration-primary), var(--celebration-secondary));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+  transition: transform 0.2s;
+}
+
+.btn-celebration-continue:active {
+  transform: scale(0.98);
+}
+
+.btn-celebration-continue.legendary {
+  background: linear-gradient(135deg, var(--celebration-gold), #f59e0b);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+}
+
+.btn-celebration-continue.epic {
+  background: linear-gradient(135deg, #2dd4bf, #c2410c);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+}
+
+/* ============================================================================
+   Achievement Modal
+   ============================================================================ */
+
+.achievement-banner {
+  background: linear-gradient(135deg, var(--celebration-gold), #f59e0b);
+  padding: 8px 24px;
+  margin: -32px -24px 24px;
+}
+
+.achievement-banner .banner-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.achievement-icon-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.achievement-glow {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, var(--celebration-gold) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: glowRotate 3s linear infinite;
+}
+
+@keyframes glowRotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.achievement-icon {
+  font-size: 72px;
+  position: relative;
+  z-index: 1;
+  animation: achievementPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes achievementPop {
+  0% { transform: scale(0) rotate(-20deg); }
+  60% { transform: scale(1.1) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.achievement-name {
+  font-size: 24px;
+  margin: 8px 0;
+}
+
+.achievement-description {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+.achievement-rewards {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.achievement-rewards .reward-item {
+  background: #f0f0f0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.achievement-rewards .reward-item.xp {
+  background: linear-gradient(135deg, #ddd6fe, #c4b5fd);
+  color: #5b21b6;
+}
+
+.achievement-rewards .reward-item.coins {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+}
+
+.achievement-rewards .reward-item.gems {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  color: #0b3f3a;
+}
+
+.achievement-progress {
+  color: #888;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+/* ============================================================================
+   Level Up Modal
+   ============================================================================ */
+
+.level-up-rays {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(139, 92, 246, 0.1) 10deg,
+    transparent 20deg
+  );
+  animation: rayRotate 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rayRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.level-badge {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, var(--celebration-primary), var(--celebration-secondary));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 30px rgba(14, 165, 233, 0.4);
+  animation: levelBadgePop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes levelBadgePop {
+  0% { transform: scale(0) rotate(-180deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.level-badge-inner {
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.level-number {
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--celebration-primary), var(--celebration-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.level-subtitle {
+  color: #666;
+  margin: 0 0 24px;
+}
+
+.level-rewards {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.reward-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.reward-card .reward-icon {
+  font-size: 28px;
+}
+
+.reward-card .reward-amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--celebration-primary);
+}
+
+.reward-card .reward-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.reward-card .reward-label {
+  font-size: 12px;
+  color: #888;
+}
+
+/* ============================================================================
+   Milestone Modal
+   ============================================================================ */
+
+.milestone-badge-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 20px;
+}
+
+.milestone-flame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 60px;
+  z-index: 2;
+  animation: flameWobble 0.5s ease-in-out infinite;
+}
+
+@keyframes flameWobble {
+  0%, 100% { transform: translate(-50%, -50%) rotate(-5deg); }
+  50% { transform: translate(-50%, -50%) rotate(5deg); }
+}
+
+.milestone-days {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ff6b6b;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 3;
+}
+
+.milestone-badge-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4px solid #ff6b6b;
+  animation: ringPulse 2s ease-in-out infinite;
+}
+
+.milestone-badge-ring.epic {
+  border-color: #2dd4bf;
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+}
+
+.milestone-badge-ring.legendary {
+  border-color: var(--celebration-gold);
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+}
+
+.milestone-title-container {
+  margin-bottom: 12px;
+}
+
+.milestone-label {
+  font-size: 12px;
+  color: #888;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.milestone-name {
+  font-size: 26px;
+  margin: 4px 0;
+  color: #333;
+}
+
+.celebration-content.milestone.legendary .milestone-name {
+  background: linear-gradient(135deg, var(--celebration-gold), #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.milestone-description {
+  color: #666;
+  font-size: 15px;
+  margin: 0 0 20px;
+}
+
+.milestone-rewards {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.milestone-rewards .reward-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.milestone-rewards .reward-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--celebration-primary);
+}
+
+.milestone-rewards .reward-type {
+  font-size: 12px;
+  color: #888;
+}
+
+.next-milestone-hint {
+  background: #f0f0f0;
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* ============================================================================
+   League Promotion Modal
+   ============================================================================ */
+
+.promotion-banner {
+  padding: 12px 24px;
+  margin: -32px -24px 24px;
+  text-align: center;
+}
+
+.promotion-banner .banner-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+.league-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.old-tier,
+.new-tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.old-tier .tier-icon,
+.new-tier .tier-icon {
+  font-size: 48px;
+}
+
+.new-tier .tier-icon {
+  animation: tierPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tierPop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.tier-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.promotion-arrow {
+  font-size: 28px;
+  color: #10b981;
+  animation: arrowBounce 1s ease-in-out infinite;
+}
+
+@keyframes arrowBounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+
+.promotion-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin: 20px 0;
+}
+
+.promotion-stats .stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.promotion-stats .stat-label {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.promotion-stats .stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--celebration-primary);
+}
+
+.promotion-rewards {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.promotion-rewards .reward {
+  background: #f0f0f0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* ============================================================================
+   Broken Streak Modal
+   ============================================================================ */
+
+.broken-content {
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.broken-icon {
+  font-size: 80px;
+  margin-bottom: 16px;
+  animation: breakShake 0.5s ease-in-out;
+}
+
+@keyframes breakShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+.broken-content h2 {
+  color: var(--celebration-danger);
+  margin: 0 0 12px;
+}
+
+.broken-content p {
+  color: #666;
+  font-size: 15px;
+  margin: 0 0 20px;
+}
+
+.encouragement {
+  background: #f0fdf4;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.encouragement p {
+  color: #166534;
+  margin: 0;
+}
+
+.btn-restart {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--celebration-success), #059669);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ============================================================================
+   XP/Coins Floater
+   ============================================================================ */
+
+.xp-floater,
+.coins-floater {
+  position: fixed;
+  transform: translateX(-50%);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--celebration-primary);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0;
+  transition: all 1s ease-out;
+}
+
+.xp-floater.animate,
+.coins-floater.animate {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-60px);
+}
+
+.coins-floater {
+  color: var(--celebration-gold);
+}
+
+/* ============================================================================
+   Streak Notification
+   ============================================================================ */
+
+.streak-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: white;
+  padding: 14px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 99999;
+  font-weight: 600;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.streak-notification.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.streak-notification.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.streak-notification.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ============================================================================
+   Milestone Simple Notification
+   ============================================================================ */
+
+.milestone-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: white;
+  padding: 16px 24px;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  z-index: 99999;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.milestone-notification.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.milestone-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.milestone-notification .milestone-icon {
+  font-size: 40px;
+}
+
+.milestone-notification .milestone-info h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: #888;
+}
+
+.milestone-notification .milestone-info p {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+}
+
+.milestone-notification .milestone-rewards {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.milestone-notification .milestone-rewards span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--celebration-primary);
+}
+
+/* ============================================================================
+   Confirm Modal
+   ============================================================================ */
+
+.confirm-modal {
+  max-width: 320px;
+}
+
+.confirm-content {
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.confirm-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.confirm-content h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.confirm-content p {
+  color: #666;
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.confirm-actions button {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#confirm-later {
+  background: #f0f0f0;
+  color: #666;
+}
+
+#confirm-use {
+  background: linear-gradient(135deg, var(--celebration-primary), var(--celebration-secondary));
+  color: white;
+}

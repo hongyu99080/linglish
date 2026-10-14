@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>影子跟读法怎么练｜英语听说与发音训练 - Linglish</title>
+  <meta name="description" content="了解英语影子跟读法的练习步骤：先听原声，再同步模仿语音、节奏和语调，通过录音回放与 AI 反馈持续改进听说表现。">
+  <meta name="keywords" content="影子跟读法,英语口语,shadowing,英语练习,英语学习,口语训练,英语发音">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.example.com/shadowing">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.example.com/shadowing">
+  <meta property="og:title" content="影子跟读法怎么练｜英语听说与发音训练 - Linglish">
+  <meta property="og:description" content="从听原声、同步模仿到录音复盘，系统练习英语语音、节奏、语调和常用语块。">
+  <meta property="og:image" content="https://www.example.com/assets/lingbao_3d.jpg">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="影子跟读法怎么练｜Linglish">
+  <meta name="twitter:description" content="用真实原声、逐句跟读、录音回放和 AI 反馈练习英语听说。">
+
+  <!-- Schema.org Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "影子跟读法英语口语训练",
+    "description": "通过听原声、同步模仿、录音回放和 AI 反馈练习英语语音、节奏、语调与常用语块。",
+    "provider": {
+      "@type": "Organization",
+      "name": "Linglish",
+      "url": "https://www.example.com/"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "CNY",
+      "availability": "https://schema.org/InStock"
+    },
+    "hasCourseInstance": {
+      "@type": "CourseInstance",
+      "courseMode": "online"
+    }
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #C41E3A;
+      --red-light: #e8294d;
+      --gold: #D4A017;
+      --dark: #0f172a;
+      --dark2: #1e293b;
+      --dark3: #0a0f1e;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: var(--dark3);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 60px;
+      background: rgba(10,15,30,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, #C41E3A 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-decoration: none;
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--red);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .nav-cta:hover { background: var(--red-light); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 24px 80px;
+      position: relative;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(196,30,58,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(212,160,23,0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #0a0f1e 0%, #0f172a 100%);
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(196,30,58,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(196,30,58,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(196,30,58,0.15);
+      border: 1px solid rgba(196,30,58,0.3);
+      color: #ff8099;
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 32px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .hero-badge-dot {
+      width: 7px; height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-title {
+      font-size: clamp(32px, 6vw, 68px);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      animation: fadeDown 0.6s ease 0.1s both;
+    }
+
+    .hero-title .accent {
+      background: linear-gradient(135deg, #C41E3A, #ff4d6d, #D4A017);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle-en {
+      font-size: clamp(15px, 2.5vw, 22px);
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-style: italic;
+      animation: fadeDown 0.6s ease 0.2s both;
+    }
+
+    .hero-subtitle-zh {
+      font-size: clamp(14px, 2vw, 18px);
+      color: #64748b;
+      margin-bottom: 48px;
+      animation: fadeDown 0.6s ease 0.25s both;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: fadeDown 0.6s ease 0.35s both;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #C41E3A, #e8294d);
+      color: #fff;
+      padding: 18px 36px;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 8px 32px rgba(196,30,58,0.4), 0 0 0 1px rgba(196,30,58,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 48px rgba(196,30,58,0.5), 0 0 0 1px rgba(196,30,58,0.3);
+    }
+    .btn-primary:active { transform: translateY(-1px); }
+
+    .btn-arrow {
+      font-size: 20px;
+      transition: transform 0.2s;
+    }
+    .btn-primary:hover .btn-arrow { transform: translateX(4px); }
+
+    .hero-trust {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .hero-stars { color: var(--gold); font-size: 15px; }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SECTION COMMONS ── */
+    section { padding: 80px 24px; }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(26px, 4vw, 42px);
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 17px;
+      max-width: 560px;
+    }
+
+    /* ── WHAT IS SHADOWING (3-STEP) ── */
+    .steps-section {
+      background: var(--dark);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0;
+      margin-top: 48px;
+      position: relative;
+    }
+
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 52px;
+      left: calc(16.66% + 12px);
+      right: calc(16.66% + 12px);
+      height: 2px;
+      background: linear-gradient(90deg, var(--red), var(--gold), var(--red));
+      opacity: 0.3;
+    }
+
+    .step-card {
+      background: var(--dark2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+      transition: border-color 0.2s, transform 0.2s;
+      margin: 8px;
+    }
+    .step-card:hover {
+      border-color: rgba(196,30,58,0.3);
+      transform: translateY(-4px);
+    }
+
+    .step-number {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--red);
+      color: #fff;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-emoji {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .step-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .step-title .en {
+      display: block;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .step-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── SCIENCE SECTION ── */
+    .science-section {
+      background: var(--dark3);
+    }
+
+    .science-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .science-card {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .science-card:hover {
+      border-color: rgba(196,30,58,0.3);
+      transform: translateY(-4px);
+    }
+
+    .science-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--red), transparent);
+    }
+
+    .science-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+    }
+
+    .science-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .science-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .science-cite {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #475569;
+      font-style: italic;
+    }
+
+    /* ── COMPARISON TABLE ── */
+    .compare-section {
+      background: var(--dark);
+    }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 48px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .compare-table th {
+      padding: 20px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-table th:first-child { text-align: left; }
+
+    .compare-table th.highlight {
+      background: rgba(196,30,58,0.12);
+      color: #ff8099;
+    }
+
+    .compare-table td {
+      padding: 16px;
+      font-size: 14px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+
+    .compare-table td:first-child {
+      text-align: left;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .compare-table td.highlight {
+      background: rgba(196,30,58,0.05);
+    }
+
+    .compare-table tr:last-child td { border-bottom: none; }
+
+    .compare-table tr:nth-child(even) td:not(.highlight) {
+      background: rgba(255,255,255,0.015);
+    }
+
+    .compare-table thead tr th:first-child {
+      background: var(--dark2);
+    }
+    .compare-table thead tr th:not(:first-child):not(.highlight) {
+      background: var(--dark2);
+    }
+
+    .check { color: #34d399; font-size: 18px; }
+    .cross { color: #f87171; font-size: 18px; }
+    .partial { color: var(--gold); font-size: 18px; }
+
+    /* ── SOCIAL PROOF ── */
+    .proof-section {
+      background: var(--dark3);
+    }
+
+    .proof-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+      margin-bottom: 48px;
+    }
+
+    .proof-stat {
+      text-align: center;
+      padding: 28px 20px;
+      background: var(--dark);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .proof-stat-num {
+      font-size: 42px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff, #C41E3A);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .proof-stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .proof-quotes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .quote-card {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .quote-mark {
+      font-size: 48px;
+      color: var(--red);
+      opacity: 0.3;
+      line-height: 1;
+      margin-bottom: -10px;
+      font-family: Georgia, serif;
+    }
+
+    .quote-text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .quote-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .quote-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--red), var(--gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .quote-name { font-size: 13px; font-weight: 600; }
+    .quote-role { font-size: 12px; color: var(--text-muted); }
+
+    /* ── FINAL CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, rgba(196,30,58,0.15) 0%, rgba(212,160,23,0.08) 100%);
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .cta-title {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .cta-subtitle {
+      color: var(--text-muted);
+      font-size: 17px;
+      margin-bottom: 40px;
+    }
+
+    .cta-features {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .cta-feature {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .cta-feature-check { color: #34d399; font-size: 16px; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--dark3);
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 0 16px; }
+      section { padding: 60px 16px; }
+      .hero-cta-group { width: 100%; }
+      .btn-primary { width: 100%; justify-content: center; }
+      .compare-table th, .compare-table td { padding: 12px 8px; font-size: 13px; }
+      .steps-grid::before { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .compare-table { font-size: 12px; }
+      .compare-table th, .compare-table td { padding: 10px 6px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="nav-logo">Linglish</a>
+    <a href="/video-reader-desktop.html" class="nav-cta">
+      免费开始练习 <span>→</span>
+    </a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      听原声 · 同步模仿 · 录音复盘
+    </div>
+
+    <h1 class="hero-title">
+      影子跟读<br>
+      <span class="accent">把听懂的英语练到说得出来</span>
+    </h1>
+
+    <p class="hero-subtitle-en">Shadowing Practice for Listening and Speaking</p>
+    <p class="hero-subtitle-zh">同步听辨 · 模仿节奏 · 录音反馈</p>
+
+    <div class="hero-cta-group">
+      <a href="/video-reader-desktop.html" class="btn-primary">
+        立即免费体验跟读
+        <span class="btn-arrow">→</span>
+      </a>
+      <div class="hero-trust">
+        <span class="hero-stars">★★★★★</span>
+        <span>可免费开始 · 真实原声 · 逐句练习</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT IS SHADOWING -->
+  <section class="steps-section">
+    <div class="container">
+      <p class="section-label">方法解析</p>
+      <h2 class="section-title">影子跟读法是什么？</h2>
+      <p class="section-desc">跟读法（Shadowing）常用于口译和语言训练：学习者在听到原声后立即模仿，重点关注语音、节奏、语调和连续表达。</p>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <span class="step-number">1</span>
+          <span class="step-emoji">🎧</span>
+          <div class="step-title">
+            听
+            <span class="en">Listen First</span>
+          </div>
+          <p class="step-desc">
+            先完整聆听一段母语者的音频，感受自然的语调、节奏和语速。不用理解每个词，感受整体韵律。
+          </p>
+        </div>
+
+        <div class="step-card">
+          <span class="step-number">2</span>
+          <span class="step-emoji">🗣️</span>
+          <div class="step-title">
+            跟
+            <span class="en">Shadow Simultaneously</span>
+          </div>
+          <p class="step-desc">
+            听到音频的同时立刻跟着说出来，像影子一样紧跟母语者。不需要完全准确，专注于节奏和语感。
+          </p>
+        </div>
+
+        <div class="step-card">
+          <span class="step-number">3</span>
+          <span class="step-emoji">🔁</span>
+          <div class="step-title">
+            练
+            <span class="en">Repeat Until Natural</span>
+          </div>
+          <p class="step-desc">
+            反复练习同一段内容，直到说起来毫不费力。AI分析你的薄弱点，自动强化需要巩固的部分。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCIENCE -->
+  <section class="science-section">
+    <div class="container">
+      <p class="section-label">科学原理</p>
+      <h2 class="section-title">为什么影子跟读法有效？</h2>
+      <p class="section-desc">它把听辨、发音动作和连续输出放进同一次练习，适合作为精听与口语训练之间的桥梁。</p>
+
+      <div class="science-grid">
+        <div class="science-card">
+          <div class="science-icon">🧠</div>
+          <div class="science-title">听觉与输出同步</div>
+          <p class="science-desc">
+            跟读要求学习者一边持续听原声，一边复现刚刚听到的内容，因此能同时训练声音辨识、短时记忆和连续输出。
+          </p>
+          <p class="science-cite">训练重点：听清语块，再保持连续输出</p>
+        </div>
+
+        <div class="science-card">
+          <div class="science-icon">💪</div>
+          <div class="science-title">发音动作练习</div>
+          <p class="science-desc">
+            模仿原声的重音、连读、弱读和语调，并通过录音对比发现差异，比只阅读音标更接近真实口语练习。
+          </p>
+          <p class="science-cite">训练重点：重音、节奏、连读与语调</p>
+        </div>
+
+        <div class="science-card">
+          <div class="science-icon">⚡</div>
+          <div class="science-title">语块熟悉度</div>
+          <p class="science-desc">
+            反复听说完整短句和常用搭配，可以提高对英语词序与表达语块的熟悉度，为后续复述和真实应答提供材料。
+          </p>
+          <p class="science-cite">训练重点：整句模仿，再脱稿复述</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON TABLE -->
+  <section class="compare-section">
+    <div class="container">
+      <p class="section-label">方法对比</p>
+      <h2 class="section-title">影子跟读 vs 传统方法 vs ChatGPT</h2>
+      <p class="section-desc">为什么越来越多学习者选择影子跟读法？</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>评估维度</th>
+            <th class="highlight">🎯 影子跟读<br><small style="font-weight:400;color:#ff8099;">Linglish</small></th>
+            <th>📚 传统方法<br><small style="font-weight:400;color:var(--text-muted);">背单词/语法</small></th>
+            <th>🤖 ChatGPT<br><small style="font-weight:400;color:var(--text-muted);">文字对话</small></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>口语进步速度</td>
+            <td class="highlight"><span class="check">✓</span> 每轮都能录音对比</td>
+            <td><span class="partial">△</span> 取决于是否包含输出</td>
+            <td><span class="partial">△</span> 取决于是否使用语音模式</td>
+          </tr>
+          <tr>
+            <td>发音准确性训练</td>
+            <td class="highlight"><span class="check">✓</span> 深度训练</td>
+            <td><span class="cross">✗</span> 几乎没有</td>
+            <td><span class="cross">✗</span> 无法练习发音</td>
+          </tr>
+          <tr>
+            <td>摆脱翻译思维</td>
+            <td class="highlight"><span class="check">✓</span> 核心目标</td>
+            <td><span class="cross">✗</span> 加强翻译依赖</td>
+            <td><span class="partial">△</span> 部分帮助</td>
+          </tr>
+          <tr>
+            <td>语调/节奏/语感</td>
+            <td class="highlight"><span class="check">✓</span> 自然习得</td>
+            <td><span class="cross">✗</span> 无法习得</td>
+            <td><span class="cross">✗</span> 文字无法传达</td>
+          </tr>
+          <tr>
+            <td>即时反馈</td>
+            <td class="highlight"><span class="check">✓</span> AI实时分析</td>
+            <td><span class="cross">✗</span> 无反馈</td>
+            <td><span class="partial">△</span> 文字反馈</td>
+          </tr>
+          <tr>
+            <td>真实场景内容</td>
+            <td class="highlight"><span class="check">✓</span> 原汁原味素材</td>
+            <td><span class="cross">✗</span> 教科书腔调</td>
+            <td><span class="partial">△</span> 可定制</td>
+          </tr>
+          <tr>
+            <td>费用</td>
+            <td class="highlight"><span class="check">✓</span> 可免费开始</td>
+            <td><span class="partial">△</span> 书本+课程费</td>
+            <td><span class="partial">△</span> 订阅费用</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF -->
+  <section class="proof-section">
+    <div class="container">
+      <p class="section-label">训练要素</p>
+      <h2 class="section-title">一轮影子跟读包含什么？</h2>
+
+      <div class="proof-stats">
+        <div class="proof-stat">
+          <div class="proof-stat-num">原声</div>
+          <div class="proof-stat-label">真实英语输入</div>
+        </div>
+        <div class="proof-stat">
+          <div class="proof-stat-num">逐句</div>
+          <div class="proof-stat-label">短句同步模仿</div>
+        </div>
+        <div class="proof-stat">
+          <div class="proof-stat-num">录音</div>
+          <div class="proof-stat-label">原声与自己对比</div>
+        </div>
+        <div class="proof-stat">
+          <div class="proof-stat-num">AI</div>
+          <div class="proof-stat-label">发音与漏词反馈</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2 class="cta-title">现在就开始影子跟读</h2>
+      <p class="cta-subtitle">选择一段短原声，先听清一句，再同步模仿并录音复盘。</p>
+
+      <div class="cta-features">
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> 可免费开始</span>
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> 真实英语素材</span>
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> AI发音分析</span>
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> 逐句练习</span>
+        <span class="cta-feature"><span class="cta-feature-check">✓</span> 随时随地练习</span>
+      </div>
+
+      <a href="/video-reader-desktop.html" class="btn-primary" style="font-size:20px;padding:20px 48px;">
+        立即免费开始跟读
+        <span class="btn-arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <p style="margin-bottom:8px;">
+      <a href="/">Linglish</a> ·
+      <a href="/interview">面试英语</a> ·
+      <a href="/workplace">职场英语</a> ·
+      <a href="/video-reader-desktop.html">开始学习</a>
+    </p>
+    <p>© 2024 Linglish · AI 英语学习平台 · <a href="https://www.example.com/">example.com</a></p>
+  </footer>
+
+<script>(function(){var p=new URLSearchParams(location.search);var d={page:location.pathname,utm_source:p.get('utm_source'),utm_medium:p.get('utm_medium'),utm_campaign:p.get('utm_campaign'),utm_content:p.get('utm_content'),referrer:document.referrer};fetch('/api/track/visit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).catch(function(){});})()</script>
+</body>
+</html>

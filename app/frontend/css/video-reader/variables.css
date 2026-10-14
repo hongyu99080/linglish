@@ -1,0 +1,35 @@
+/* CSS Custom Properties and Color Variables */
+:root {
+  /* 现代渐变配色 */
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+
+  /* 主色系 */
+  --primary-color: #667eea;
+  --primary-dark: #5568d3;
+  --primary-light: #8b9aff;
+  --accent-color: #f5576c;
+  --success-color: #00f2fe;
+  --warning-color: #fee140;
+
+  /* 中性色 */
+  --bg-primary: #f0f4f8;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #2d3748;
+  --text-secondary: #718096;
+  --border-color: #e2e8f0;
+
+  /* 阴影 */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.15);
+  --shadow-glow: 0 0 20px rgba(14, 165, 233, 0.3);
+
+  /* 动画时长 */
+  --transition-fast: 0.15s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+}

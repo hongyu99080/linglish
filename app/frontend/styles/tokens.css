@@ -1,0 +1,175 @@
+/* ============================================================
+   Linglish Design Tokens — 现代清新教育风
+   Shared across all pages. Link BEFORE page-local styles:
+   <link rel="stylesheet" href="./styles/tokens.css?v=1">
+   Namespace: --lx-*
+   ============================================================ */
+
+:root {
+  /* ---------- Brand ramp (teal primary, sky/mint accents) ---------- */
+  --lx-teal-50: #f0fdfa;
+  --lx-teal-100: #ccfbf1;
+  --lx-teal-300: #5eead4;
+  --lx-teal-500: #14b8a6;
+  --lx-teal-600: #0d9488;
+  --lx-primary: #0f766e;          /* teal-700 — 主色，主 CTA */
+  --lx-primary-strong: #0b5f59;   /* hover / active */
+  --lx-sky: #0ea5e9;              /* accent-1: 链接、信息 */
+  --lx-sky-strong: #0284c7;
+  --lx-sky-soft: #e0f2fe;
+  --lx-mint: #2dd4bf;             /* accent-2: 装饰、渐变末端 */
+  --lx-gold: #f7b733;
+  --lx-amber: #b45309;
+  --lx-rose: #be123c;
+
+  /* ---------- Gradients ---------- */
+  --lx-grad-brand: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+  --lx-grad-fresh: linear-gradient(135deg, #0d9488 0%, #2dd4bf 100%);
+  --lx-grad-hero: linear-gradient(160deg, #f0fdfa 0%, #f0f9ff 55%, #ffffff 100%);
+  --lx-grad-card: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  --lx-grad-gold: linear-gradient(135deg, #f7b733 0%, #fc8b32 100%);
+
+  /* ---------- Ink (slate) ---------- */
+  --lx-ink-900: #0f172a;
+  --lx-ink-700: #334155;
+  --lx-ink-500: #64748b;
+  --lx-ink-400: #94a3b8;
+
+  /* ---------- Surfaces & lines ---------- */
+  --lx-paper: #f8fafc;
+  --lx-surface: #ffffff;
+  --lx-surface-mint: #ecfeff;
+  --lx-surface-warm: #f0fdfa;
+  --lx-line: #e2e8f0;
+  --lx-line-soft: rgba(148, 163, 184, 0.35);
+
+  /* ---------- Semantic ---------- */
+  --lx-success: #10b981;
+  --lx-warning: #f59e0b;
+  --lx-error: #ef4444;
+  --lx-info: #0ea5e9;
+
+  /* ---------- Shadows: soft, layered, slate/teal-tinted ---------- */
+  --lx-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --lx-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 8px rgba(15, 23, 42, 0.04);
+  --lx-shadow-md: 0 2px 4px rgba(15, 23, 42, 0.05), 0 8px 16px rgba(15, 23, 42, 0.06);
+  --lx-shadow-lg: 0 4px 8px rgba(15, 23, 42, 0.05), 0 16px 32px rgba(15, 23, 42, 0.08);
+  --lx-shadow-brand: 0 8px 24px rgba(15, 118, 110, 0.18);
+  --lx-shadow-ring: 0 0 0 3px rgba(14, 165, 233, 0.25);
+
+  /* ---------- Glass ---------- */
+  --lx-glass-bg: rgba(255, 255, 255, 0.8);
+  --lx-glass-border: rgba(255, 255, 255, 0.5);
+  --lx-glass-blur: blur(12px);
+
+  /* ---------- Radius ---------- */
+  --lx-radius-sm: 8px;
+  --lx-radius-md: 12px;
+  --lx-radius-lg: 16px;
+  --lx-radius-xl: 24px;
+  --lx-radius-pill: 999px;
+
+  /* ---------- Motion ---------- */
+  --lx-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --lx-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --lx-dur-fast: 150ms;
+  --lx-dur: 250ms;
+  --lx-dur-slow: 400ms;
+
+  /* ---------- Typography ---------- */
+  --lx-font-display: "Fraunces", "Noto Serif SC", Georgia, serif;
+  --lx-font-body: "Manrope", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+  --lx-text-display: clamp(2.25rem, 1.5rem + 2.5vw, 3.5rem);
+  --lx-text-h1: clamp(1.75rem, 1.3rem + 1.5vw, 2.25rem);
+  --lx-text-h2: 1.5rem;
+  --lx-text-h3: 1.25rem;
+  --lx-text-body: 1rem;
+  --lx-text-sm: 0.875rem;
+  --lx-text-xs: 0.75rem;
+}
+
+/* ---------- Shared base behaviors ---------- */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--lx-shadow-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   V2 additions — Duolingo-style tactile layer + AI visuals
+   (additive only; do not modify tokens above)
+   ============================================================ */
+:root {
+  /* 3D 按压按钮 */
+  --lx-btn-shadow-3d: 0 4px 0 var(--lx-primary-strong);
+  --lx-btn-shadow-3d-sky: 0 4px 0 var(--lx-sky-strong);
+  --lx-btn-shadow-3d-gold: 0 4px 0 #d97706;
+
+  /* 粗边卡片 */
+  --lx-border-bold: 2px solid var(--lx-line);
+
+  /* AI 专属视觉 */
+  --lx-grad-ai: linear-gradient(120deg, #0f766e 0%, #0ea5e9 60%, #2dd4bf 100%);
+  --lx-ai-glow: 0 0 0 1px rgba(14, 165, 233, 0.25), 0 8px 24px rgba(14, 165, 233, 0.18);
+
+  /* 多彩软背景 */
+  --lx-soft-teal: #f0fdfa;
+  --lx-soft-sky: #f0f9ff;
+  --lx-soft-gold: #fffbeb;
+  --lx-soft-rose: #fff1f2;
+}
+
+@keyframes lx-pop {
+  0% { opacity: 0; transform: scale(0.85); }
+  70% { transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes lx-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-6deg); }
+  75% { transform: rotate(6deg); }
+}
+
+@keyframes lx-fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lx-dash-flow {
+  to { stroke-dashoffset: -16; }
+}
+
+/* AI 渐变徽章 */
+.lx-badge-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.2em 0.7em;
+  border-radius: var(--lx-radius-pill);
+  background: var(--lx-grad-ai);
+  color: #ffffff;
+  font-size: var(--lx-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: var(--lx-ai-glow);
+}
+
+/* 滚动入场:JS 注入 .lx-reveal,进入视口加 .is-visible。无 JS 时元素保持默认可见 */
+.lx-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+}
+.lx-reveal.is-visible {
+  animation: lx-fade-up var(--lx-dur-slow) var(--lx-ease) forwards;
+}

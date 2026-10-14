@@ -1,0 +1,3951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Minimal deep-link only; stay on Explore by default
+    (function () {
+      try { const p = new URLSearchParams(location.search || ''); const to = p.get('to'); if (to) { try { location.replace(to); } catch (_) { location.href = to; } } }
+      catch (_) { }
+    })();
+  </script>
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function () {
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function (...args) {
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            // Check if it's an error object
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function (...args) {
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev && ev.reason;
+            // Check message
+            const msg = (reason && reason.message) || (reason && reason.toString && reason.toString()) || reason;
+            if (matchMsg(String(msg || ''))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if from extension
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch (_) { }
+        });
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = (ev && ev.message) || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if error is from extension
+            if (ev && ev.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              return;
+            }
+            // Check filename for extension patterns
+            const filename = (ev && ev.filename) || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch (_) { }
+        }, true);
+      } catch (_) { }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>探索世界 - Linglish AI英语学习 | 真实原声视频内容库</title>
+  <meta name="description" content="浏览Linglish精选的海量原声英语视频内容。涵盖日常对话、商务英语、旅游场景等真实语境，通过沉浸式学习提升英语水平。AI智能推荐，个性化学习路径。">
+  <meta name="keywords" content="英语视频,原声视频,英语学习内容,沉浸式英语,真实场景英语,English videos,immersive content">
+  <meta name="author" content="Linglish">
+  <meta name="google-site-verification" content="google5a3b03e17f3c3f2c">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://example.com/mobile-explore.html">
+  <meta property="og:title" content="探索世界 - Linglish AI英语学习">
+  <meta property="og:description" content="浏览海量原声英语视频，在真实场景中学习地道英语表达">
+  <meta property="og:image" content="https://example.com/og-image-explore.jpg">
+  <meta property="og:locale" content="zh_CN">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://example.com/mobile-explore.html">
+  <meta name="twitter:title" content="探索世界 - Linglish AI英语学习">
+  <meta name="twitter:description" content="浏览海量原声英语视频，在真实场景中学习地道英语表达">
+  <meta name="twitter:image" content="https://example.com/og-image-explore.jpg">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://example.com/mobile-explore.html">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <meta name="view-transition" content="same-origin">
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="alternate icon" href="/linglish-favicon.png?v=1" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "探索世界 - Linglish",
+    "description": "浏览Linglish精选的海量原声英语视频内容",
+    "url": "https://example.com/mobile-explore.html",
+    "isPartOf": {
+      "@type": "WebApplication",
+      "name": "Linglish"
+    },
+    "inLanguage": "zh-CN",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://example.com/mobile-explore.html?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <link rel="stylesheet" href="./mobile-styles.css?v=2">
+
+  <!-- Resource Hints -->
+  <link rel="preconnect" href="https://example.com">
+  <link rel="dns-prefetch" href="https://example.com">
+  <link rel="preload" href="./i18n.js?v=20250114e" as="script">
+  <link rel="preload" href="./mobile-styles.css?v=2" as="style">
+  <link rel="preload" href="./global-ui.js?v=20250108" as="script">
+  <link rel="preload" href="./video-tag-system.js?v=20251223" as="script">
+  <style>
+    /* Skeleton Loading Animation */
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    .skeleton {
+      background: #f1f5f9;
+      background-image: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+
+    .skeleton-card {
+      border-radius: 24px;
+      overflow: hidden;
+      background: white;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .skeleton-thumbnail {
+      width: 100%;
+      padding-top: 56.25%;
+      background: #e2e8f0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .skeleton-thumbnail::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transform: translateX(-100%);
+      animation: shimmer 1.5s infinite;
+    }
+
+    .skeleton-info {
+      padding: 12px 16px;
+    }
+
+    .skeleton-title {
+      height: 18px;
+      width: 80%;
+      margin-bottom: 8px;
+    }
+
+    .skeleton-meta {
+      height: 12px;
+      width: 40%;
+    }
+  </style>
+
+  <script src="./i18n.js?v=20250114e"></script>
+  <script src="./global-ui.js?v=20250108"></script>
+  <script src="./guest-check.js?v=1" defer></script>
+  <script src="./auth-helpers.js?v=1" defer></script>
+  <script src="./mobile-auth.js?v=1" defer></script>
+  <script src="./feedback.js?v=1" defer></script>
+  <script src="./video-tag-system.js?v=20251223"></script>
+  <style>
+    /* Premium Theme Variables (Scoped to this page if needed, but relying on global styles.css) */
+    :root {
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.5);
+      --glass-blur: blur(16px);
+      --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+      --primary-gradient: linear-gradient(135deg, #0ea5e9 0%, #2dd4bf 100%);
+    }
+
+    body {
+      background-color: var(--lx-paper, #f8fafc);
+      font-family: var(--lx-font-body, 'Manrope', system-ui, -apple-system, sans-serif);
+    }
+
+    /* Search Bar Glassmorphism */
+    .search-container {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 12px 16px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .search-input-wrapper {
+      background: var(--surface);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 4px 16px;
+      transition: all 0.3s ease;
+    }
+
+    .search-input-wrapper:focus-within {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--primary-light);
+    }
+
+    .search-input {
+      border: none;
+      outline: none;
+      font-size: 16px;
+      width: 100%;
+      padding: 12px 0;
+      color: #1e293b;
+      background: transparent;
+    }
+
+    .search-icon {
+      color: #94a3b8;
+      font-size: 20px;
+      margin-right: 12px;
+    }
+
+    /* Video Grid Layout */
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      padding: 0 16px 20px 16px;
+    }
+
+    /* 小屏幕单列布局 */
+    @media (max-width: 374px) {
+      .video-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 大屏幕三列布局 */
+    @media (min-width: 768px) {
+      .video-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding: 0 24px 24px 24px;
+      }
+    }
+
+    /* 超大屏幕四列布局 */
+    @media (min-width: 1200px) {
+      .video-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        padding: 0 32px 32px 32px;
+      }
+    }
+
+    /* Video Card Premium Style */
+    .video-card {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      background: white;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .video-card:active {
+      transform: scale(0.98);
+    }
+
+    .video-thumbnail {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      /* 16:9 Aspect Ratio */
+      overflow: hidden;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0f766e 100%);
+      border-radius: 24px 24px 0 0;
+    }
+
+    .video-thumbnail img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .video-card:hover .video-thumbnail img {
+      transform: scale(1.05);
+    }
+
+    /* Duration Badge */
+    .video-duration {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.75) !important;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 4px 10px !important;
+      border-radius: 8px !important;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      color: white !important;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+    }
+
+    /* Video Info Area */
+    .video-info {
+      padding: 12px 16px !important;
+      background: white;
+    }
+
+    .video-info-header {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: flex-start !important;
+      margin-bottom: 10px !important;
+      gap: 8px !important;
+    }
+
+    .video-title {
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      color: #0f172a !important;
+      line-height: 1.4 !important;
+      margin: 0 !important;
+      display: -webkit-box !important;
+      -webkit-line-clamp: 2 !important;
+      -webkit-box-orient: vertical !important;
+      overflow: hidden !important;
+      flex: 1 !important;
+    }
+
+    .mobile-card-actions {
+      display: flex !important;
+      gap: 4px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .mobile-action-btn {
+      background: none !important;
+      border: none !important;
+      padding: 4px !important;
+      font-size: 16px !important;
+      cursor: pointer !important;
+      opacity: 0.7 !important;
+      transition: opacity 0.2s !important;
+      line-height: 1 !important;
+    }
+
+    .mobile-action-btn:active {
+      opacity: 1 !important;
+      transform: scale(0.95);
+    }
+
+    .video-meta {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      gap: 8px !important;
+      margin-bottom: 10px !important;
+    }
+
+    .video-lang {
+      background: rgba(14, 165, 233, 0.1) !important;
+      color: #0ea5e9 !important;
+      padding: 3px 8px !important;
+      border-radius: 4px !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.3px !important;
+      white-space: nowrap !important;
+    }
+
+    .video-words,
+    .video-duration-text {
+      font-size: 12px !important;
+      color: #64748b !important;
+      font-weight: 500 !important;
+      white-space: nowrap !important;
+    }
+
+    /* Progress Bar */
+    .video-progress {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+
+    .progress-bar-mini {
+      flex: 1 !important;
+      height: 4px !important;
+      background: #e2e8f0 !important;
+      border-radius: 2px !important;
+      overflow: hidden !important;
+    }
+
+    .progress-fill-mini {
+      height: 100% !important;
+      background: var(--primary-gradient) !important;
+      border-radius: 2px !important;
+      transition: width 0.3s ease !important;
+    }
+
+    .progress-text {
+      font-size: 11px !important;
+      color: #94a3b8 !important;
+      white-space: nowrap !important;
+      font-weight: 500 !important;
+    }
+
+    /* Category Tabs */
+    /* 难度筛选标签 */
+    .difficulty-filter-container {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .difficulty-tab {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .difficulty-tab.active {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: white;
+      border-color: #0284c7;
+    }
+
+    .difficulty-tab:active {
+      transform: scale(0.95);
+    }
+
+    .difficulty-count {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    /* 视频难度标识 */
+    .video-difficulty-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      z-index: 1;
+    }
+
+    .video-difficulty-badge.beginner {
+      background: rgba(34, 197, 94, 0.9);
+      color: white;
+    }
+
+    .video-difficulty-badge.intermediate {
+      background: rgba(245, 158, 11, 0.9);
+      color: white;
+    }
+
+    .video-difficulty-badge.advanced {
+      background: rgba(239, 68, 68, 0.9);
+      color: white;
+    }
+
+    .category-tabs {
+      padding: 0 20px 12px 20px !important;
+      gap: 12px !important;
+    }
+
+    .category-tab {
+      padding: 8px 16px !important;
+      border-radius: 20px !important;
+      background: white !important;
+      color: #64748b !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+      border: 1px solid rgba(0, 0, 0, 0.05) !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .category-tab.active {
+      background: var(--primary-gradient) !important;
+      color: white !important;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3) !important;
+      border: none !important;
+      transform: translateY(-1px);
+    }
+
+    /* Bottom Navigation (Glassmorphism) */
+    .bottom-nav {
+      background: rgba(255, 255, 255, 0.9) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+      padding-bottom: env(safe-area-inset-bottom) !important;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      z-index: 1000;
+    }
+
+    .nav-item {
+      color: #94a3b8 !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .nav-item.active {
+      color: #0ea5e9 !important;
+    }
+
+    .nav-item.active .nav-icon {
+      transform: translateY(-2px);
+      filter: drop-shadow(0 4px 8px rgba(14, 165, 233, 0.3));
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .video-card {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    /* ===== 视频标签系统样式 ===== */
+    /* 视频卡片上的标签显示 */
+    .video-tags-display {
+      display: flex !important;
+      gap: 3px !important;
+      flex-wrap: wrap !important;
+      margin-top: 6px !important;
+    }
+
+    .video-tag-chip {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 2px !important;
+      padding: 2px 6px !important;
+      border-radius: 6px !important;
+      font-size: 10px !important;
+      font-weight: 700 !important;
+      background: rgba(14, 165, 233, 0.08) !important;
+      color: var(--primary-color) !important;
+      border: 1px solid rgba(14, 165, 233, 0.15) !important;
+      line-height: 1.2 !important;
+    }
+
+    .video-tag-chip .tag-icon {
+      font-size: 11px !important;
+    }
+
+    /* 预设标签（子标签）- 更小尺寸 */
+    .video-tag-chip.video-tag-preset {
+      font-size: 9px !important;
+      padding: 1.5px 5px !important;
+    }
+
+    .video-tag-chip.video-tag-preset .tag-icon {
+      font-size: 10px !important;
+    }
+
+    /* 标签筛选标签页 */
+    .tag-filter-tabs {
+      display: flex !important;
+      gap: 6px !important;
+      overflow-x: auto !important;
+      padding: 8px 12px !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none !important;
+      background: linear-gradient(to bottom, #f8fafc, #ffffff) !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+
+    .tag-filter-tabs::-webkit-scrollbar {
+      display: none !important;
+    }
+
+    .tag-filter-chip {
+      flex-shrink: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      padding: 6px 10px !important;
+      border-radius: 16px !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      background: #ffffff !important;
+      color: #64748b !important;
+      border: 1px solid #e2e8f0 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      white-space: nowrap !important;
+      -webkit-tap-highlight-color: transparent !important;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+    }
+
+    .tag-filter-chip:active {
+      transform: scale(0.96) !important;
+    }
+
+    .tag-filter-chip.active {
+      background: linear-gradient(135deg, #0ea5e9, #2dd4bf) !important;
+      color: white !important;
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3) !important;
+      border-color: transparent !important;
+    }
+
+    .tag-filter-chip.active .tag-count {
+      background: rgba(255,255,255,0.2) !important;
+      color: white !important;
+    }
+
+    .tag-filter-chip.special-chip {
+      background: linear-gradient(135deg, #f0f9ff, #e0f2fe) !important;
+      border: 1px solid #bae6fd !important;
+      color: #0284c7 !important;
+    }
+
+    .tag-filter-chip.special-chip.active {
+      background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+      border: none !important;
+      color: white !important;
+    }
+
+    .tag-filter-chip.manage-chip {
+      padding: 6px 8px !important;
+      background: #f1f5f9 !important;
+      color: #94a3b8 !important;
+      border: 1px dashed #cbd5e1 !important;
+    }
+
+    .tag-filter-chip .tag-icon {
+      font-size: 14px !important;
+      line-height: 1 !important;
+    }
+
+    .tag-filter-chip .tag-count {
+      font-size: 10px !important;
+      font-weight: 600 !important;
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      padding: 1px 5px !important;
+      border-radius: 8px !important;
+      margin-left: 2px !important;
+    }
+
+    /* 合集（二级标签）筛选栏 */
+    .collection-filter-tabs {
+      display: none;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 0 12px 10px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .collection-filter-tabs.show {
+      display: flex;
+    }
+
+    .collection-filter-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .collection-filter-tabs .tag-filter-chip {
+      padding: 5px 9px !important;
+      font-size: 11px !important;
+    }
+
+    /* 标签管理模态框 */
+    .tag-manager-modal {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      z-index: 9999;
+      max-height: 75vh;
+      overflow-y: auto;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .tag-manager-modal.show {
+      display: block;
+    }
+
+    .tag-manager-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .tag-manager-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .tag-manager-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #64748b;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tag-manager-section {
+      margin-bottom: 24px;
+    }
+
+    .tag-manager-section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tag-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .tag-item.selected {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(45, 212, 191, 0.1));
+      border-color: #0ea5e9;
+    }
+
+    .tag-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tag-item-icon {
+      font-size: 20px;
+    }
+
+    .tag-item-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .tag-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tag-item-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tag-item-btn.danger {
+      color: #ef4444;
+    }
+
+    .tag-item-btn.danger:active {
+      background: #ef4444;
+      color: white;
+      border-color: #ef4444;
+    }
+
+    .tag-add-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 2px dashed #cbd5e1;
+      background: #f8fafc;
+      color: #0284c7;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .tag-add-btn:active {
+      transform: scale(0.98);
+      background: #e0f2fe;
+      border-color: #0ea5e9;
+    }
+
+    /* 视频标签选择器模态框 */
+    .video-tag-selector-modal {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      z-index: 9999;
+      max-height: 75vh;
+      overflow-y: auto;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .video-tag-selector-modal.show {
+      display: block;
+    }
+
+    .video-tag-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+    }
+
+    .video-tag-item.selected {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(45, 212, 191, 0.15));
+      border-color: #0ea5e9;
+    }
+
+    .video-tag-item:active {
+      transform: scale(0.98);
+    }
+
+    .video-tag-checkbox {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 2px solid #cbd5e1;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .video-tag-item.selected .video-tag-checkbox {
+      background: #0ea5e9;
+      border-color: #0ea5e9;
+      color: white;
+    }
+
+    /* 管理标签按钮 */
+    .manage-tags-btn {
+      width: 36px !important;
+      height: 36px !important;
+      border-radius: 50% !important;
+      border: none !important;
+      background: linear-gradient(135deg, #0ea5e9 0%, #0f766e 100%) !important;
+      color: white !important;
+      font-size: 20px !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    .manage-tags-btn:active {
+      transform: scale(0.92) !important;
+    }
+
+    /* VIP Badge Styles */
+    .mobile-user-info {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+
+    .mobile-vip-badge {
+      /* Default hidden - only show when has .show class */
+      display: none;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      text-decoration: none;
+    }
+
+    /* Only show VIP badge when .show class is added */
+    .mobile-vip-badge.show {
+      display: inline-flex !important;
+    }
+
+    .mobile-vip-badge:active {
+      transform: scale(0.95) !important;
+    }
+
+    .mobile-vip-badge.family .vip-text {
+      background: linear-gradient(135deg, #0d9488 0%, #c2410c 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      color: #c2410c !important;
+    }
+
+    .vip-icon {
+      font-size: 16px !important;
+      line-height: 1 !important;
+      display: inline-block !important;
+    }
+
+    .vip-text {
+      font-size: 14px !important;
+      font-weight: 800 !important;
+      font-style: italic !important;
+      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      color: #D97706 !important;
+      letter-spacing: 0.5px !important;
+      text-shadow: none !important;
+      display: inline-block !important;
+    }
+
+    .mobile-user-name {
+      display: block !important;
+      font-size: 13px !important;
+      color: #ffffff !important;
+      font-weight: 500 !important;
+      max-width: 80px !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="mobile-header explore-header" style="padding: 12px 16px 10px;">
+    <div class="brand-section" style="gap: 8px;">
+      <div class="brand-icon" style="width: 36px; height: 36px; font-size: 18px;">🌍</div>
+    </div>
+    <div class="header-actions" style="gap: 18px !important;">
+      <!-- User Info -->
+      <div id="mobile-user-info" class="mobile-user-info">
+        <span id="mobile-user-name" class="mobile-user-name"></span>
+        <a href="./membership.html" id="mobile-vip-badge" class="mobile-vip-badge">
+          <span class="vip-icon">👑</span>
+          <span class="vip-text">VIP</span>
+        </a>
+      </div>
+      <button class="icon-btn refresh-btn" id="refresh-videos-btn" title="刷新" aria-label="刷新">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
+      <button class="icon-btn lang-selector-btn" id="lang-selector-btn" title="语言" aria-label="语言">
+        🌐
+      </button>
+      <button class="icon-btn voice-selector-btn" id="voice-selector-btn" title="语音" aria-label="语音">
+        🔊
+      </button>
+      <button class="icon-btn logout-btn" id="logout-btn" title="退出" aria-label="退出">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Voice Selector Modal -->
+  <style>
+    .voice-modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9998;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .voice-modal {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      z-index: 9999;
+      max-height: 70vh;
+      overflow-y: auto;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .voice-modal.show {
+      display: block;
+    }
+
+    .voice-modal-backdrop.show {
+      display: block;
+    }
+
+    .voice-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .voice-modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .voice-modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #64748b;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .voice-group {
+      margin-bottom: 20px;
+    }
+
+    .voice-group-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+      padding: 0 5px;
+    }
+
+    .voice-option-mobile,
+    .lang-option-mobile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px;
+      border-radius: 12px;
+      background: #f8fafc;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+    }
+
+    .voice-option-mobile:active,
+    .lang-option-mobile:active {
+      transform: scale(0.98);
+    }
+
+    .voice-option-mobile.active,
+    .lang-option-mobile.active {
+      background: linear-gradient(135deg, #0ea5e9, #5eead4);
+      color: white;
+      border-color: #0ea5e9;
+    }
+
+    .voice-option-emoji {
+      font-size: 24px;
+    }
+
+    .voice-option-text {
+      flex: 1;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .voice-option-mobile.active .voice-option-text,
+    .lang-option-mobile.active .voice-option-text {
+      color: white;
+    }
+
+    .voice-separator {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 15px 0;
+    }
+  </style>
+
+  <div class="voice-modal-backdrop" id="voice-modal-backdrop"></div>
+  <div class="voice-modal" id="voice-modal">
+    <div class="voice-modal-header">
+      <h3 class="voice-modal-title"><span>🔊</span> <span data-i18n="mobile.voice.title">选择语音</span></h3>
+      <button class="voice-modal-close" id="voice-modal-close">×</button>
+    </div>
+
+    <div class="voice-group">
+      <div class="voice-group-title">English</div>
+      <div class="voice-option-mobile" data-voice="en-US-AriaNeural" data-name="Aria">
+        <span class="voice-option-emoji">👩</span>
+        <span class="voice-option-text">Aria (US)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="en-US-JennyNeural" data-name="Jenny">
+        <span class="voice-option-emoji">👩</span>
+        <span class="voice-option-text">Jenny (US)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="en-US-GuyNeural" data-name="Guy">
+        <span class="voice-option-emoji">👨</span>
+        <span class="voice-option-text">Guy (US)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="en-US-DavisNeural" data-name="Davis">
+        <span class="voice-option-emoji">👨</span>
+        <span class="voice-option-text">Davis (US)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="en-US-AmberNeural" data-name="Amber">
+        <span class="voice-option-emoji">👩</span>
+        <span class="voice-option-text">Amber (US)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="en-GB-SoniaNeural" data-name="Sonia">
+        <span class="voice-option-emoji">👩</span>
+        <span class="voice-option-text">Sonia (UK)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="en-GB-RyanNeural" data-name="Ryan">
+        <span class="voice-option-emoji">👨</span>
+        <span class="voice-option-text">Ryan (UK)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="en-AU-NatashaNeural" data-name="Natasha">
+        <span class="voice-option-emoji">👩</span>
+        <span class="voice-option-text">Natasha (AU)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="en-AU-WilliamNeural" data-name="William">
+        <span class="voice-option-emoji">👨</span>
+        <span class="voice-option-text">William (AU)</span>
+      </div>
+    </div>
+
+    <div class="voice-separator"></div>
+
+    <div class="voice-group">
+      <div class="voice-group-title">中文</div>
+      <div class="voice-option-mobile active" data-voice="en-US-AriaNeural" data-name="Aria">
+        <span class="voice-option-emoji">👩</span>
+        <span class="voice-option-text">晓晓 (女声)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="zh-CN-YunxiNeural" data-name="云希">
+        <span class="voice-option-emoji">👨</span>
+        <span class="voice-option-text">云希 (男声)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="zh-CN-YunyangNeural" data-name="云扬">
+        <span class="voice-option-emoji">📰</span>
+        <span class="voice-option-text">云扬 (男声新闻)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="zh-CN-XiaoyiNeural" data-name="晓伊">
+        <span class="voice-option-emoji">👧</span>
+        <span class="voice-option-text">晓伊 (女声)</span>
+      </div>
+      <div class="voice-option-mobile" data-voice="zh-CN-YunjianNeural" data-name="云健">
+        <span class="voice-option-emoji">💼</span>
+        <span class="voice-option-text">云健 (男声)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language Selector Modal -->
+  <div class="voice-modal-backdrop" id="lang-modal-backdrop"></div>
+  <div class="voice-modal" id="lang-modal">
+    <div class="voice-modal-header">
+      <h3 class="voice-modal-title"><span>🌐</span> <span data-i18n="mobile.lang.title">选择语言</span></h3>
+      <button class="voice-modal-close" id="lang-modal-close">×</button>
+    </div>
+
+    <div class="voice-group">
+      <div class="lang-option-mobile active" data-lang="zh">
+        <span class="voice-option-emoji">🇨🇳</span>
+        <span class="voice-option-text" data-i18n="mobile.lang.chinese">中文</span>
+      </div>
+      <div class="lang-option-mobile" data-lang="en">
+        <span class="voice-option-emoji">🇺🇸</span>
+        <span class="voice-option-text" data-i18n="mobile.lang.english">English</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Strip: 快速入口条 -->
+  <style>
+    .feature-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 12px;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .feature-chip {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 800;
+      text-decoration: none;
+      background: linear-gradient(135deg, #0ea5e9, #5eead4);
+      box-shadow: 0 6px 18px rgba(14, 165, 233, 0.25);
+      border: 1px solid rgba(14, 165, 233, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-chip.secondary {
+      background: linear-gradient(135deg, #22c55e, #2dd4bf);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+
+    .feature-chip.warn {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+
+    /* Ripple effect (prevent layout jump on tap) */
+    .ripple-effect {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+      transform: scale(0);
+      animation: ripple 0.6s linear;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    @keyframes ripple {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+  </style>
+  <!-- Search Bar -->
+  <div class="search-container">
+    <div class="search-input-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" placeholder="搜索视频..."
+        data-i18n-placeholder="mobile.explore.search_placeholder">
+    </div>
+  </div>
+
+  <script>
+    // Safe storage access helpers (防止隐私设置阻止 storage 访问)
+    const safeStorage = {
+      set: function (storage, key, value) {
+        try {
+          if (storage && typeof storage.setItem === 'function') {
+            storage.setItem(key, value);
+            return true;
+          }
+        } catch (e) {
+          console.warn('[Storage] Failed to set:', key, e.message);
+        }
+        return false;
+      },
+      get: function (storage, key) {
+        try {
+          if (storage && typeof storage.getItem === 'function') {
+            return storage.getItem(key);
+          }
+        } catch (e) {
+          console.warn('[Storage] Failed to get:', key, e.message);
+        }
+        return null;
+      },
+      remove: function (storage, key) {
+        try {
+          if (storage && typeof storage.removeItem === 'function') {
+            storage.removeItem(key);
+            return true;
+          }
+        } catch (e) {
+          console.warn('[Storage] Failed to remove:', key, e.message);
+        }
+        return false;
+      },
+      // 清理所有认证相关数据
+      clearAuth: function () {
+        const keys = ['authToken', 'linglish_token', 'userEmail', 'is_guest', 'guest_id', 'isGuest'];
+        keys.forEach(key => {
+          this.remove(localStorage, key);
+          this.remove(sessionStorage, key);
+        });
+      }
+    };
+
+    // Haptic Feedback Helper
+    const triggerHaptic = () => {
+      if (navigator.vibrate) navigator.vibrate(10);
+    };
+
+    // Ripple Effect Helper
+    const createRipple = (event) => {
+      const button = event.currentTarget;
+      const circle = document.createElement('span');
+      const diameter = Math.max(button.clientWidth, button.clientHeight);
+      const radius = diameter / 2;
+
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+      circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+      circle.classList.add('ripple-effect');
+
+      const ripple = button.getElementsByClassName('ripple-effect')[0];
+      if (ripple) {
+        ripple.remove();
+      }
+
+      button.appendChild(circle);
+    };
+
+    // Bind interactions
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('button, a, .video-card, .category-tab, .tag-filter-chip, .nav-item');
+      if (target) {
+        triggerHaptic();
+        createRipple({ currentTarget: target, clientX: e.clientX, clientY: e.clientY });
+      }
+    });
+  </script>
+
+  <!-- Feature Strip (Compact & Scrollable) -->
+  <div class="feature-strip compact-strip">
+    <a class="feature-chip active" href="#" onclick="return false;"><span>🎬</span><span
+        data-i18n="nav.videos">视频</span></a>
+    <a class="feature-chip" href="practice-session.html"><span>🎪</span><span data-i18n="nav.practice">练习</span></a>
+    <a class="feature-chip" href="mobile-power.html"><span>📚</span><span data-i18n="nav.vocabulary">词汇</span></a>
+    <a class="feature-chip warn" href="video-upload.html"><span>📤</span><span data-i18n="nav.upload">上传</span></a>
+    <a class="feature-chip" href="feedback.html"><span>💬</span><span data-i18n="nav.feedback">反馈</span></a>
+  </div>
+
+  <!-- Main Content -->
+  <main class="mobile-content explore-content">
+    <!-- Removed standalone upload card: rely on top feature strip's Upload chip -->
+
+    <!-- Video Categories Section (Compact) -->
+    <section class="video-categories" style="padding: 0 16px; margin-bottom: 12px;">
+      <!-- 标签筛选区域 (Unified Filter Bar) -->
+      <div class="tag-filter-tabs" id="tag-filter-tabs" style="padding: 4px 0 !important;">
+        <!-- 标签筛选将在这里动态生成 -->
+      </div>
+      <!-- 合集（二级标签）筛选（当选中某个标签且存在合集时显示） -->
+      <div class="collection-filter-tabs" id="collection-filter-tabs"></div>
+    </section>
+
+    <!-- Status Filter Modal -->
+    <div class="tag-manager-modal" id="status-filter-modal">
+      <div class="tag-manager-header">
+        <h3 class="tag-manager-title">按状态筛选</h3>
+        <button class="tag-manager-close"
+          onclick="document.getElementById('status-filter-modal').classList.remove('show')">×</button>
+      </div>
+      <div class="tag-list">
+        <div class="tag-item" onclick="selectStatusFilter('all')">
+          <div class="tag-item-left">
+            <span class="tag-item-icon">📂</span>
+            <span class="tag-item-name">全部视频</span>
+          </div>
+          <div class="tag-item-actions">
+            <span class="tag-check" id="status-check-all">✓</span>
+          </div>
+        </div>
+        <div class="tag-item" onclick="selectStatusFilter('not-started')">
+          <div class="tag-item-left">
+            <span class="tag-item-icon">⚪</span>
+            <span class="tag-item-name">未开始</span>
+          </div>
+          <div class="tag-item-actions">
+            <span class="tag-check" id="status-check-not-started"></span>
+          </div>
+        </div>
+        <div class="tag-item" onclick="selectStatusFilter('in-progress')">
+          <div class="tag-item-left">
+            <span class="tag-item-icon">⏳</span>
+            <span class="tag-item-name">学习中</span>
+          </div>
+          <div class="tag-item-actions">
+            <span class="tag-check" id="status-check-in-progress"></span>
+          </div>
+        </div>
+        <div class="tag-item" onclick="selectStatusFilter('completed')">
+          <div class="tag-item-left">
+            <span class="tag-item-icon">✅</span>
+            <span class="tag-item-name">已完成</span>
+          </div>
+          <div class="tag-item-actions">
+            <span class="tag-check" id="status-check-completed"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Grid -->
+    <section class="video-grid-section">
+      <div class="section-title-row">
+        <h3 class="section-title"><span>🎬</span> <span data-i18n="mobile.explore.native_videos">原声视频</span></h3>
+        <span class="video-count" id="video-count"><span>0</span> <span
+            data-i18n="mobile.explore.video_count">个视频</span></span>
+      </div>
+
+      <!-- 难度筛选 -->
+      <div class="difficulty-filter-container" id="difficulty-filter-container">
+        <button class="difficulty-tab active" data-difficulty="">全部难度</button>
+        <button class="difficulty-tab" data-difficulty="beginner">🌱 入门</button>
+        <button class="difficulty-tab" data-difficulty="intermediate">🌿 进阶</button>
+        <button class="difficulty-tab" data-difficulty="advanced">🌳 高级</button>
+      </div>
+
+      <div class="video-grid" id="video-grid"></div>
+
+      <!-- Skeleton Loading Container -->
+      <div class="video-grid-skeleton" id="video-grid-skeleton">
+        <!-- Generated by JS or static HTML -->
+        <div class="skeleton-card">
+          <div class="skeleton-image skeleton"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-title skeleton"></div>
+            <div class="skeleton-text skeleton"></div>
+            <div class="skeleton-meta">
+              <div class="skeleton-badge skeleton"></div>
+              <div class="skeleton-badge skeleton"></div>
+            </div>
+          </div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image skeleton"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-title skeleton"></div>
+            <div class="skeleton-text skeleton"></div>
+            <div class="skeleton-meta">
+              <div class="skeleton-badge skeleton"></div>
+              <div class="skeleton-badge skeleton"></div>
+            </div>
+          </div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image skeleton"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-title skeleton"></div>
+            <div class="skeleton-text skeleton"></div>
+            <div class="skeleton-meta">
+              <div class="skeleton-badge skeleton"></div>
+              <div class="skeleton-badge skeleton"></div>
+            </div>
+          </div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton-image skeleton"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-title skeleton"></div>
+            <div class="skeleton-text skeleton"></div>
+            <div class="skeleton-meta">
+              <div class="skeleton-badge skeleton"></div>
+              <div class="skeleton-badge skeleton"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="video-grid-placeholder hidden" id="video-grid-placeholder" data-i18n="mobile.explore.loading">
+        正在加载视频...</div>
+      <div class="video-grid-empty hidden" id="video-grid-empty" data-i18n="mobile.explore.no_videos">暂时没有可用的视频，试试上传一个吧！
+      </div>
+    </section>
+
+    <!-- Quick Stats Summary -->
+    <div class="quick-stats-link" onclick="location.href='mobile-stats.html'">
+      <div class="stats-preview">
+        <div class="stat-preview-item">
+          <span class="stat-icon-mini">🔥</span>
+          <span class="stat-text-mini">2天连击</span>
+        </div>
+        <div class="stat-preview-item">
+          <span class="stat-icon-mini">⭐</span>
+          <span class="stat-text-mini">1个单词</span>
+        </div>
+        <div class="stat-preview-item">
+          <span class="stat-icon-mini">🎯</span>
+          <span class="stat-text-mini">0个完成</span>
+        </div>
+      </div>
+      <span class="view-details">查看详细统计 ›</span>
+    </div>
+  </main>
+
+  <!-- Vocab Review Overlay (lightweight) -->
+  <div id="review-overlay" class="vocab-detail-overlay" hidden>
+    <div class="vocab-detail-backdrop"></div>
+    <div class="vocab-detail-card" role="dialog" aria-modal="true">
+      <button type="button" class="detail-close-btn" id="review-close" aria-label="关闭">✕</button>
+      <div class="detail-header">
+        <div>
+          <h2 class="detail-word" id="review-word"></h2>
+          <p class="detail-translation" id="review-translation"></p>
+        </div>
+        <span class="detail-status reviewing" id="review-status">复习</span>
+      </div>
+      <div class="detail-contexts" id="review-contexts">
+        <div class="detail-context-empty">加载上下文…</div>
+      </div>
+      <div class="review-actions">
+        <button class="review-action-btn danger" id="review-fail-btn">再来</button>
+        <button class="review-action-btn primary" id="review-pass-btn">认识</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tag Manager Modal -->
+  <div class="voice-modal-backdrop" id="tag-manager-backdrop"></div>
+  <div class="tag-manager-modal" id="tag-manager-modal">
+    <div class="tag-manager-header">
+      <h3 class="tag-manager-title">🏷️ 管理标签</h3>
+      <button class="tag-manager-close" id="tag-manager-close">×</button>
+    </div>
+
+    <div class="tag-manager-section">
+      <div class="tag-manager-section-title">预设标签</div>
+      <div class="tag-list" id="preset-tags-list">
+        <!-- 预设标签列表将在这里生成 -->
+      </div>
+    </div>
+
+    <div class="tag-manager-section">
+      <div class="tag-manager-section-title">自定义标签</div>
+      <button class="tag-add-btn" id="add-custom-tag-btn">
+        <span>➕</span>
+        <span>添加自定义标签</span>
+      </button>
+      <div class="tag-list" id="custom-tags-list" style="margin-top: 12px;">
+        <!-- 自定义标签列表将在这里生成 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Tag Selector Modal -->
+  <div class="voice-modal-backdrop" id="video-tag-selector-backdrop"></div>
+  <div class="video-tag-selector-modal" id="video-tag-selector-modal">
+    <div class="tag-manager-header">
+      <h3 class="tag-manager-title">🏷️ 选择标签</h3>
+      <button class="tag-manager-close" id="video-tag-selector-close">×</button>
+    </div>
+
+    <div id="video-tag-selector-list">
+      <!-- 标签选择列表将在这里生成 -->
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="mobile-today.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">🎯</span>
+      </div>
+      <span>今日</span>
+    </a>
+    <a href="mobile-explore.html" class="nav-item active">
+      <div class="nav-icon">
+        <span class="nav-emoji">🌍</span>
+      </div>
+      <span data-i18n="mobile.explore.title">探索世界</span>
+    </a>
+    <a href="mobile-power.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">⚡</span>
+      </div>
+      <span data-i18n="mobile.power.title">能量站</span>
+    </a>
+    <a href="mobile-arena.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">🎪</span>
+      </div>
+      <span data-i18n="mobile.arena.title">实战场</span>
+    </a>
+    <a href="mobile-treasure.html" class="nav-item">
+      <div class="nav-icon">
+        <span class="nav-emoji">🪴</span>
+      </div>
+      <span data-i18n="mobile.treasure.title">成长中心</span>
+    </a>
+  </nav>
+
+  <script>
+    // Initialize i18n on mobile explore
+    if (typeof i18n !== 'undefined') {
+      try {
+        i18n.init();
+      } catch (e) {
+        console.error('[i18n] Failed to initialize:', e);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof i18n !== 'undefined') {
+        i18n.init();
+      }
+    });
+
+    // Initialize voice selector
+    window.addEventListener('DOMContentLoaded', () => {
+      const voiceSelectorBtn = document.getElementById('voice-selector-btn');
+      const voiceModal = document.getElementById('voice-modal');
+      const voiceModalBackdrop = document.getElementById('voice-modal-backdrop');
+      const voiceModalClose = document.getElementById('voice-modal-close');
+
+      // Get selected voice from localStorage
+      const getSelectedVoice = () => {
+        try {
+          return localStorage.getItem('linglish_tts_voice') || 'en-US-AriaNeural';
+        } catch (_) {
+          return 'en-US-AriaNeural';
+        }
+      };
+
+      // Update active state
+      const updateActiveState = () => {
+        const savedVoice = getSelectedVoice();
+        document.querySelectorAll('.voice-option-mobile').forEach(opt => {
+          opt.classList.toggle('active', opt.dataset.voice === savedVoice);
+        });
+      };
+
+      // Show modal
+      const showModal = () => {
+        voiceModal && voiceModal.classList.add('show');
+        voiceModalBackdrop && voiceModalBackdrop.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      };
+
+      // Hide modal
+      const hideModal = () => {
+        voiceModal && voiceModal.classList.remove('show');
+        voiceModalBackdrop && voiceModalBackdrop.classList.remove('show');
+        document.body.style.overflow = '';
+      };
+
+      // Open modal
+      voiceSelectorBtn && voiceSelectorBtn.addEventListener('click', showModal);
+
+      // Close modal
+      voiceModalClose && voiceModalClose.addEventListener('click', hideModal);
+      voiceModalBackdrop && voiceModalBackdrop.addEventListener('click', hideModal);
+
+      // Select voice
+      document.querySelectorAll('.voice-option-mobile').forEach(option => {
+        option.addEventListener('click', () => {
+          const voice = option.dataset.voice;
+          const voiceName = option.dataset.name;
+          if (voice) {
+            try {
+              localStorage.setItem('linglish_tts_voice', voice);
+            } catch (_) { }
+            updateActiveState();
+            hideModal();
+
+            // Show toast
+            try {
+              const changedText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.voice.changed') : '已切换到';
+              const applyText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.voice.apply_all') : '语音（全站生效）';
+              const toast = document.createElement('div');
+              toast.textContent = `${changedText} ${voiceName} ${applyText}`;
+              toast.style.position = 'fixed';
+              toast.style.left = '50%';
+              toast.style.bottom = '90px';
+              toast.style.transform = 'translateX(-50%)';
+              toast.style.background = 'rgba(0,0,0,0.85)';
+              toast.style.color = '#fff';
+              toast.style.padding = '12px 18px';
+              toast.style.borderRadius = '12px';
+              toast.style.fontSize = '14px';
+              toast.style.zIndex = '10000';
+              toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+              document.body.appendChild(toast);
+              setTimeout(() => toast.remove(), 2000);
+            } catch (_) { }
+          }
+        });
+      });
+
+      // Initialize active state
+      updateActiveState();
+    });
+
+    // Initialize language selector
+    window.addEventListener('DOMContentLoaded', () => {
+      const langSelectorBtn = document.getElementById('lang-selector-btn');
+      const langModal = document.getElementById('lang-modal');
+      const langModalBackdrop = document.getElementById('lang-modal-backdrop');
+      const langModalClose = document.getElementById('lang-modal-close');
+
+      // Get selected language from localStorage or i18n
+      const getSelectedLang = () => {
+        try {
+          if (typeof i18n !== 'undefined' && i18n.currentLang) {
+            return i18n.currentLang;
+          }
+          return localStorage.getItem('linglish_lang') || 'zh';
+        } catch (_) {
+          return 'zh';
+        }
+      };
+
+      // Update active state
+      const updateActiveState = () => {
+        const savedLang = getSelectedLang();
+        document.querySelectorAll('.lang-option-mobile').forEach(opt => {
+          opt.classList.toggle('active', opt.dataset.lang === savedLang);
+        });
+      };
+
+      // Show modal
+      const showModal = () => {
+        langModal && langModal.classList.add('show');
+        langModalBackdrop && langModalBackdrop.classList.add('show');
+        document.body.style.overflow = 'hidden';
+      };
+
+      // Hide modal
+      const hideModal = () => {
+        langModal && langModal.classList.remove('show');
+        langModalBackdrop && langModalBackdrop.classList.remove('show');
+        document.body.style.overflow = '';
+      };
+
+      // Open modal
+      langSelectorBtn && langSelectorBtn.addEventListener('click', showModal);
+
+      // Close modal
+      langModalClose && langModalClose.addEventListener('click', hideModal);
+      langModalBackdrop && langModalBackdrop.addEventListener('click', hideModal);
+
+      // Select language
+      document.querySelectorAll('.lang-option-mobile').forEach(option => {
+        option.addEventListener('click', () => {
+          const lang = option.dataset.lang;
+          const langName = (option.querySelector('.voice-option-text') && option.querySelector('.voice-option-text').textContent) || lang;
+          if (lang) {
+            try {
+              localStorage.setItem('linglish_lang', lang);
+              // Update i18n if available
+              if (typeof i18n !== 'undefined' && i18n.setLang) {
+                i18n.setLang(lang);
+              }
+            } catch (_) { }
+            updateActiveState();
+            hideModal();
+
+            // Show toast
+            try {
+              const changedText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.lang.changed') : '已切换到';
+              const applyText = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('mobile.lang.apply_all') : '（全站生效）';
+              const toast = document.createElement('div');
+              toast.textContent = `${changedText} ${langName}${applyText}`;
+              toast.style.position = 'fixed';
+              toast.style.left = '50%';
+              toast.style.bottom = '90px';
+              toast.style.transform = 'translateX(-50%)';
+              toast.style.background = 'rgba(0,0,0,0.85)';
+              toast.style.color = '#fff';
+              toast.style.padding = '12px 18px';
+              toast.style.borderRadius = '12px';
+              toast.style.fontSize = '14px';
+              toast.style.zIndex = '10000';
+              toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+              document.body.appendChild(toast);
+              setTimeout(() => toast.remove(), 2000);
+            } catch (_) { }
+          }
+        });
+      });
+
+      // Initialize active state
+      updateActiveState();
+    });
+
+    // Normalize API base to current origin to avoid www/non-www CORS redirects
+    function resolveApiBase() {
+      const loc = (typeof window !== 'undefined' && window.location) ? window.location : null;
+      const explicit = (typeof window !== 'undefined') ? (window.API_BASE || window.API_PREFIX || '') : '';
+
+      const normalize = (base) => {
+        if (!base) return '';
+        try {
+          const pageOrigin = loc && loc.origin ? loc.origin : '';
+          const resolved = new URL(base, pageOrigin || undefined).origin;
+          // If only www/no-www differs, stick to current origin to avoid cross-origin redirects
+          const norm = (v) => String(v || '').replace('://www.', '://');
+          if (norm(resolved) === norm(pageOrigin)) return pageOrigin || resolved;
+          return resolved;
+        } catch (_) {
+          return base;
+        }
+      };
+
+      if (explicit) return normalize(explicit);
+      if (loc && (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1' || loc.port === '4000')) {
+        return 'http://localhost:4000';
+      }
+      if (loc && loc.origin) return loc.origin;
+      return '';
+    }
+
+    const API_BASE = resolveApiBase();
+
+    function getAuthToken() {
+      try {
+        if (typeof authManager !== 'undefined' && authManager && typeof authManager.getUserInfo === 'function') {
+          const info = authManager.getUserInfo();
+          if (info && info.token) return info.token;
+        }
+      } catch (_) { }
+      try {
+        if (typeof authManager !== 'undefined' && authManager && typeof authManager.getToken === 'function') {
+          const t = authManager.getToken();
+          if (t) return t;
+        }
+      } catch (_) { }
+      try {
+        if (typeof window !== 'undefined' && window.AuthManager && typeof window.AuthManager.getToken === 'function') {
+          const t = window.AuthManager.getToken();
+          if (t) return t;
+        }
+      } catch (_) { }
+      try {
+        const ls = (typeof localStorage !== 'undefined') ? (localStorage.getItem('linglish_token') || localStorage.getItem('authToken')) : null;
+        if (ls) return ls;
+        const ss = (typeof sessionStorage !== 'undefined') ? (sessionStorage.getItem('linglish_token') || sessionStorage.getItem('authToken')) : null;
+        if (ss) return ss;
+      } catch (_) { }
+      try {
+        if (typeof document !== 'undefined') {
+          const match = document.cookie.match(/(?:^|;\s*)(linglish_token|authToken)=([^;]+)/);
+          if (match && match[2]) return decodeURIComponent(match[2]);
+        }
+      } catch (_) { }
+      return null;
+    }
+
+    function escapeHtml(input = '') {
+      return String(input)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatDuration(seconds) {
+      if (!Number.isFinite(seconds) || seconds <= 0) return '00:00';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function formatDurationText(seconds) {
+      const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+      if (!Number.isFinite(seconds) || seconds <= 0) {
+        return t('mobile.arena.card.duration_unknown', '时长未知');
+      }
+      if (seconds < 60) {
+        const unit = t('mobile.arena.card.seconds', '秒');
+        return `${Math.max(1, Math.round(seconds))} ${unit}`;
+      }
+      const mins = Math.max(1, Math.round(seconds / 60));
+      const unit = t('mobile.arena.card.minutes', '分钟');
+      return `${mins} ${unit}`;
+    }
+
+    function estimateWordCount(transcript = '') {
+      const normalized = String(transcript).replace(/\s+/g, ' ').trim();
+      if (!normalized) return 0;
+      const parts = normalized.split(' ').filter(Boolean);
+      if (parts.length > 1) return parts.length;
+      return Math.min(normalized.length, 2000);
+    }
+
+    function formatLanguage(language) {
+      const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+      const normalized = (language || '').toLowerCase();
+      switch (normalized) {
+        case 'en':
+        case 'eng':
+          return '🇬🇧 en';
+        case 'zh':
+        case 'zh-cn':
+          return '🇨🇳 zh';
+        case 'fr':
+          return '🇫🇷 fr';
+        case 'es':
+          return '🇪🇸 es';
+        case 'jp':
+        case 'ja':
+          return '🇯🇵 ja';
+        default:
+          const multilang = t('mobile.explore.language.multilang', '多语');
+          return normalized ? normalized : `🌐 ${multilang}`;
+      }
+    }
+
+    function resolveThumbnail(video, options = {}) {
+      const isMainlandUser = options && options.isMainlandUser ? true : false;
+      const hasLocalCopy = !!(video && video.local_video_path && video.local_video_status === 'completed');
+
+      const normalizeUrl = (input) => {
+        if (!input) return null;
+        if (/^https?:\/\//i.test(input)) return input;
+        const base = API_BASE || '';
+        const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base;
+        const normalizedPath = input.startsWith('/') ? input : `/${input}`;
+        return `${normalizedBase}${normalizedPath}`;
+      };
+
+      const placeholderSvg = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:rgb(102,126,234)"/><stop offset="100%" style="stop-color:rgb(118,75,162)"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="72" fill="white">🎬</text></svg>`)}`;
+      const candidateRaw = (video && video.thumbnail_url) || (video && video.thumbnail_path);
+      const candidateUrl = normalizeUrl(candidateRaw);
+      const isYouTubeThumb = candidateUrl ? /(?:img\.youtube\.com|ytimg\.com)/i.test(candidateUrl) : false;
+      const avoidYouTubeThumb = isMainlandUser && hasLocalCopy;
+
+      // 优先使用YouTube缩略图（如果是YouTube视频）
+      let youtubeVideoId = video && video.youtube_video_id;
+
+      // 如果没有 youtube_video_id，尝试从 youtube_url 提取
+      if (!youtubeVideoId && video && video.youtube_url) {
+        const url = video.youtube_url;
+        // 匹配各种 YouTube URL 格式
+        const patterns = [
+          /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+          /^([a-zA-Z0-9_-]{11})$/  // 直接就是 video ID
+        ];
+
+        for (const pattern of patterns) {
+          const match = url.match(pattern);
+          if (match && match[1]) {
+            youtubeVideoId = match[1];
+            break;
+          }
+        }
+      }
+
+      // 如果有 YouTube 视频并且不需要规避，优先用官方缩略图，避免缺失的本地文件
+      if (youtubeVideoId && !avoidYouTubeThumb) {
+        console.log('[Thumbnail] Using YouTube thumbnail for:', youtubeVideoId);
+        return `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`;
+      }
+
+      // 否则再尝试存储的缩略图（无论是否 /static/ 路径，都尝试加载）
+      if (candidateUrl) {
+        console.log('[Thumbnail] Stored thumbnail available:', Boolean(candidateUrl));
+        return candidateUrl;
+      }
+
+      // 兜底：如果有本地视频路径，尝试按文件名推导缩略图路径
+      try {
+        const raw = (video && video.video_path) || '';
+        if (raw) {
+          const base = raw.split('/').pop() || '';
+          const stem = base ? base.replace(/\.[^/.]+$/, '') : '';
+          if (stem) {
+            const guess = normalizeUrl(`/static/thumbnails/${stem}.jpg`);
+            console.log('[Thumbnail] Using derived thumbnail:', guess);
+            return guess;
+          }
+        }
+      } catch (_) { }
+
+      // If we intentionally skipped a YouTube thumbnail for mainland/local mode, fall back to placeholder
+      if (candidateUrl && avoidYouTubeThumb && isYouTubeThumb) {
+        console.log('[Thumbnail] Skipping YouTube thumbnail for mainland/local mode, using fallback');
+      }
+
+      // 使用简化的SVG占位符
+      const videoId = (video && video.id) || '';
+      console.log('[Thumbnail] Using SVG fallback for video:', videoId);
+      return placeholderSvg;
+    }
+
+    function mapStatus(status) {
+      const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+      const normalized = (status || '').toLowerCase();
+      switch (normalized) {
+        case 'ready':
+          return {
+            badgeClass: 'ready',
+            badgeLabel: t('mobile.explore.status.ready', '已就绪'),
+            progressPercent: '0%',
+            progressText: t('mobile.explore.status.not_started', '未开始'),
+            category: 'not-started',
+          };
+        case 'processing':
+          return {
+            badgeClass: 'processing',
+            badgeLabel: t('mobile.explore.status.processing', '处理中'),
+            progressPercent: '35%',
+            progressText: t('mobile.explore.status.processing', '处理中'),
+            category: 'in-progress',
+          };
+        case 'completed':
+          return {
+            badgeClass: 'completed',
+            badgeLabel: t('mobile.explore.status.completed', '已完成'),
+            progressPercent: '100%',
+            progressText: t('mobile.explore.status.completed', '已完成'),
+            category: 'completed',
+          };
+        case 'failed':
+          return {
+            badgeClass: 'processing',
+            badgeLabel: t('mobile.explore.status.failed', '处理失败'),
+            progressPercent: '0%',
+            progressText: t('mobile.explore.status.failed', '处理失败'),
+            category: 'not-started',
+          };
+        default:
+          return {
+            badgeClass: 'ready',
+            badgeLabel: t('mobile.explore.status.uploaded', '已上传'),
+            progressPercent: '5%',
+            progressText: t('mobile.explore.status.preparing', '准备中'),
+            category: 'not-started',
+          };
+      }
+    }
+
+    function scheduleLogout() {
+      if (typeof authManager !== 'undefined' && authManager && typeof authManager.logout === 'function') {
+        setTimeout(() => authManager.logout(), 1200);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      authManager.attachLogoutButton('logout-btn');
+
+      const isAuthed = typeof authManager !== 'undefined' && authManager && authManager.isAuthenticated && authManager.isAuthenticated();
+      if (!isAuthed) {
+        console.log('[Mobile Explore] Not authenticated, skipping initialization');
+        return;
+      }
+
+      const userInfo = authManager.getUserInfo();
+      const token = (userInfo && userInfo.token) || getAuthToken();
+      const isGuest = userInfo && userInfo.isGuest;
+
+      console.log('[Mobile Explore] Auth status:', {
+        hasToken: !!token,
+        isGuest,
+      });
+
+      if (!token) {
+        console.warn('[Mobile Explore] No token found, skipping initialization');
+        return;
+      }
+
+      // 使用全局 state 对象，以便标签系统可以访问
+      window.state = {
+        videos: [],
+        currentFilter: 'all',
+        currentDifficulty: null, // 难度筛选: null/'beginner'/'intermediate'/'advanced'
+        isMainlandUser: false,
+        currentUserId: null,
+        difficultyStats: null, // 难度统计
+      };
+      const state = window.state; // 保持向后兼容
+      // Fetch current user profile for ID (needed to show owner-only actions)
+      (async () => {
+        try {
+          console.log('[Mobile Explore] Fetching user profile...');
+          const res = await fetch(`${API_BASE}/users/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (res.ok) {
+            const me = await res.json();
+            state.currentUserId = me && (me.id || me.user_id) ? Number(me.id || me.user_id) : null;
+            console.log('[Mobile Explore] User profile loaded:', me.username || me.email);
+          } else {
+            console.error('[Mobile Explore] Failed to fetch user profile:', res.status, res.statusText);
+
+            // If 401, token is invalid/expired - clear it and redirect to login
+            if (res.status === 401) {
+              console.warn('[Mobile Explore] Token expired or invalid, clearing auth data...');
+              // Clear all possible token storage locations
+              safeStorage.clearAuth();
+
+              alert('登录已过期，请重新登录');
+              window.location.href = 'mobile-auth.html';
+            }
+          }
+        } catch (err) {
+          console.error('[Mobile Explore] Error fetching user profile:', err.message);
+        }
+      })();
+
+      const gridEl = document.getElementById('video-grid');
+      const countEl = document.getElementById('video-count');
+      const placeholderEl = document.getElementById('video-grid-placeholder');
+      const emptyEl = document.getElementById('video-grid-empty');
+      const filterButtons = Array.from(document.querySelectorAll('.category-tab'));
+
+      function showPlaceholder(text) {
+        const skeleton = document.getElementById('video-grid-skeleton');
+        const placeholder = document.getElementById('video-grid-placeholder');
+
+        if (skeleton) {
+          skeleton.classList.remove('hidden');
+          // Hide text placeholder if we have skeletons
+          if (placeholder) placeholder.classList.add('hidden');
+        } else if (placeholder) {
+          placeholder.textContent = text;
+          placeholder.classList.remove('hidden');
+        }
+      }
+
+      function hidePlaceholder() {
+        const skeleton = document.getElementById('video-grid-skeleton');
+        const placeholder = document.getElementById('video-grid-placeholder');
+
+        if (skeleton) skeleton.classList.add('hidden');
+        if (placeholder) placeholder.classList.add('hidden');
+      }
+
+      function showEmpty(message) {
+        if (!emptyEl) return;
+        emptyEl.textContent = message || '暂时没有可用的视频。';
+        emptyEl.classList.remove('hidden');
+      }
+
+      function hideEmpty() {
+        if (!emptyEl) return;
+        emptyEl.classList.add('hidden');
+      }
+
+      function setActiveFilter(filterKey) {
+        state.currentFilter = filterKey;
+        filterButtons.forEach((btn) => {
+          btn.classList.toggle('active', (btn.dataset.filter || 'all') === filterKey);
+        });
+      }
+
+      function filterVideos(filterKey) {
+        if (!Array.isArray(state.videos)) return [];
+        let filtered = state.videos;
+
+        // Apply status filter
+        if (filterKey && filterKey !== 'all') {
+          filtered = filtered.filter((video) => mapStatus(video.status).category === filterKey);
+        }
+
+        // Apply difficulty filter
+        if (state.currentDifficulty) {
+          filtered = filtered.filter((video) => video.difficulty_level === state.currentDifficulty);
+        }
+
+        return filtered;
+      }
+
+      // Load user's default level
+      async function loadUserDefaultLevel() {
+        // 优先从 localStorage 读取用户选择的等级
+        try {
+          const storedLevel = localStorage.getItem('linglish_active_level');
+          if (storedLevel && ['beginner', 'intermediate', 'advanced'].includes(storedLevel)) {
+            console.log('[Difficulty] Using level from localStorage:', storedLevel);
+            return storedLevel;
+          }
+        } catch (e) {
+          console.warn('[Difficulty] Failed to read level from localStorage:', e);
+        }
+
+        // 回退到从 API 读取
+        try {
+          const token = authManager.getToken();
+          if (!token) return null;
+          const response = await fetch('/auth/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const level = data.user?.level;
+            if (level === 'beginner' || level === 'intermediate' || level === 'advanced') {
+              return level;
+            }
+          }
+        } catch (e) {
+          console.warn('[Difficulty] Failed to load user level:', e);
+        }
+        return null;
+      }
+
+      // Save user's level preference
+      async function saveUserLevel(level) {
+        try {
+          const token = authManager.getToken();
+          if (!token || !level) return;
+          await fetch('/auth/profile', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ level })
+          });
+          console.log('[Difficulty] Saved user level:', level);
+        } catch (e) {
+          console.warn('[Difficulty] Failed to save user level:', e);
+        }
+      }
+
+      // 难度筛选函数
+      function setDifficultyFilter(difficulty) {
+        state.currentDifficulty = difficulty || null;
+        updateDifficultyTabs();
+        const filtered = filterVideos(state.currentFilter);
+        renderVideos(filtered);
+        // Save to user profile if a specific level is selected
+        if (difficulty) {
+          saveUserLevel(difficulty);
+        }
+      }
+
+      // 更新难度筛选标签的激活状态
+      function updateDifficultyTabs() {
+        document.querySelectorAll('.difficulty-tab').forEach(tab => {
+          const tabDiff = tab.dataset.difficulty || null;
+          tab.classList.toggle('active', tabDiff === state.currentDifficulty);
+        });
+      }
+
+      // 渲染难度筛选标签
+      function renderDifficultyFilters() {
+        const container = document.getElementById('difficulty-filter-container');
+        if (!container) return;
+
+        const stats = state.difficultyStats || {};
+        const levels = [
+          { key: null, label: '全部难度', count: null },
+          { key: 'beginner', label: '🌱 入门', count: stats.beginner || 0 },
+          { key: 'intermediate', label: '🌿 进阶', count: stats.intermediate || 0 },
+          { key: 'advanced', label: '🌳 高级', count: stats.advanced || 0 },
+        ];
+
+        container.innerHTML = levels.map(level => {
+          const isActive = state.currentDifficulty === level.key;
+          const countHtml = level.count !== null ? ` <span class="difficulty-count">(${level.count})</span>` : '';
+          return `<button class="difficulty-tab ${isActive ? 'active' : ''}" data-difficulty="${level.key || ''}">${level.label}${countHtml}</button>`;
+        }).join('');
+
+        // Add click handlers
+        container.querySelectorAll('.difficulty-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            setDifficultyFilter(tab.dataset.difficulty || null);
+          });
+        });
+      }
+
+      function renderVideos(videos) {
+        if (!gridEl) return;
+        gridEl.innerHTML = '';
+
+        const totalCount = Array.isArray(videos) ? videos.length : 0;
+        if (countEl) {
+          const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+          const videoCountText = t('mobile.explore.video_count', '个视频');
+          countEl.innerHTML = `<span>${totalCount}</span> <span data-i18n="mobile.explore.video_count">${videoCountText}</span>`;
+        }
+
+        if (!totalCount) {
+          const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+          const hasExisting = Array.isArray(state.videos) && state.videos.length > 0;
+          if (hasExisting) {
+            const msg = t('mobile.explore.no_videos_category', '该分类暂无视频。');
+            showEmpty(msg);
+          } else {
+            const msg = t('mobile.explore.no_videos', '暂时还没有可用的视频，试试上传一个吧！');
+            showEmpty(msg);
+          }
+          return;
+        }
+
+        hideEmpty();
+
+        // Get current user ID
+        const userInfo = authManager.getUserInfo();
+        const currentUserId = state.currentUserId || userInfo && (userInfo.userId || userInfo.id);
+
+        const fragment = document.createDocumentFragment();
+        videos.forEach((video) => {
+          const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+          const statusInfo = mapStatus(video && video.status);
+          const durationSec = Number(video && video.duration_sec) || 0;
+          const durationLabel = formatDuration(durationSec);
+          const durationText = formatDurationText(durationSec);
+          const wordCount = estimateWordCount(video && video.transcript);
+          const wordsSuffix = t('mobile.explore.words_suffix', '词');
+          const languageLabel = formatLanguage(video && video.language);
+          const thumbnail = resolveThumbnail(video, { isMainlandUser: state.isMainlandUser });
+          const title = (video && video.title) || (video && video.original_filename) || `视频 ${(video && video.id) || ''}`;
+          const progressWidth = statusInfo.progressPercent || '0%';
+          const progressText = statusInfo.progressText || '';
+
+          // Check if current user is the uploader
+          const isOwner = video && video.uploader_id && currentUserId && (Number(video.uploader_id) === Number(currentUserId));
+
+          const card = document.createElement('div');
+          card.className = 'video-card';
+          card.dataset.category = statusInfo.category;
+          card.dataset.status = (video && video.status) || '';
+
+          // Only show action buttons for owner's videos
+          const actionButtonsHtml = isOwner ? `
+            <div class="mobile-card-actions">
+              <button type="button" title="重命名" class="mobile-action-btn rename-btn" data-id="${(video && video.id) || ''}">✏️</button>
+              <button type="button" title="删除" class="mobile-action-btn danger delete-btn" data-id="${(video && video.id) || ''}">🗑️</button>
+            </div>
+          ` : '';
+
+          // 难度标识
+          const difficultyLabels = { beginner: '入门', intermediate: '进阶', advanced: '高级' };
+          const difficultyLevel = video && video.difficulty_level;
+          const difficultyBadgeHtml = difficultyLevel && difficultyLabels[difficultyLevel]
+            ? `<span class="video-difficulty-badge ${difficultyLevel}">${difficultyLabels[difficultyLevel]}</span>`
+            : '';
+
+          card.innerHTML = `
+            <div class="video-thumbnail">
+              <img src="${escapeHtml(thumbnail)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22280%22 height=%22160%22%3E%3Crect fill=%22%23667eea%22 width=%22280%22 height=%22160%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22white%22%3EVideo%3C/text%3E%3C/svg%3E'">
+              <div class="video-duration">${durationLabel}</div>
+              ${difficultyBadgeHtml}
+            </div>
+            <div class="video-info">
+              <div class="video-info-header">
+                <h4 class="video-title" title="${escapeHtml(title)}">${escapeHtml(title)}</h4>
+                ${actionButtonsHtml}
+              </div>
+            </div>
+          `;
+
+          if (video && video.id != null) {
+            card.addEventListener('click', () => {
+              window.location.href = `video-reader.html?videoId=${encodeURIComponent(String(video.id))}`;
+            });
+          }
+
+          // Actions
+          const renameBtn = card.querySelector('.rename-btn');
+          const deleteBtn = card.querySelector('.delete-btn');
+          if (renameBtn) {
+            renameBtn.addEventListener('click', async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+              const id = Number(renameBtn.dataset.id);
+              if (!Number.isFinite(id)) return;
+              const titleEl = card.querySelector('.video-title');
+              const current = titleEl ? titleEl.textContent.trim() : '';
+              const promptText = t('mobile.explore.rename_video', '重命名视频');
+              const next = window.prompt(promptText, current);
+              if (next === null) return;
+              const trimmed = String(next).trim();
+              const emptyMsg = t('mobile.explore.title_empty', '标题不能为空');
+              if (!trimmed) return alert(emptyMsg);
+              if (trimmed === current) return;
+              try {
+                const res = await fetch(`${API_BASE}/video-resources/${id}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ title: trimmed }),
+                });
+                if (!res.ok) throw new Error(await res.text());
+                if (titleEl) titleEl.textContent = trimmed;
+                const idx = state.videos.findIndex(v => String(v.id) === String(id));
+                if (idx >= 0) state.videos[idx].title = trimmed;
+              } catch (err) {
+                const failedMsg = t('mobile.explore.rename_failed', '重命名失败');
+                alert(`${failedMsg}: ` + ((err && err.message) || '未知错误'));
+              }
+            });
+          }
+          if (deleteBtn) {
+            deleteBtn.addEventListener('click', async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+              const id = Number(deleteBtn.dataset.id);
+              if (!Number.isFinite(id)) return;
+              const confirmMsg = t('mobile.explore.delete_confirm', '确定要删除这个视频吗？此操作无法撤销。');
+              if (!window.confirm(confirmMsg)) return;
+              try {
+                const res = await fetch(`${API_BASE}/video-resources/${id}`, {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (!res.ok) throw new Error(await res.text());
+                state.videos = state.videos.filter(v => String(v.id) !== String(id));
+                const filtered = filterVideos(state.currentFilter);
+                renderVideos(filtered);
+              } catch (err) {
+                const failedMsg = t('mobile.explore.delete_failed', '删除失败');
+                alert(`${failedMsg}: ` + ((err && err.message) || '未知错误'));
+              }
+            });
+          }
+
+          fragment.appendChild(card);
+        });
+
+        gridEl.appendChild(fragment);
+      }
+
+      // Expose renderVideos to global scope for tag system
+      window.renderVideos = renderVideos;
+
+      async function preloadVideoTags(videoList) {
+        if (!window.VideoTagSystem || !Array.isArray(videoList) || !videoList.length) return;
+        const ids = Array.from(new Set(videoList.map(v => v && v.id).filter(Boolean)));
+        if (!ids.length) return;
+        const tokenForTags = token || getAuthToken() || window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+        if (!tokenForTags) return;
+        const tagApiBase = (() => {
+          const base = API_BASE || '';
+          const origin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '';
+          if (!base) return origin;
+          try {
+            // Normalize and drop www so we can compare with page origin
+            const normalize = (v) => String(v || '').replace('://www.', '://');
+            const resolved = new URL(base, origin || undefined).origin;
+            return (normalize(resolved) === normalize(origin)) ? origin : resolved;
+          } catch (_) {
+            return base;
+          }
+        })();
+        try {
+          if (typeof window.VideoTagSystem.syncVideoTagsFromServer === 'function') {
+            // 使用 force: true 确保标签数据与服务器同步
+            await window.VideoTagSystem.syncVideoTagsFromServer(tagApiBase, tokenForTags, ids, { force: true });
+          } else {
+            const fetchOne = async (vid) => {
+              try {
+                const base = tagApiBase.replace(/\/$/, '');
+                const sameOrigin = (() => {
+                  try {
+                    const pageOrigin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : '';
+                    const normalize = (v) => String(v || '').replace('://www.', '://');
+                    return normalize(base) === normalize(pageOrigin) || base === '';
+                  } catch (_) { return true; }
+                })();
+                const url = sameOrigin ? `/videos/${vid}/tags` : `${base}/videos/${vid}/tags`;
+                const res = await fetch(url, {
+                  headers: { 'Authorization': `Bearer ${tokenForTags}` }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const tagIds = [
+                  ...((data.global_tag_ids || []).map(id => String(id))),
+                  ...((data.user_tag_ids || []).map(id => `u:${id}`))
+                ];
+                if (window.VideoTagSystem && window.VideoTagSystem.setVideoTags) {
+                  window.VideoTagSystem.setVideoTags(vid, tagIds);
+                }
+              } catch (e) {
+                console.warn('[Mobile Tag System] preload single video tags failed', e);
+              }
+            };
+            const limit = 5;
+            for (let i = 0; i < ids.length; i += limit) {
+              const batch = ids.slice(i, i + limit);
+              await Promise.all(batch.map(fetchOne));
+            }
+          }
+        } catch (err) {
+          console.warn('[Mobile Tag System] preload video tags failed', err);
+        }
+      }
+
+      function renderSkeleton() {
+        const gridEl = document.getElementById('video-grid');
+        if (!gridEl) return;
+
+        // Generate 6 skeleton cards
+        const skeletons = Array(6).fill(0).map(() => `
+          <div class="skeleton-card">
+            <div class="skeleton-thumbnail"></div>
+            <div class="skeleton-info">
+              <div class="skeleton skeleton-title"></div>
+              <div class="skeleton skeleton-meta"></div>
+            </div>
+          </div>
+        `).join('');
+
+        gridEl.innerHTML = skeletons;
+
+        // Hide placeholder if visible
+        const placeholder = document.getElementById('placeholder');
+        if (placeholder) placeholder.style.display = 'none';
+      }
+
+      async function loadVideos() {
+        const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+        // Show skeleton instead of text placeholder
+        renderSkeleton();
+        hideEmpty();
+
+        try {
+          // 添加时间戳和cache控制，确保获取最新数据
+          const timestamp = Date.now();
+          const response = await fetch(`${API_BASE}/video-resources?lite=1&_t=${timestamp}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            cache: 'no-store',
+          });
+
+          if (response.status === 401) {
+            console.warn('[Explore] Token expired, forcing logout');
+            const expiredMsg = t('mobile.explore.session_expired', '登录信息已过期，请重新登录。');
+            showEmpty(expiredMsg);
+            scheduleLogout();
+            return;
+          }
+
+          if (!response.ok) {
+            const failedMsg = t('mobile.explore.load_failed', '加载失败，请稍后重试。');
+            throw new Error(failedMsg);
+          }
+
+          const data = await response.json();
+          const items = Array.isArray(data && data.items) ? data.items : [];
+          state.videos = items;
+          state.isMainlandUser = data && data.isMainlandUser ? true : false;
+          state.difficultyStats = data && data.difficultyStats ? data.difficultyStats : null;
+          console.log('[Explore] User is mainland region:', state.isMainlandUser);
+          console.log('[Explore] Difficulty stats:', state.difficultyStats);
+          // Render difficulty filters
+          renderDifficultyFilters();
+          // 同步标签（全局/个人/偏好）
+          let tagLoadOk = false;
+          if (window.VideoTagSystem && typeof window.VideoTagSystem.loadFromServer === 'function') {
+            try {
+              console.log('[Mobile Tag System] loadFromServer start', { API_BASE, hasToken: !!token });
+              tagLoadOk = await window.VideoTagSystem.loadFromServer(API_BASE, token);
+              console.log('[Mobile Tag System] loadFromServer result', tagLoadOk, 'globals:', (window.VideoTagSystem.serverCache?.globalTags || []).length);
+            } catch (e) {
+              console.warn('[Mobile Tag System] loadFromServer failed', e);
+            }
+          }
+          // 如果服务器标签拉取失败，使用预设标签作为 fallback
+          if (!tagLoadOk && window.VideoTagSystem && typeof window.VideoTagSystem.getPresetTags === 'function') {
+            try {
+              window.VideoTagSystem.serverCache = window.VideoTagSystem.serverCache || {};
+              window.VideoTagSystem.serverCache.globalTags = window.VideoTagSystem.getPresetTags();
+              console.warn('[Mobile Tag System] fallback to preset global tags');
+            } catch (_) { }
+          }
+          await preloadVideoTags(items);
+          const filtered = filterVideos(state.currentFilter);
+          renderVideos(filtered);
+
+          // 更新标签筛选器的统计数据
+          if (typeof window.renderTagFilters === 'function') {
+            window.renderTagFilters(state.videos);
+          }
+        } catch (err) {
+          console.error('加载视频失败:', err);
+          const loadFailedMsg = t('mobile.explore.load_failed', '加载失败，请稍后重试。');
+          showEmpty(loadFailedMsg);
+        } finally {
+          hidePlaceholder();
+        }
+      }
+
+      // 暴露 loadVideos 为全局函数，以便标签系统可以访问
+      window.loadVideos = loadVideos;
+
+      filterButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const filterKey = button.dataset.filter || 'all';
+          setActiveFilter(filterKey);
+          const filtered = filterVideos(filterKey);
+          renderVideos(filtered);
+        });
+      });
+
+      setActiveFilter('all');
+
+      // Load user's default level then load videos
+      loadUserDefaultLevel().then(userLevel => {
+        if (userLevel) {
+          state.currentDifficulty = userLevel;
+        }
+        loadVideos();
+      });
+
+      // 刷新按钮功能
+      const refreshBtn = document.getElementById('refresh-videos-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+          refreshBtn.style.animation = 'spin 0.6s ease-in-out';
+          await loadVideos();
+          setTimeout(() => {
+            refreshBtn.style.animation = '';
+          }, 600);
+        });
+      }
+
+      // 页面可见时自动刷新视频列表，确保看到最新上传的视频
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && isAuthed) {
+          console.log('[Explore] Page visible, refreshing videos...');
+          loadVideos();
+        }
+      });
+
+      // 添加下拉刷新功能
+      let touchStartY = 0;
+      let isPulling = false;
+      const mainContent = document.querySelector('.explore-content');
+
+      if (mainContent) {
+        mainContent.addEventListener('touchstart', (e) => {
+          if (mainContent.scrollTop === 0) {
+            touchStartY = e.touches[0].clientY;
+          }
+        }, { passive: true });
+
+        mainContent.addEventListener('touchmove', (e) => {
+          if (mainContent.scrollTop === 0) {
+            const touchY = e.touches[0].clientY;
+            const pullDistance = touchY - touchStartY;
+            if (pullDistance > 80 && !isPulling) {
+              isPulling = true;
+              console.log('[Explore] Pull to refresh triggered');
+            }
+          }
+        }, { passive: true });
+
+        mainContent.addEventListener('touchend', async () => {
+          if (isPulling) {
+            isPulling = false;
+            await loadVideos();
+          }
+          touchStartY = 0;
+        }, { passive: true });
+      }
+    });
+
+    // ---- Lightweight vocab review prompt ----
+    (function () {
+      const overlay = document.getElementById('review-overlay');
+      const closeBtn = document.getElementById('review-close');
+      const passBtn = document.getElementById('review-pass-btn');
+      const failBtn = document.getElementById('review-fail-btn');
+      const wordEl = document.getElementById('review-word');
+      const transEl = document.getElementById('review-translation');
+      const ctxEl = document.getElementById('review-contexts');
+      const fab = document.getElementById('review-fab');
+      let activeLemma = null;
+
+      function toast(msg, type = 'info') {
+        if (window.Feedback) { Feedback.showToast(type, msg); return; }
+        try { const t = document.createElement('div'); t.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;z-index:2000;'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 1600); } catch (_) { }
+      }
+      function getToken() {
+        try { return authManager && authManager.getUserInfo && (authManager.getUserInfo().token); } catch (_) { return null; }
+      }
+      async function fetchVocabDetail(lemma) {
+        const token = getToken(); if (!token) throw new Error('未登录');
+        const res = await fetch(`${API_BASE}/vocab/item?lemma=${encodeURIComponent(lemma)}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error('加载失败');
+        return res.json();
+      }
+      async function submitReview(outcome) {
+        const token = getToken(); if (!token || !activeLemma) return;
+        const btn = outcome === 'pass' ? passBtn : failBtn; const old = btn.textContent; btn.disabled = true; btn.textContent = '…';
+        try {
+          const res = await fetch(`${API_BASE}/vocab/review`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ lemma: activeLemma, outcome }) });
+          if (!res.ok) throw new Error(await res.text());
+          const msgKey = outcome === 'pass' ? 'feedback.mark_known' : 'feedback.mark_again';
+          const msg = (typeof i18n !== 'undefined' && i18n && i18n.t) ? i18n.t(msgKey) : (outcome === 'pass' ? '已标记为认识' : '已标记为再来');
+          toast(msg, 'success');
+          try { if (window.Feedback) Feedback.playSfx('success'); } catch (_) { }
+          overlay.hidden = true; activeLemma = null;
+        } catch (e) {
+          const msg = (typeof i18n !== 'undefined' && i18n && i18n.t) ? (i18n.t('feedback.submit_failed') || '提交失败') : '提交失败';
+          toast(msg, 'warn');
+        } finally { btn.disabled = false; btn.textContent = old; }
+      }
+      async function openPrompt() {
+        const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+        const promptMsg = t('mobile.explore.review.input_prompt', '输入要复习/认识的单词');
+        let lemma = window.prompt(promptMsg);
+        if (!lemma) return; lemma = String(lemma).trim().toLowerCase(); if (!lemma) return;
+        const loadingCtx = t('mobile.explore.review.loading_context', '加载上下文…');
+        activeLemma = lemma; wordEl.textContent = lemma; transEl.textContent = ''; ctxEl.innerHTML = `<div class="detail-context-empty">${loadingCtx}</div>`; overlay.hidden = false;
+        try {
+          const d = await fetchVocabDetail(lemma);
+          const tr = (d.item && d.item.definitions?.zh) || '';
+          const noTransMsg = t('mobile.explore.review.no_translation', '暂无翻译');
+          transEl.textContent = (tr && !tr.startsWith('[待翻译]')) ? tr : noTransMsg;
+          const cs = Array.isArray(d.contexts) ? d.contexts : [];
+          if (cs.length) {
+            const f = document.createDocumentFragment();
+            cs.slice(0, 3).forEach(c => {
+              const el = document.createElement('div');
+              el.className = 'detail-context-item';
+              const videoPrefix = t('mobile.explore.review.video_prefix', '视频 #');
+              const sourceLabel = t('mobile.explore.review.source', '来源片段');
+              const title = c.video_resource_id ? `${videoPrefix}${c.video_resource_id}` : sourceLabel;
+              el.innerHTML = `<div class="context-title">${title}</div><div class="context-sentence">${c.sentence || ''}</div>`;
+              f.appendChild(el);
+            });
+            ctxEl.innerHTML = '';
+            ctxEl.appendChild(f);
+          } else {
+            const noCtxMsg = t('mobile.explore.review.no_context', '暂无上下文记录');
+            ctxEl.innerHTML = `<div class="detail-context-empty">${noCtxMsg}</div>`;
+          }
+        } catch (_) {
+          const loadFailedMsg = t('mobile.explore.review.load_failed', '加载失败，请稍后重试');
+          ctxEl.innerHTML = `<div class="detail-context-empty">${loadFailedMsg}</div>`;
+        }
+      }
+      if (fab) fab.addEventListener('click', openPrompt);
+      if (closeBtn) closeBtn.addEventListener('click', () => { overlay.hidden = true; activeLemma = null; });
+      if (passBtn) passBtn.addEventListener('click', () => submitReview('pass'));
+      if (failBtn) failBtn.addEventListener('click', () => submitReview('fail'));
+      window.openExploreReview = (lemma) => {
+        const t = (key, fallback) => (typeof i18n !== 'undefined' && i18n.t) ? i18n.t(key) : fallback;
+        activeLemma = String(lemma || '').trim().toLowerCase();
+        if (!activeLemma) return;
+        wordEl.textContent = activeLemma;
+        transEl.textContent = '';
+        const loadingCtx = t('mobile.explore.review.loading_context', '加载上下文…');
+        ctxEl.innerHTML = `<div class="detail-context-empty">${loadingCtx}</div>`;
+        overlay.hidden = false;
+        fetchVocabDetail(activeLemma).then(d => {
+          const tr = (d.item && d.item.definitions?.zh) || '';
+          const noTransMsg = t('mobile.explore.review.no_translation', '暂无翻译');
+          transEl.textContent = (tr && !tr.startsWith('[待翻译]')) ? tr : noTransMsg;
+          const cs = Array.isArray(d.contexts) ? d.contexts : [];
+          if (cs.length) {
+            const f = document.createDocumentFragment();
+            cs.slice(0, 3).forEach(c => {
+              const el = document.createElement('div');
+              el.className = 'detail-context-item';
+              const videoPrefix = t('mobile.explore.review.video_prefix', '视频 #');
+              const sourceLabel = t('mobile.explore.review.source', '来源片段');
+              const title = c.video_resource_id ? `${videoPrefix}${c.video_resource_id}` : sourceLabel;
+              el.innerHTML = `<div class="context-title">${title}</div><div class="context-sentence">${c.sentence || ''}</div>`;
+              f.appendChild(el);
+            });
+            ctxEl.innerHTML = '';
+            ctxEl.appendChild(f);
+          }
+        }).catch(() => { });
+      };
+      // Delegate clicks on any element with data-lemma to open review directly
+      document.body.addEventListener('click', (e) => {
+        const el = e.target && e.target.closest && e.target.closest('[data-lemma]');
+        if (!el) return;
+        const lemma = (el.getAttribute('data-lemma') || el.textContent || '').trim();
+        if (!lemma) return;
+        e.preventDefault(); e.stopPropagation();
+        window.openExploreReview(lemma);
+      });
+    })();
+
+    // ===== 视频标签系统实现 =====
+    (function () {
+      'use strict';
+
+      // 等待标签系统加载（添加超时和调试）
+      function waitForTagSystem(callback, attempts = 0, maxAttempts = 50) {
+        console.log(`[Mobile Tag System] Waiting for dependencies... (attempt ${attempts + 1}/${maxAttempts})`);
+        console.log('[Mobile Tag System] VideoTagSystem available:', typeof window.VideoTagSystem !== 'undefined');
+        console.log('[Mobile Tag System] renderVideos available:', typeof window.renderVideos !== 'undefined');
+
+        if (window.VideoTagSystem && window.renderVideos) {
+          console.log('[Mobile Tag System] Dependencies loaded, executing callback');
+          callback();
+        } else if (attempts >= maxAttempts) {
+          console.error('[Mobile Tag System] Timeout waiting for dependencies!');
+          console.error('[Mobile Tag System] VideoTagSystem:', typeof window.VideoTagSystem);
+          console.error('[Mobile Tag System] renderVideos:', typeof window.renderVideos);
+          // 即使超时，也尝试执行回调（可能某些功能可以工作）
+          console.warn('[Mobile Tag System] Executing callback anyway...');
+          callback();
+        } else {
+          setTimeout(() => waitForTagSystem(callback, attempts + 1, maxAttempts), 100);
+        }
+      }
+
+      waitForTagSystem(() => {
+        const tagSystem = window.VideoTagSystem;
+        let currentTagFilter = null; // 当前选中的标签筛选
+        let currentCollectionFilter = null; // 当前选中的合集（二级标签）筛选
+        let currentVideoForTagging = null; // 当前正在打标签的视频
+
+        // Toast 提示
+        function showToast(message) {
+          try {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;z-index:10000;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+          } catch (e) {
+            console.error('Toast error:', e);
+          }
+        }
+
+        // ===== 标签筛选 UI =====
+        function renderTagFilters(videos) {
+          window.renderTagFilters = renderTagFilters; // Expose to global scope
+          const container = document.getElementById('tag-filter-tabs');
+          if (!container) return;
+
+          const videoList = Array.isArray(videos) ? videos : [];
+          const stats = tagSystem.getTagStatistics(videoList);
+          const allTags = tagSystem.getVisibleTags ? tagSystem.getVisibleTags() : tagSystem.getAllTags();
+
+          // 分离全局标签和用户标签
+          let globalTags = allTags.filter(t => !(t.scope && String(t.scope).startsWith('user')));
+          let userTags = allTags.filter(t => t.scope && String(t.scope).startsWith('user'));
+
+          // 去除用户标签中与全局标签同名的（优先显示全局）
+          const globalNames = new Set(globalTags.map(t => t.name));
+          userTags = userTags.filter(t => !globalNames.has(t.name));
+
+          // 按计数排序
+          const sortByCount = (tags) => tags.sort((a, b) => {
+            const countA = (stats[a.id] || { count: 0 }).count;
+            const countB = (stats[b.id] || { count: 0 }).count;
+            if (countB !== countA) return countB - countA;
+            return (a.name || '').localeCompare(b.name || '');
+          });
+
+          globalTags = sortByCount(globalTags);
+          userTags = sortByCount(userTags);
+
+          // 核心标签（始终显示）
+          const coreTagNames = new Set(['我的', '职场', '购物', '生活', '影视', '儿童', '亲子', '动画', '故事', '校园', '演讲', '课程', '跟读', '播客', '旅行', '词汇']);
+
+          // 过滤：只显示有视频的 + 核心标签
+          const globalTagsFiltered = globalTags.filter(t => {
+            const count = (stats[t.id] || { count: 0 }).count;
+            return count > 0 || coreTagNames.has(t.name);
+          });
+
+          const userTagsFiltered = userTags.filter(t => {
+            const count = (stats[t.id] || { count: 0 }).count;
+            return count > 0;
+          });
+
+          container.innerHTML = '';
+
+          // 1. 状态筛选 Chip
+          const statusChip = document.createElement('div');
+          const currentStatus = (window.state && window.state.currentFilter) || 'all';
+          const statusLabels = { 'all': '状态', 'not-started': '未开始', 'in-progress': '学习中', 'completed': '已完成' };
+          const statusIcons = { 'all': '📊', 'not-started': '⚪', 'in-progress': '⏳', 'completed': '✅' };
+
+          statusChip.className = 'tag-filter-chip special-chip';
+          if (currentStatus !== 'all') statusChip.classList.add('active');
+          statusChip.innerHTML = `
+            <span class="tag-icon">${statusIcons[currentStatus] || '📊'}</span>
+            <span>${statusLabels[currentStatus] || '状态'}</span>
+            <span style="font-size: 10px; margin-left: 2px; opacity: 0.6;">▼</span>
+          `;
+          statusChip.onclick = () => {
+            updateStatusModalUI();
+            document.getElementById('status-filter-modal').classList.add('show');
+          };
+          container.appendChild(statusChip);
+
+          // 2. "全部" 标签 Chip
+          const allChip = document.createElement('div');
+          allChip.className = 'tag-filter-chip' + (!currentTagFilter ? ' active' : '');
+          allChip.innerHTML = `
+            <span class="tag-icon">📂</span>
+            <span>全部</span>
+            <span class="tag-count">(${videoList.length})</span>
+          `;
+          allChip.addEventListener('click', () => {
+            currentTagFilter = null;
+            currentCollectionFilter = null;
+            renderTagFilters(window.state ? window.state.videos : []);
+            applyFilters();
+          });
+          container.appendChild(allChip);
+
+          // 3. "未标记" Chip（只在有未标记视频时显示）
+          const untaggedCount = stats['_untagged'] ? stats['_untagged'].count : 0;
+          if (untaggedCount > 0) {
+            const untaggedChip = document.createElement('div');
+            untaggedChip.className = 'tag-filter-chip' + (currentTagFilter === '_untagged' ? ' active' : '');
+            untaggedChip.innerHTML = `
+              <span class="tag-icon">📋</span>
+              <span>未标记</span>
+              <span class="tag-count">(${untaggedCount})</span>
+            `;
+            untaggedChip.addEventListener('click', () => {
+              currentTagFilter = '_untagged';
+              currentCollectionFilter = null;
+              renderTagFilters(window.state ? window.state.videos : []);
+              applyFilters();
+            });
+            container.appendChild(untaggedChip);
+          }
+
+          // 4. 全局标签 Chips（按计数排序，有视频的+核心标签）
+          globalTagsFiltered.forEach(tag => {
+            const stat = stats[tag.id] || { count: 0 };
+            const chip = document.createElement('div');
+            chip.className = 'tag-filter-chip' + (currentTagFilter === tag.id ? ' active' : '');
+            chip.innerHTML = `
+              <span class="tag-icon">${tag.icon || '🏷️'}</span>
+              <span>${tag.displayName || tag.name}</span>
+              <span class="tag-count">(${stat.count})</span>
+            `;
+            chip.style.setProperty('--tag-color', tag.color);
+            chip.addEventListener('click', () => {
+              currentTagFilter = tag.id;
+              currentCollectionFilter = null;
+              renderTagFilters(window.state ? window.state.videos : []);
+              applyFilters();
+            });
+            container.appendChild(chip);
+          });
+
+          // 5. 用户标签 Chips（只显示有视频的）
+          userTagsFiltered.forEach(tag => {
+            const stat = stats[tag.id] || { count: 0 };
+            const chip = document.createElement('div');
+            chip.className = 'tag-filter-chip' + (currentTagFilter === tag.id ? ' active' : '');
+            chip.innerHTML = `
+              <span class="tag-icon">${tag.icon || '🏷️'}</span>
+              <span>${tag.displayName || tag.name}</span>
+              <span class="tag-count">(${stat.count})</span>
+            `;
+            chip.style.setProperty('--tag-color', tag.color);
+            chip.addEventListener('click', () => {
+              currentTagFilter = tag.id;
+              currentCollectionFilter = null;
+              renderTagFilters(window.state ? window.state.videos : []);
+              applyFilters();
+            });
+            container.appendChild(chip);
+          });
+
+          // 6. 管理标签 Button
+          const manageBtn = document.createElement('div');
+          manageBtn.className = 'tag-filter-chip manage-chip';
+          manageBtn.innerHTML = `<span class="tag-icon">⚙️</span>`;
+          manageBtn.onclick = () => {
+            renderTagManager();
+            document.getElementById('tag-manager-modal').classList.add('show');
+          };
+          container.appendChild(manageBtn);
+        }
+
+        function getVideoCollectionName(video) {
+          try {
+            const raw = video?.collection_name ?? video?.collection ?? video?.series ?? '';
+            const name = String(raw || '').trim();
+            return name || null;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function renderCollectionFilters(baseVideos) {
+          const container = document.getElementById('collection-filter-tabs');
+          if (!container) return;
+
+          // Only show collections when a tag is selected (and not _untagged)
+          if (!currentTagFilter || currentTagFilter === '_untagged') {
+            currentCollectionFilter = null;
+            container.classList.remove('show');
+            container.innerHTML = '';
+            return;
+          }
+
+          const list = Array.isArray(baseVideos) ? baseVideos : [];
+          const counts = new Map();
+          for (const v of list) {
+            const name = getVideoCollectionName(v);
+            if (!name) continue;
+            counts.set(name, (counts.get(name) || 0) + 1);
+          }
+
+          const collections = Array.from(counts.entries())
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => (b.count - a.count) || a.name.localeCompare(b.name, 'zh-Hans-CN'));
+
+          if (!collections.length) {
+            currentCollectionFilter = null;
+            container.classList.remove('show');
+            container.innerHTML = '';
+            return;
+          }
+
+          // If selected collection is no longer available, clear it
+          if (currentCollectionFilter && !counts.has(currentCollectionFilter)) {
+            currentCollectionFilter = null;
+          }
+
+          container.classList.add('show');
+          container.innerHTML = '';
+
+          // "All collections" chip
+          const allChip = document.createElement('div');
+          allChip.className = 'tag-filter-chip special-chip' + (!currentCollectionFilter ? ' active' : '');
+          allChip.innerHTML = `
+            <span class="tag-icon">📚</span>
+            <span>合集</span>
+            <span class="tag-count">(${collections.reduce((s, c) => s + c.count, 0)})</span>
+          `;
+          allChip.addEventListener('click', () => {
+            currentCollectionFilter = null;
+            applyFilters();
+          });
+          container.appendChild(allChip);
+
+          collections.forEach(({ name, count }) => {
+            const chip = document.createElement('div');
+            chip.className = 'tag-filter-chip' + (currentCollectionFilter === name ? ' active' : '');
+            chip.innerHTML = `
+              <span class="tag-icon">📚</span>
+              <span>${name}</span>
+              <span class="tag-count">(${count})</span>
+            `;
+            chip.addEventListener('click', () => {
+              currentCollectionFilter = name;
+              applyFilters();
+            });
+            container.appendChild(chip);
+          });
+        }
+
+        // 状态筛选逻辑
+        window.selectStatusFilter = function (status) {
+          if (window.state) {
+            window.state.currentFilter = status;
+          }
+          document.getElementById('status-filter-modal').classList.remove('show');
+          renderTagFilters(window.state ? window.state.videos : []); // Re-render to update status chip text
+          applyFilters();
+        };
+
+        function updateStatusModalUI() {
+          const current = (window.state && window.state.currentFilter) || 'all';
+          ['all', 'not-started', 'in-progress', 'completed'].forEach(s => {
+            const check = document.getElementById(`status-check-${s}`);
+            if (check) check.textContent = s === current ? '✓' : '';
+
+            // Highlight selected row
+            const row = check.closest('.tag-item');
+            if (row) {
+              if (s === current) row.classList.add('selected');
+              else row.classList.remove('selected');
+            }
+          });
+        }
+
+        // ===== 应用筛选 =====
+        function applyFilters() {
+          if (!window.state) {
+            console.warn('[Mobile Tag System] window.state not available in applyFilters');
+            return;
+          }
+
+          // Status filter first (uses global state.videos)
+          let baseVideos = (window.state.currentFilter && window.state.currentFilter !== 'all')
+            ? filterVideos(window.state.currentFilter)
+            : (window.state.videos || []);
+
+          // Then tag filter
+          if (currentTagFilter) {
+            if (currentTagFilter === '_untagged') {
+              baseVideos = tagSystem.getUntaggedVideos(baseVideos);
+            } else {
+              baseVideos = tagSystem.filterVideosByTags(baseVideos, currentTagFilter);
+            }
+          }
+
+          // Render & apply collection filter (secondary tag)
+          renderCollectionFilters(baseVideos);
+          let filteredVideos = baseVideos;
+          if (currentCollectionFilter) {
+            filteredVideos = filteredVideos.filter(v => getVideoCollectionName(v) === currentCollectionFilter);
+          }
+
+          renderVideos(filteredVideos);
+        }
+
+        // ===== 在视频卡片上显示标签 =====
+        function renderVideoTags(videoId, container) {
+          if (!container) return;
+
+          const tags = tagSystem.getVideoTagObjects(videoId);
+          if (!tags || tags.length === 0) {
+            container.innerHTML = '';
+            return;
+          }
+
+          // 分离自定义标签（视频标签）和预设标签（状态标签）
+          const customTags = tags.filter(tag => tag.custom === true);
+          const presetTags = tags.filter(tag => !tag.custom);
+
+          // 主标签（自定义标签）- 正常大小
+          const customTagsHtml = customTags.map(tag => {
+            const label = tag.displayName || tag.name;
+            return `
+        <span class="video-tag-chip" style="background-color: ${tag.color}15; color: ${tag.color}; border-color: ${tag.color}40;">
+          <span class="tag-icon">${tag.icon}</span>
+          <span>${label}</span>
+        </span>
+        `;
+          }).join('');
+
+          // 子标签（预设标签）- 较小的尺寸
+          const presetTagsHtml = presetTags.map(tag => {
+            const label = tag.displayName || tag.name;
+            return `
+        <span class="video-tag-chip video-tag-preset" style="background-color: ${tag.color}10; color: ${tag.color}; border-color: ${tag.color}30;">
+          <span class="tag-icon">${tag.icon}</span>
+          <span>${label}</span>
+        </span>
+        `;
+          }).join('');
+
+          // 先显示自定义标签，再显示预设标签
+          container.innerHTML = customTagsHtml + presetTagsHtml;
+        }
+
+        // ===== 标签管理模态框 =====
+        const tagManagerModal = document.getElementById('tag-manager-modal');
+        const tagManagerBackdrop = document.getElementById('tag-manager-backdrop');
+        const tagManagerCloseBtn = document.getElementById('tag-manager-close');
+        const manageTagsBtn = document.getElementById('manage-tags-btn'); // 可能不存在（旧代码）
+        const addCustomTagBtn = document.getElementById('add-custom-tag-btn');
+
+        console.log('[Mobile Tag System] Tag manager elements check:');
+        console.log('  - tagManagerModal:', !!tagManagerModal);
+        console.log('  - tagManagerBackdrop:', !!tagManagerBackdrop);
+        console.log('  - tagManagerCloseBtn:', !!tagManagerCloseBtn);
+        console.log('  - manageTagsBtn:', !!manageTagsBtn);
+        console.log('  - addCustomTagBtn:', !!addCustomTagBtn);
+
+        function showTagManager() {
+          if (!tagManagerModal || !tagManagerBackdrop) {
+            console.error('[Mobile Tag System] Tag manager modal elements not found');
+            return;
+          }
+          renderTagManager();
+          tagManagerModal.classList.add('show');
+          tagManagerBackdrop.classList.add('show');
+          document.body.style.overflow = 'hidden';
+        }
+
+        function hideTagManager() {
+          if (!tagManagerModal || !tagManagerBackdrop) return;
+          tagManagerModal.classList.remove('show');
+          tagManagerBackdrop.classList.remove('show');
+          document.body.style.overflow = '';
+        }
+
+        function renderTagManager() {
+          // 渲染预设标签
+          const presetTagsList = document.getElementById('preset-tags-list');
+          if (!presetTagsList) {
+            console.error('[Mobile Tag System] preset-tags-list element not found');
+            return;
+          }
+          const presetTags = tagSystem.getPresetTags();
+          presetTagsList.innerHTML = presetTags.map(tag => {
+            const hidden = tagSystem.isHidden && tagSystem.isHidden(tag.id);
+            return `
+        <div class="tag-item">
+          <div class="tag-item-left">
+            <span class="tag-item-icon">${tag.icon}</span>
+            <span class="tag-item-name">${tag.name}</span>
+          </div>
+          <div class="tag-item-actions">
+            <button class="tag-item-btn ${hidden ? '' : 'danger'} toggle-hide-preset" data-tag-id="${tag.id}">
+              ${hidden ? '显示' : '隐藏'}
+            </button>
+            <button class="tag-item-btn toggle-pin-preset" data-tag-id="${tag.id}">
+              ${tagSystem.getPreferences().pinned.includes(String(tag.id)) ? '取消置顶' : '置顶'}
+            </button>
+            <button class="tag-item-btn edit-alias" data-tag-id="${tag.id}">别名</button>
+          </div>
+        </div>
+        `;
+          }).join('');
+
+          presetTagsList.querySelectorAll('.toggle-hide-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.dataset.tagId;
+              const visible = tagSystem.toggleHide(id);
+              showToast(visible ? '已显示标签' : '已隐藏标签');
+              renderTagManager();
+              renderTagFilters(window.state ? window.state.videos : []);
+              if (typeof tagSystem.savePreferencesToServer === 'function') {
+                const token = window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+                tagSystem.savePreferencesToServer(API_BASE, token);
+              }
+            });
+          });
+
+          presetTagsList.querySelectorAll('.toggle-pin-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.dataset.tagId;
+              const pinned = tagSystem.togglePin(id);
+              showToast(pinned ? '已置顶' : '取消置顶');
+              renderTagManager();
+              renderTagFilters(window.state ? window.state.videos : []);
+              if (typeof tagSystem.savePreferencesToServer === 'function') {
+                const token = window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+                tagSystem.savePreferencesToServer(API_BASE, token);
+              }
+            });
+          });
+
+          presetTagsList.querySelectorAll('.edit-alias').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.dataset.tagId;
+              const currentAlias = tagSystem.getPreferences().alias[id] || '';
+              const alias = prompt('为此标签设置别名（留空恢复默认）：', currentAlias);
+              if (alias === null) return;
+              tagSystem.setAlias(id, alias);
+              if (typeof tagSystem.savePreferencesToServer === 'function') {
+                const token = window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+                tagSystem.savePreferencesToServer(API_BASE, token);
+              }
+              renderTagManager();
+              renderTagFilters(window.state ? window.state.videos : []);
+            });
+          });
+
+          // 渲染自定义标签
+          const customTagsList = document.getElementById('custom-tags-list');
+          if (!customTagsList) {
+            console.error('[Mobile Tag System] custom-tags-list element not found');
+            return;
+          }
+          const customTags = tagSystem.getCustomTags();
+          if (customTags.length === 0) {
+            customTagsList.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;">还没有自定义标签</div>';
+          } else {
+            customTagsList.innerHTML = customTags.map(tag => `
+              <div class="tag-item" data-tag-id="${tag.id}">
+                <div class="tag-item-left">
+                  <span class="tag-item-icon">${tag.icon}</span>
+                  <span class="tag-item-name">${tag.name}</span>
+                </div>
+                <div class="tag-item-actions">
+                  <button class="tag-item-btn danger delete-tag-btn" data-tag-id="${tag.id}">删除</button>
+                  <button class="tag-item-btn" data-tag-id="${tag.id}" data-action="pin">置顶</button>
+                </div>
+              </div>
+            `).join('');
+
+            // 绑定删除按钮事件
+            customTagsList.querySelectorAll('.delete-tag-btn').forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tagId = btn.dataset.tagId;
+                if (!tagId) return;
+
+                const confirmed = window.confirm('确定要删除这个标签吗？');
+                if (!confirmed) return;
+
+                // Prevent double clicks while the async work runs in the background
+                btn.disabled = true;
+
+                const token = window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+
+                // Attempt to delete from both server and local storage to ensure robustness
+                const promises = [];
+
+                // 1. Try server deletion
+                if (tagSystem.deletePersonalTag) {
+                  promises.push(
+                    Promise.resolve(tagSystem.deletePersonalTag(API_BASE, token, tagId))
+                      .catch(err => {
+                        console.warn('[Mobile Tag System] deletePersonalTag failed', err);
+                        return false;
+                      })
+                  );
+                }
+
+                // 2. Try local deletion (always try this too, in case it's a "hybrid" tag or local-only)
+                if (tagSystem.deleteCustomTag) {
+                  promises.push(
+                    Promise.resolve(tagSystem.deleteCustomTag(tagId))
+                      .catch(err => {
+                        console.warn('[Mobile Tag System] deleteCustomTag failed', err);
+                        return false;
+                      })
+                  );
+                }
+
+                // Defer heavy work so the click handler returns quickly
+                Promise.allSettled(promises).then(results => {
+                  const success = results.some(r => r.status === 'fulfilled' && r.value === true);
+
+                  if (success) {
+                    showToast('标签已删除');
+                  } else {
+                    alert('删除失败，请稍后重试');
+                  }
+
+                  // Refresh UI regardless to drop stale entries
+                  renderTagManager();
+                  renderTagFilters(window.state ? window.state.videos : []);
+                }).finally(() => {
+                  btn.disabled = false;
+                });
+              });
+            });
+
+            customTagsList.querySelectorAll('[data-action="pin"]').forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const tagId = btn.dataset.tagId;
+                const pinned = tagSystem.togglePin(tagId);
+                if (typeof tagSystem.savePreferencesToServer === 'function') {
+                  const token = window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+                  tagSystem.savePreferencesToServer(API_BASE, token);
+                }
+                showToast(pinned ? '已置顶' : '取消置顶');
+                renderTagManager();
+                renderTagFilters(window.state ? window.state.videos : []);
+              });
+            });
+          }
+        }
+
+        // 添加自定义标签
+        if (addCustomTagBtn) {
+          addCustomTagBtn.addEventListener('click', async () => {
+            const name = prompt('请输入标签名称：');
+            if (!name) return;
+
+            const icon = prompt('请输入标签图标（emoji）：', '🏷️') || '🏷️';
+
+            let tag = null;
+            if (tagSystem.createPersonalTag) {
+              const token = window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+              tag = await tagSystem.createPersonalTag(API_BASE, token, name, icon);
+            } else {
+              tag = tagSystem.addCustomTag(name, icon);
+            }
+            if (tag) {
+              showToast(`已创建标签：${name}`);
+              renderTagManager();
+              renderTagFilters(window.state ? window.state.videos : []);
+            } else {
+              alert('标签创建失败，可能已存在同名标签');
+            }
+          });
+        }
+
+        // 打开/关闭标签管理（添加空值检查）
+        if (manageTagsBtn) {
+          manageTagsBtn.addEventListener('click', showTagManager);
+        }
+        if (tagManagerCloseBtn) {
+          tagManagerCloseBtn.addEventListener('click', hideTagManager);
+        }
+        if (tagManagerBackdrop) {
+          tagManagerBackdrop.addEventListener('click', hideTagManager);
+        }
+
+        // ===== 视频标签选择器 =====
+        const videoTagSelectorModal = document.getElementById('video-tag-selector-modal');
+        const videoTagSelectorBackdrop = document.getElementById('video-tag-selector-backdrop');
+        const videoTagSelectorCloseBtn = document.getElementById('video-tag-selector-close');
+        const videoTagSelectorList = document.getElementById('video-tag-selector-list');
+
+        console.log('[Mobile Tag System] Video tag selector elements check:');
+        console.log('  - videoTagSelectorModal:', !!videoTagSelectorModal);
+        console.log('  - videoTagSelectorBackdrop:', !!videoTagSelectorBackdrop);
+        console.log('  - videoTagSelectorCloseBtn:', !!videoTagSelectorCloseBtn);
+        console.log('  - videoTagSelectorList:', !!videoTagSelectorList);
+
+        function showVideoTagSelector(videoId) {
+          if (!videoTagSelectorModal || !videoTagSelectorBackdrop) {
+            console.error('[Mobile Tag System] Video tag selector modal elements not found');
+            return;
+          }
+          currentVideoForTagging = videoId;
+          renderVideoTagSelector();
+          videoTagSelectorModal.classList.add('show');
+          videoTagSelectorBackdrop.classList.add('show');
+          document.body.style.overflow = 'hidden';
+        }
+
+        function hideVideoTagSelector() {
+          if (!videoTagSelectorModal || !videoTagSelectorBackdrop) return;
+          videoTagSelectorModal.classList.remove('show');
+          videoTagSelectorBackdrop.classList.remove('show');
+          document.body.style.overflow = '';
+          currentVideoForTagging = null;
+
+          // 刷新显示
+          if (window.state) {
+            renderTagFilters(window.state.videos);
+            const filtered = filterVideos(window.state.currentFilter);
+            renderVideos(filtered);
+          }
+        }
+
+        function renderVideoTagSelector() {
+          if (!currentVideoForTagging || !videoTagSelectorList) {
+            console.error('[Mobile Tag System] Cannot render video tag selector: missing element or video ID');
+            return;
+          }
+
+          // 先加载后端标签映射
+          loadVideoTagsFromServer(currentVideoForTagging).then(() => {
+            buildSelector();
+          });
+        }
+
+        function buildSelector() {
+          if (!currentVideoForTagging || !videoTagSelectorList) return;
+          const allTags = tagSystem.getVisibleTags ? tagSystem.getVisibleTags() : tagSystem.getAllTags();
+          const videoTags = tagSystem.getVideoTags(currentVideoForTagging);
+
+          videoTagSelectorList.innerHTML = allTags.map(tag => {
+            const isSelected = videoTags.includes(tag.id);
+            const label = tag.displayName || tag.name;
+            return `
+        <div class="video-tag-item ${isSelected ? 'selected' : ''}" data-tag-id="${tag.id}">
+          <div class="tag-item-left">
+            <span class="tag-item-icon">${tag.icon}</span>
+            <span class="tag-item-name">${label}</span>
+          </div>
+          <div class="video-tag-checkbox">${isSelected ? '✓' : ''}</div>
+        </div>
+        `;
+          }).join('');
+
+          // 绑定点击事件
+          videoTagSelectorList.querySelectorAll('.video-tag-item').forEach(item => {
+            item.addEventListener('click', async () => {
+              const tagId = item.dataset.tagId;
+              tagSystem.toggleVideoTag(currentVideoForTagging, tagId);
+              renderVideoTagSelector();
+              // 保存到后端
+              await saveVideoTagsToServer(currentVideoForTagging);
+            });
+          });
+        }
+
+        async function loadVideoTagsFromServer(videoId) {
+          try {
+            const tokenSave = window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+            if (typeof tagSystem.syncVideoTagsFromServer === 'function') {
+              await tagSystem.syncVideoTagsFromServer(API_BASE, tokenSave, [videoId], { force: true });
+            } else {
+              const res = await fetch(`${API_BASE}/videos/${videoId}/tags`, {
+                headers: { 'Authorization': `Bearer ${tokenSave}` }
+              });
+              if (!res.ok) return;
+              const data = await res.json();
+              const ids = [
+                ...((data.global_tag_ids || []).map(id => String(id))),
+                ...((data.user_tag_ids || []).map(id => String(id)))
+              ];
+              tagSystem.setVideoTags(videoId, ids);
+            }
+          } catch (e) {
+            console.warn('加载视频标签失败', e);
+          }
+        }
+
+        async function saveVideoTagsToServer(videoId) {
+          try {
+            const allTags = tagSystem.getAllTags();
+            const tagIds = tagSystem.getVideoTags(videoId);
+            const globalIds = [];
+            const personalIds = [];
+            tagIds.forEach(id => {
+              const t = allTags.find(t => t.id === id);
+              if (!t) return;
+              if (t.scope === 'personal' || t.custom) personalIds.push(id);
+              else globalIds.push(id);
+            });
+            const tokenSave = window.token || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+            await fetch(`${API_BASE}/videos/${videoId}/tags`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${tokenSave}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ global_tag_ids: globalIds, user_tag_ids: personalIds })
+            });
+          } catch (e) {
+            console.warn('保存标签到后端失败', e);
+          }
+        }
+
+        // 添加事件监听器（添加空值检查）
+        if (videoTagSelectorCloseBtn) {
+          videoTagSelectorCloseBtn.addEventListener('click', hideVideoTagSelector);
+        }
+        if (videoTagSelectorBackdrop) {
+          videoTagSelectorBackdrop.addEventListener('click', hideVideoTagSelector);
+        }
+
+        // ===== 修改 renderVideos 函数，添加标签显示和管理功能 =====
+        const originalRenderVideos = window.renderVideos || renderVideos;
+
+        // 监听视频渲染完成事件，添加标签显示和管理功能
+        const observer = new MutationObserver(() => {
+          const videoCards = document.querySelectorAll('.video-card');
+          videoCards.forEach(card => {
+            // 如果已经处理过，跳过
+            if (card.dataset.tagsAdded) return;
+            card.dataset.tagsAdded = 'true';
+
+            const videoId = card.querySelector('.rename-btn')?.dataset?.id ||
+              card.querySelector('.delete-btn')?.dataset?.id;
+
+            if (!videoId) return;
+
+            // 在视频进度条后面添加标签显示区域
+            const progressDiv = card.querySelector('.video-progress');
+            if (progressDiv && !card.querySelector('.video-tags-display')) {
+              const tagsDisplay = document.createElement('div');
+              tagsDisplay.className = 'video-tags-display';
+              progressDiv.parentNode.insertBefore(tagsDisplay, progressDiv.nextSibling);
+              renderVideoTags(videoId, tagsDisplay);
+            }
+
+            // 在操作按钮中添加标签按钮
+            const actionsDiv = card.querySelector('.mobile-card-actions');
+            if (actionsDiv && !actionsDiv.querySelector('.tag-video-btn')) {
+              const tagBtn = document.createElement('button');
+              tagBtn.className = 'mobile-action-btn tag-video-btn';
+              tagBtn.title = '管理标签';
+              tagBtn.innerHTML = '🏷️';
+              tagBtn.dataset.id = videoId;
+
+              tagBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showVideoTagSelector(videoId);
+              });
+
+              // 插入到重命名按钮之前
+              const renameBtn = actionsDiv.querySelector('.rename-btn');
+              if (renameBtn) {
+                actionsDiv.insertBefore(tagBtn, renameBtn);
+              } else {
+                actionsDiv.appendChild(tagBtn);
+              }
+            }
+          });
+        });
+
+        // 开始观察视频网格的变化
+        const gridEl = document.getElementById('video-grid');
+        if (gridEl) {
+          observer.observe(gridEl, {
+            childList: true,
+            subtree: true
+          });
+        }
+
+        // 初始化标签筛选 - 添加调试信息
+        console.log('[Mobile Tag System] Starting initialization...');
+        console.log('[Mobile Tag System] window.state available:', typeof window.state !== 'undefined');
+        console.log('[Mobile Tag System] state.videos:', typeof window.state !== 'undefined' && window.state ? (window.state.videos || []).length : 'N/A');
+
+        // 立即尝试渲染，因为 loadVideos 可能已经执行过了
+        if (typeof window.state !== 'undefined' && window.state) {
+          console.log('[Mobile Tag System] Immediate render attempt...');
+          renderTagFilters(window.state.videos || []);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+          console.log('[Mobile Tag System] DOMContentLoaded fired');
+          if (typeof window.state !== 'undefined' && window.state) {
+            renderTagFilters(window.state.videos || []);
+          }
+        });
+
+        // 在视频加载完成后渲染标签筛选
+        const originalLoadVideos = window.loadVideos;
+        if (typeof originalLoadVideos === 'function') {
+          console.log('[Mobile Tag System] Wrapping loadVideos function');
+          window.loadVideos = async function () {
+            await originalLoadVideos();
+            console.log('[Mobile Tag System] Videos loaded, rendering filters...');
+            if (window.state) {
+              renderTagFilters(window.state.videos);
+            }
+          };
+        } else {
+          console.warn('[Mobile Tag System] loadVideos function not found!');
+        }
+
+        console.log('[Mobile Tag System] Initialized');
+      });
+    })();
+  </script>
+
+  <script>
+    // Initialize user info display
+    (async function initUserInfo() {
+      try {
+        const clearGuestFlags = () => {
+          try {
+            localStorage.removeItem('is_guest');
+            localStorage.removeItem('isGuest');
+            localStorage.removeItem('guest_id');
+            sessionStorage.removeItem('is_guest');
+            sessionStorage.removeItem('isGuest');
+            sessionStorage.removeItem('guest_id');
+          } catch (_) { }
+        };
+
+        // Prefer fresher session tokens; avoid stale guest tokens lingering in localStorage
+        const readToken = () => {
+          const sessionToken = sessionStorage.getItem('linglish_token') || sessionStorage.getItem('authToken');
+          const localToken = localStorage.getItem('linglish_token') || localStorage.getItem('authToken');
+          const isGuest =
+            localStorage.getItem('is_guest') === 'true' ||
+            sessionStorage.getItem('is_guest') === 'true' ||
+            localStorage.getItem('isGuest') === 'true' ||
+            sessionStorage.getItem('isGuest') === 'true';
+
+          // If we have a session token, treat it as the current login and clear guest flags
+          if (sessionToken) {
+            clearGuestFlags();
+            return sessionToken;
+          }
+
+          // Only fall back to local token when not marked as guest
+          if (localToken && !isGuest) return localToken;
+          return localToken || null;
+        };
+
+        const guestCheckFlags = {
+          localStorage_is_guest: localStorage.getItem('is_guest'),
+          sessionStorage_is_guest: sessionStorage.getItem('is_guest'),
+          localStorage_isGuest: localStorage.getItem('isGuest'),
+          sessionStorage_isGuest: sessionStorage.getItem('isGuest')
+        };
+
+        const isGuestMode = (() => {
+          try {
+            if (typeof window.GuestCheck !== 'undefined' && typeof window.GuestCheck.isGuest === 'function') {
+              return !!window.GuestCheck.isGuest();
+            }
+            return (
+              localStorage.getItem('is_guest') === 'true' ||
+              sessionStorage.getItem('is_guest') === 'true' ||
+              localStorage.getItem('isGuest') === 'true' ||
+              sessionStorage.getItem('isGuest') === 'true'
+            );
+          } catch (_) { return false; }
+        })();
+
+        console.log('[Mobile Explore Header] Guest check:', { isGuestMode, guestCheckFlags });
+
+        const token = readToken();
+
+        const vipBadgeEl = document.getElementById('mobile-vip-badge');
+        if (vipBadgeEl) {
+          vipBadgeEl.classList.remove('show');
+          console.log('[Mobile Explore Header] VIP badge hidden by default');
+        }
+
+        // 游客模式：不请求 /users/me，避免 401 日志噪音
+        if (isGuestMode) {
+          const userInfoEl = document.getElementById('mobile-user-info');
+          const userNameEl = document.getElementById('mobile-user-name');
+          if (userInfoEl) userInfoEl.hidden = false;
+          if (userNameEl) userNameEl.textContent = '游客';
+          console.log('[Mobile Explore Header] Guest mode - VIP badge should stay hidden');
+          return;
+        }
+
+        if (!token) {
+          console.log('[Mobile Explore] No token found');
+          return;
+        }
+
+        // Fetch user data
+        const API_BASE = window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1' ||
+          window.location.port === '4000'
+          ? 'http://localhost:4000'
+          : '';
+
+        const response = await fetch(`${API_BASE}/users/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+
+        const user = await response.json();
+
+        // Only clear guest flags if this is a real user (not a guest)
+        // Guest email format: guest_xxxxx@temp.linglish.local
+        const isGuestUser = user.email && user.email.includes('@temp.linglish.local');
+        if (!isGuestUser) {
+          clearGuestFlags();
+          console.log('[Mobile Explore] Clearing guest flags for regular user');
+        } else {
+          console.log('[Mobile Explore] Guest user detected, keeping guest flags');
+        }
+
+        console.log('[Mobile Explore] User profile loaded:', Boolean(user));
+
+        // Extract display name
+        let displayName = 'User';
+        if (user.username) {
+          displayName = user.username;
+        } else if (user.email) {
+          displayName = user.email.split('@')[0];
+        }
+
+        // Show user info section
+        const userInfoEl = document.getElementById('mobile-user-info');
+        const userNameEl = document.getElementById('mobile-user-name');
+
+        if (userInfoEl) {
+          userInfoEl.hidden = false;
+        }
+
+        if (userNameEl) {
+          userNameEl.textContent = displayName;
+        }
+
+        // Show VIP badge if user is VIP or Family member
+        if (vipBadgeEl) {
+          if (user.membership_type && user.membership_type !== 'free') {
+            vipBadgeEl.classList.add('show');
+            const tier = (user.membership_type || '').trim().toLowerCase();
+            const isFamily = tier === 'family';
+            const isSvip = tier === 'svip';
+            vipBadgeEl.classList.remove('vip', 'family', 'svip');
+            vipBadgeEl.classList.add(isFamily ? 'family' : (isSvip ? 'svip' : 'vip'));
+
+            const vipTextEl = vipBadgeEl.querySelector('.vip-text');
+            if (vipTextEl) {
+              vipTextEl.textContent = isFamily ? 'Family' : (isSvip ? 'SVIP' : 'VIP');
+            }
+            const vipIconEl = vipBadgeEl.querySelector('.vip-icon');
+            if (vipIconEl) {
+              vipIconEl.textContent = isSvip ? '🚀' : (isFamily ? '👑' : '🔥');
+            }
+
+            console.log('[Mobile Explore] VIP badge shown:', user.membership_type);
+          } else {
+            vipBadgeEl.classList.remove('show');
+            console.log('[Mobile Explore] User is free tier');
+          }
+        }
+
+      } catch (error) {
+        console.error('[Mobile Explore] Failed to load user info:', error);
+      }
+    })();
+  </script>
+  <script src="./js/page-tracker.js?v=1"></script>
+</body>
+
+</html>

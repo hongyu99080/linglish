@@ -1,0 +1,468 @@
+/* linglish 游戏化系统样式 */
+
+/* 通知动画 */
+.gamification-notification {
+  position: fixed;
+  top: 80px;
+  right: -400px;
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 350px;
+  border-left: 4px solid #667eea;
+}
+
+.gamification-notification.show {
+  right: 20px;
+}
+
+.gamification-notification.xp {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-left-color: #fff;
+}
+
+.gamification-notification.coins {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border-left-color: #fff;
+}
+
+.gamification-notification.level-up {
+  background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+  color: white;
+  border-left-color: #fff;
+  font-size: 1.1rem;
+  padding: 1.25rem 1.75rem;
+}
+
+.gamification-notification.warning {
+  background: #fff3cd;
+  color: #856404;
+  border-left-color: #ffc107;
+}
+
+.gamification-notification.info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border-left-color: #17a2b8;
+}
+
+/* 成就解锁通知 */
+.achievement-unlock-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+  min-width: 400px;
+  text-align: center;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.achievement-unlock-notification.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.achievement-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: bounce 0.6s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.achievement-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.achievement-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.achievement-description {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.achievement-reward {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f093fb;
+  background: #f8f9ff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+/* 进度组件 */
+.gamification-widget {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.gamification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.level-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coins-display {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.xp-progress {
+  margin-bottom: 1rem;
+}
+
+.xp-bar {
+  width: 100%;
+  height: 12px;
+  background: #f0f0f0;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  transition: width 0.5s ease;
+}
+
+.xp-text {
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+}
+
+.streak-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fff5f7 0%, #f0f9ff 100%);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.streak-item {
+  text-align: center;
+}
+
+.streak-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f5576c;
+}
+
+.streak-label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.daily-goal-card {
+  background: linear-gradient(135deg, #fff5f7 0%, #f0f9ff 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.daily-goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.goal-icon {
+  font-size: 2rem;
+}
+
+.goal-info h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.2rem;
+  color: #1a1a1a;
+}
+
+.goal-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.goal-progress {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f5576c;
+}
+
+.goal-bar {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.goal-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+
+.goal-text {
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+}
+
+/* 统计卡片 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 2px solid #f0f0f0;
+  transition: all 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* 成就网格 */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.achievement-badge {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  border: 2px solid #e0e0e0;
+  cursor: pointer;
+}
+
+.achievement-badge.unlocked {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+}
+
+.achievement-badge.locked {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.achievement-badge:hover {
+  transform: scale(1.05);
+}
+
+.badge-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.badge-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+  color: #1a1a1a;
+}
+
+.badge-desc {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* 词汇状态组件 */
+.vocabulary-stats {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.vocab-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.vocab-item {
+  text-align: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+.vocab-item.new {
+  background: linear-gradient(135deg, #fff5f7 0%, #ffffff 100%);
+  border: 2px solid #ffd6e0;
+}
+
+.vocab-item.learning {
+  background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+  border: 2px solid #ffe8b3;
+}
+
+.vocab-item.known {
+  background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
+  border: 2px solid #d0e9ff;
+}
+
+.vocab-number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.vocab-item.new .vocab-number {
+  color: #f5576c;
+}
+
+.vocab-item.learning .vocab-number {
+  color: #feca57;
+}
+
+.vocab-item.known .vocab-number {
+  color: #10b981;
+}
+
+.vocab-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .gamification-notification {
+    right: -350px;
+    max-width: 300px;
+    font-size: 0.85rem;
+    padding: 0.85rem 1.25rem;
+  }
+
+  .gamification-notification.show {
+    right: 10px;
+  }
+
+  .achievement-unlock-notification {
+    min-width: 90%;
+    max-width: 350px;
+    padding: 1.5rem;
+  }
+
+  .achievement-icon {
+    font-size: 3rem;
+  }
+
+  .achievement-title {
+    font-size: 1.25rem;
+  }
+
+  .achievement-name {
+    font-size: 1.1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .achievements-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .vocab-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .vocab-number {
+    font-size: 1.5rem;
+  }
+}

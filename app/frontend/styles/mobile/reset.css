@@ -1,0 +1,46 @@
+/* CSS Reset and Base Styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: var(--background);
+  color: var(--text-primary);
+  padding-bottom: 70px; /* Space for bottom nav */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Main Content */
+.mobile-content {
+  padding: 16px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Scrollbar Styling */
+.lesson-cards::-webkit-scrollbar,
+.section-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.lesson-cards::-webkit-scrollbar-thumb,
+.section-tabs::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+/* Touch Feedback */
+button:active,
+.nav-item:active,
+.menu-item:active {
+  opacity: 0.7;
+}
+
+body.modal-open {
+  overflow: hidden;
+}

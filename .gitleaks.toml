@@ -1,0 +1,13 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = 'Exact public test fixtures and browser storage identifiers; no file or directory exclusions'
+regexTarget = 'secret'
+regexes = [
+  '''^123e4567\-e89b\-42d3\-a456\-426614174000$''',
+  '''^linglish\.vrp\.position\.v1$''',
+  '''^linglish\.vrp\.repeats\.v1$''',
+  '''^linglish_acquisition_v1$''',
+  '''^scoped\-secret\-0123456789abcdef0123456789abcdef$''',
+]

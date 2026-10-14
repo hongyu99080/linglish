@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+          /iosMetadata\.js/i,
+          /Wu\.updateConfig/i,
+          /ul\.updateConfig/i,
+          /cloudflareinsights/i,
+          /beacon\.min\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            const name = error.name || '';
+            const message = error.message || '';
+
+            // Check error message and name
+            if (matchMsg(message) || matchMsg(name)) return true;
+
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/iosMetadata\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            if (/Wu\.|ul\./i.test(stack)) return true;
+            if (/cloudflare|beacon/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev && ev.reason;
+            if (reason && reason.name === 'SyntaxError') {
+              const msg = reason.message || '';
+              if (matchMsg(msg)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                ev.stopImmediatePropagation();
+                return;
+              }
+            }
+            const msg = (reason && reason.message) || (reason && reason.toString && reason.toString()) || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = (ev && ev.message) || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (ev && ev.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            const filename = (ev && ev.filename) || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js|iosMetadata\.js|^VM\d+:/i.test(filename)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>linglish Admin - PDF Import</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .admin-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+      }
+      .import-section {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+      .form-group input[type="text"],
+      .form-group input[type="file"] {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .form-group input[type="checkbox"] {
+        margin-right: 0.5rem;
+      }
+      .btn-primary {
+        background: #007bff;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      .btn-primary:hover {
+        background: #0056b3;
+      }
+      .btn-primary:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .status-message {
+        padding: 1rem;
+        margin-top: 1rem;
+        border-radius: 4px;
+      }
+      .status-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .status-info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .articles-list {
+        list-style: none;
+        padding: 0;
+      }
+      .articles-list li {
+        padding: 0.75rem;
+        border-bottom: 1px solid #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <h1>linglish Admin</h1>
+        <p>PDF Import Management</p>
+      </div>
+      <div>
+        <a href="./index.html" style="color: white; text-decoration: none;">← Back to App</a>
+      </div>
+    </header>
+
+    <main class="admin-container">
+      <div class="import-section">
+        <h2>Import PDF as Articles</h2>
+        <p>Upload a PDF file to import it as learning content. The system will attempt to extract text and create articles.</p>
+
+        <form id="pdf-import-form" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="pdf-file">Upload PDF File</label>
+            <input
+              type="file"
+              id="pdf-file"
+              accept=".pdf"
+              required
+            />
+            <small>Select a PDF file from your computer to upload and import.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="pdf-title">Title</label>
+            <input
+              type="text"
+              id="pdf-title"
+              placeholder="e.g., Learning English Textbook"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="pdf-tags">Tags (comma-separated)</label>
+            <input
+              type="text"
+              id="pdf-tags"
+              placeholder="e.g., textbook, beginner, imported"
+              value="imported, pdf"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="split-sections" checked />
+              Split into multiple articles by sections
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="single-article" />
+              Create single article (overrides split option)
+            </label>
+          </div>
+
+          <button type="submit" class="btn-primary" id="import-btn">
+            Import PDF
+          </button>
+        </form>
+
+        <div id="status-message"></div>
+      </div>
+
+      <div class="import-section">
+        <h2>Recently Imported Articles</h2>
+        <ul id="articles-list" class="articles-list">
+          <li>Loading...</li>
+        </ul>
+      </div>
+    </main>
+
+    <script>
+      const API_BASE = '';
+      let token = localStorage.getItem('linglish_token');
+
+      // Check authentication
+      if (!token) {
+        alert('Please login first');
+        window.location.href = './index.html';
+      }
+
+      // Load recent articles
+      async function loadArticles() {
+        try {
+          const response = await fetch(`${API_BASE}/articles`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await response.json();
+
+          const list = document.getElementById('articles-list');
+          if (data.items && data.items.length > 0) {
+            list.innerHTML = data.items
+              .slice(0, 20)
+              .map(article => `
+                <li>
+                  <strong>${article.title}</strong><br>
+                  <small>Level: ${article.level || 'N/A'} | Tags: ${(article.tags || []).join(', ')}</small>
+                </li>
+              `)
+              .join('');
+          } else {
+            list.innerHTML = '<li>No articles found</li>';
+          }
+        } catch (err) {
+          console.error('Failed to load articles:', err);
+          document.getElementById('articles-list').innerHTML = '<li>Error loading articles</li>';
+        }
+      }
+
+      // Handle form submission
+      document.getElementById('pdf-import-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const pdfFile = document.getElementById('pdf-file').files[0];
+        if (!pdfFile) {
+          alert('Please select a PDF file');
+          return;
+        }
+
+        const title = document.getElementById('pdf-title').value;
+        const tags = document.getElementById('pdf-tags').value.split(',').map(t => t.trim());
+        const splitSections = document.getElementById('split-sections').checked;
+        const createSingleArticle = document.getElementById('single-article').checked;
+
+        const statusDiv = document.getElementById('status-message');
+        const importBtn = document.getElementById('import-btn');
+
+        statusDiv.innerHTML = '<div class="status-message status-info">Uploading and importing PDF...</div>';
+        importBtn.disabled = true;
+
+        try {
+          // Create FormData for file upload
+          const formData = new FormData();
+          formData.append('pdf', pdfFile);
+          formData.append('title', title);
+          formData.append('tags', JSON.stringify(tags));
+          formData.append('splitBySections', splitSections);
+          formData.append('createSingleArticle', createSingleArticle);
+
+          const response = await fetch(`${API_BASE}/pdf/upload`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            statusDiv.innerHTML = `
+              <div class="status-message status-success">
+                <strong>Success!</strong> Created ${result.articlesCreated} article(s).
+                ${result.articles ? `
+                  <ul>
+                    ${result.articles.map(a => `<li>${a.title} (${a.word_count} words)</li>`).join('')}
+                  </ul>
+                ` : ''}
+              </div>
+            `;
+
+            // Reload articles list
+            loadArticles();
+
+            // Reset form
+            document.getElementById('pdf-import-form').reset();
+          } else {
+            statusDiv.innerHTML = `
+              <div class="status-message status-error">
+                <strong>Error:</strong> ${result.message || 'Import failed'}
+              </div>
+            `;
+          }
+        } catch (err) {
+          statusDiv.innerHTML = `
+            <div class="status-message status-error">
+              <strong>Error:</strong> ${err.message}
+            </div>
+          `;
+        } finally {
+          importBtn.disabled = false;
+        }
+      });
+
+      // Initial load
+      loadArticles();
+    </script>
+  </body>
+</html>

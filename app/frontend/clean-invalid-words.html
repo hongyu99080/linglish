@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>清理无效单词 - Linglish</title>
+  <link rel="stylesheet" href="./mobile-styles.css">
+  <script src="./mobile-auth.js"></script>
+  <script src="./auth-helpers.js"></script>
+  <style>
+    body {
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      margin: 0 0 10px 0;
+      font-size: 28px;
+    }
+
+    .header p {
+      margin: 0;
+      opacity: 0.9;
+    }
+
+    .section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .section h2 {
+      margin: 0 0 15px 0;
+      font-size: 20px;
+      color: #333;
+    }
+
+    .button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      transition: transform 0.2s;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .button.danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .button.secondary {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: #f8fafc;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .log-container {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-entry {
+      margin: 5px 0;
+      padding: 3px 0;
+    }
+
+    .log-entry.success {
+      color: #10b981;
+    }
+
+    .log-entry.error {
+      color: #ef4444;
+    }
+
+    .log-entry.warning {
+      color: #f59e0b;
+    }
+
+    .log-entry.info {
+      color: #3b82f6;
+    }
+
+    .word-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .word-item {
+      padding: 8px;
+      margin: 5px 0;
+      background: #f8fafc;
+      border-radius: 6px;
+      font-family: monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .word-item.invalid {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🧹 清理无效单词</h1>
+    <p>自动识别并删除词汇表中包含标点符号的无效单词</p>
+  </div>
+
+  <div class="section">
+    <h2>📊 统计信息</h2>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="total-count">0</div>
+        <div class="stat-label">总单词数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="invalid-count">0</div>
+        <div class="stat-label">无效单词</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="deleted-count">0</div>
+        <div class="stat-label">已删除</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="failed-count">0</div>
+        <div class="stat-label">删除失败</div>
+      </div>
+    </div>
+
+    <div class="progress-bar" id="progress-container" style="display: none;">
+      <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+    </div>
+
+    <button class="button" id="scan-btn">🔍 扫描无效单词</button>
+    <button class="button danger" id="delete-btn" disabled>🗑️ 删除无效单词</button>
+    <button class="button secondary" id="clear-log-btn">清空日志</button>
+  </div>
+
+  <div class="section">
+    <h2>📝 无效单词列表</h2>
+    <div class="word-list" id="word-list">
+      <div style="text-align: center; color: #94a3b8; padding: 20px;">
+        点击"扫描无效单词"开始检查
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>📋 操作日志</h2>
+    <div class="log-container" id="log-container"></div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    const logContainer = document.getElementById('log-container');
+    const wordListEl = document.getElementById('word-list');
+    const totalCountEl = document.getElementById('total-count');
+    const invalidCountEl = document.getElementById('invalid-count');
+    const deletedCountEl = document.getElementById('deleted-count');
+    const failedCountEl = document.getElementById('failed-count');
+    const scanBtn = document.getElementById('scan-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+    const clearLogBtn = document.getElementById('clear-log-btn');
+    const progressContainer = document.getElementById('progress-container');
+    const progressFill = document.getElementById('progress-fill');
+
+    let invalidWords = [];
+    let stats = {
+      total: 0,
+      invalid: 0,
+      deleted: 0,
+      failed: 0
+    };
+
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const timestamp = new Date().toLocaleTimeString();
+      entry.textContent = `[${timestamp}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function updateStats() {
+      totalCountEl.textContent = stats.total;
+      invalidCountEl.textContent = stats.invalid;
+      deletedCountEl.textContent = stats.deleted;
+      failedCountEl.textContent = stats.failed;
+    }
+
+    function updateProgress(current, total) {
+      if (total === 0) return;
+      const percent = (current / total) * 100;
+      progressFill.style.width = `${percent}%`;
+    }
+
+    function isValidWord(word) {
+      if (!word || typeof word !== 'string') return false;
+
+      // 移除所有非字母、非连字符、非撇号的字符
+      const cleaned = word.replace(/[^a-z'-]/gi, '');
+
+      // 移除首尾的连字符和撇号
+      const trimmed = cleaned.replace(/^['\-]+|['\-]+$/g, '');
+
+      // 检查是否有效
+      return trimmed.length >= 2 &&
+             /[a-z]/i.test(trimmed) &&
+             !/^\d+$/.test(trimmed) &&
+             !/[']{2,}/.test(trimmed) &&
+             trimmed === word;
+    }
+
+    async function scanWords() {
+      const token = authManager?.getUserInfo?.()?.token;
+      if (!token) {
+        alert('请先登录！');
+        return;
+      }
+
+      scanBtn.disabled = true;
+      deleteBtn.disabled = true;
+      log('开始扫描词汇表...', 'info');
+
+      try {
+        const response = await fetch(`${API_BASE}/vocab?limit=100000`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const allWords = data.items || [];
+
+        stats.total = allWords.length;
+        log(`总共 ${stats.total} 个单词`, 'info');
+
+        // 筛选无效单词
+        invalidWords = allWords.filter(item => !isValidWord(item.lemma));
+        stats.invalid = invalidWords.length;
+
+        log(`发现 ${stats.invalid} 个无效单词`, stats.invalid > 0 ? 'warning' : 'success');
+        updateStats();
+
+        // 显示无效单词列表
+        if (invalidWords.length === 0) {
+          wordListEl.innerHTML = '<div style="text-align: center; color: #10b981; padding: 20px;">✅ 没有发现无效单词！</div>';
+          deleteBtn.disabled = true;
+        } else {
+          wordListEl.innerHTML = invalidWords.map(item =>
+            `<div class="word-item invalid">
+              <span>"${item.lemma}"</span>
+              <span style="font-size: 12px; color: #64748b;">${item.state || 'unknown'}</span>
+            </div>`
+          ).join('');
+          deleteBtn.disabled = false;
+        }
+
+      } catch (err) {
+        log(`扫描失败: ${err.message}`, 'error');
+        alert(`扫描失败: ${err.message}`);
+      } finally {
+        scanBtn.disabled = false;
+      }
+    }
+
+    async function deleteWords() {
+      if (invalidWords.length === 0) {
+        alert('没有需要删除的单词');
+        return;
+      }
+
+      if (!confirm(`确定要删除 ${invalidWords.length} 个无效单词吗？此操作不可撤销！`)) {
+        return;
+      }
+
+      const token = authManager?.getUserInfo?.()?.token;
+      if (!token) {
+        alert('请先登录！');
+        return;
+      }
+
+      scanBtn.disabled = true;
+      deleteBtn.disabled = true;
+      progressContainer.style.display = 'block';
+      stats.deleted = 0;
+      stats.failed = 0;
+      updateStats();
+
+      log(`开始删除 ${invalidWords.length} 个无效单词...`, 'info');
+
+      for (let i = 0; i < invalidWords.length; i++) {
+        const item = invalidWords[i];
+
+        try {
+          const response = await fetch(`${API_BASE}/vocab/${encodeURIComponent(item.lemma)}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            stats.deleted++;
+            log(`✓ 已删除: "${item.lemma}"`, 'success');
+          } else {
+            stats.failed++;
+            log(`✗ 删除失败: "${item.lemma}" (HTTP ${response.status})`, 'error');
+          }
+        } catch (err) {
+          stats.failed++;
+          log(`✗ 删除失败: "${item.lemma}" (${err.message})`, 'error');
+        }
+
+        updateStats();
+        updateProgress(i + 1, invalidWords.length);
+
+        // 每10个单词暂停一下，避免服务器压力过大
+        if ((i + 1) % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      log(`清理完成！成功: ${stats.deleted}, 失败: ${stats.failed}`, 'info');
+      progressContainer.style.display = 'none';
+
+      // 清空列表并重新扫描
+      invalidWords = [];
+      setTimeout(() => scanWords(), 1000);
+    }
+
+    function clearLog() {
+      logContainer.innerHTML = '';
+      log('日志已清空', 'info');
+    }
+
+    scanBtn.addEventListener('click', scanWords);
+    deleteBtn.addEventListener('click', deleteWords);
+    clearLogBtn.addEventListener('click', clearLog);
+
+    // 页面加载时检查登录状态
+    window.addEventListener('DOMContentLoaded', () => {
+      const isAuthed = authManager?.isAuthenticated?.();
+      if (!isAuthed) {
+        log('请先登录！', 'warning');
+        scanBtn.disabled = true;
+      } else {
+        log('已登录，可以开始扫描', 'success');
+      }
+    });
+
+    // 初始化日志
+    log('词汇表清理工具已就绪', 'info');
+    log('点击"扫描无效单词"开始检查', 'info');
+  </script>
+</body>
+</html>

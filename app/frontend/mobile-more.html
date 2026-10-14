@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            // Check if it's an error object
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev?.reason;
+            // Check message
+            const msg = reason?.message || reason?.toString?.() || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if from extension
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        });
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = ev?.message || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if error is from extension
+            if (ev?.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              return;
+            }
+            // Check filename for extension patterns
+            const filename = ev?.filename || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>linglish - More</title>
+  <link rel="stylesheet" href="./mobile-styles.css">
+  <script src="./guest-check.js"></script>
+  <script src="./auth-helpers.js"></script>
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="mobile-header more-header">
+    <h1>More</h1>
+    <div class="header-actions">
+      <!-- User Info -->
+      <div id="mobile-user-info" class="mobile-user-info" hidden>
+        <a href="./membership.html" id="mobile-vip-badge" class="mobile-vip-badge" hidden>
+          <span class="vip-icon">👑</span>
+          <span class="vip-text">VIP</span>
+        </a>
+        <span id="mobile-user-name" class="mobile-user-name"></span>
+      </div>
+      <button class="icon-btn settings-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6"></path>
+          <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24"></path>
+          <path d="m1 12h6m6 0h6"></path>
+          <path d="m4.93 19.07 4.24-4.24m5.66-5.66 4.24-4.24"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="mobile-content more-content">
+    <!-- Menu List -->
+    <div class="menu-list">
+      <a href="#" class="menu-item">
+        <span class="menu-text">Notifications</span>
+        <div class="menu-right">
+          <span class="badge">9</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </a>
+
+      <a href="/game.html" class="menu-item">
+        <span class="menu-text">闯关词汇游戏 · Vocabulary Quest</span>
+        <div class="menu-right">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </a>
+
+      <a href="#" class="menu-item">
+        <span class="menu-text">Forum</span>
+        <div class="menu-right">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </a>
+
+      <a href="#" class="menu-item">
+        <span class="menu-text">Grammar Guide</span>
+        <div class="menu-right">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </a>
+
+      <a href="#" class="menu-item">
+        <span class="menu-text">Help & Documentation</span>
+        <div class="menu-right">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </a>
+
+      <a href="#" class="menu-item">
+        <span class="menu-text">Invite Friends</span>
+        <div class="menu-right">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </a>
+    </div>
+
+    <!-- Extension Info Box -->
+    <div class="info-box">
+      <p>Enable the LinGo Share Extension to import any page from Safari or your favorite apps.</p>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="mobile-today.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🎯</span></div>
+      <span>今日</span>
+    </a>
+    <a href="mobile-explore.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🌍</span></div>
+      <span>探索世界</span>
+    </a>
+    <a href="mobile-power.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">⚡</span></div>
+      <span>能量站</span>
+    </a>
+    <a href="mobile-arena.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🎪</span></div>
+      <span>实战场</span>
+    </a>
+    <a href="mobile-treasure.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🪴</span></div>
+      <span>成长中心</span>
+    </a>
+  </nav>
+
+  <script>
+    // Initialize user info display
+    (async function initUserInfo() {
+      try {
+        // Check if user is logged in
+        const token = localStorage.getItem('linglish_token') ||
+                     localStorage.getItem('authToken') ||
+                     sessionStorage.getItem('linglish_token') ||
+                     sessionStorage.getItem('authToken');
+
+        if (!token) {
+          console.log('[Mobile More] No token found');
+          return;
+        }
+
+        // Fetch user data
+        const API_BASE = window.location.hostname === 'localhost' ||
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.port === '4000'
+          ? 'http://localhost:4000'
+          : '';
+
+        const response = await fetch(`${API_BASE}/users/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+
+        const user = await response.json();
+        console.log('[Mobile More] User data:', user);
+
+        // Extract display name
+        let displayName = 'User';
+        if (user.username) {
+          displayName = user.username;
+        } else if (user.email) {
+          displayName = user.email.split('@')[0];
+        }
+
+        // Show user info section
+        const userInfoEl = document.getElementById('mobile-user-info');
+        const userNameEl = document.getElementById('mobile-user-name');
+        const vipBadgeEl = document.getElementById('mobile-vip-badge');
+
+        if (userInfoEl) {
+          userInfoEl.hidden = false;
+        }
+
+        if (userNameEl) {
+          userNameEl.textContent = displayName;
+        }
+
+        // Show VIP badge if user is VIP or Family member
+        if (vipBadgeEl && user.membership_type && user.membership_type !== 'free') {
+          vipBadgeEl.hidden = false;
+          const isFamily = user.membership_type === 'family';
+          vipBadgeEl.classList.remove('vip', 'family');
+          vipBadgeEl.classList.add(isFamily ? 'family' : 'vip');
+
+          const vipTextEl = vipBadgeEl.querySelector('.vip-text');
+          if (vipTextEl) {
+            vipTextEl.textContent = isFamily ? 'Family' : 'VIP';
+          }
+
+          console.log('[Mobile More] VIP badge shown:', user.membership_type);
+        } else {
+          console.log('[Mobile More] User is free tier');
+        }
+
+      } catch (error) {
+        console.error('[Mobile More] Failed to load user info:', error);
+      }
+    })();
+  </script>
+  <script src="./js/page-tracker.js"></script>
+</body>
+</html>

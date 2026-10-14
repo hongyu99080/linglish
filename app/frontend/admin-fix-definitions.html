@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>修复词汇定义 - 管理员工具</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 0.5rem;
+      font-size: 2rem;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .input-group {
+      flex: 1;
+      min-width: 200px;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #555;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e1e8ed;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    button {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(14, 165, 233, 0.4);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .status {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+    .status.info {
+      background: #e3f2fd;
+      color: #1976d2;
+      border-left: 4px solid #1976d2;
+    }
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-left: 4px solid #2e7d32;
+    }
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+      border-left: 4px solid #c62828;
+    }
+    .progress {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      display: none;
+    }
+    .progress.visible {
+      display: block;
+    }
+    .log {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .log-entry {
+      margin-bottom: 0.5rem;
+    }
+    .log-entry.success { color: #4caf50; }
+    .log-entry.error { color: #f44336; }
+    .log-entry.warning { color: #ff9800; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .stat {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #667eea;
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 修复词汇定义</h1>
+    <p class="subtitle">此工具会为缺失definitions的词汇自动填充英文定义和音标</p>
+
+    <div class="controls">
+      <div class="input-group">
+        <label for="limit">每批处理数量：</label>
+        <input type="number" id="limit" value="50" min="1" max="500">
+      </div>
+      <div class="input-group">
+        <label for="offset">起始位置：</label>
+        <input type="number" id="offset" value="0" min="0">
+      </div>
+      <div class="input-group" style="display: flex; align-items: flex-end;">
+        <button id="startBtn" onclick="startFix()">开始修复</button>
+      </div>
+    </div>
+
+    <div id="statusBox"></div>
+
+    <div class="progress" id="progressBox">
+      <h3>修复进度</h3>
+      <div class="stats" id="stats">
+        <div class="stat">
+          <div class="stat-value" id="fixedCount">0</div>
+          <div class="stat-label">成功修复</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="skippedCount">0</div>
+          <div class="stat-label">跳过</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="failedCount">0</div>
+          <div class="stat-label">失败</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="remainingCount">-</div>
+          <div class="stat-label">剩余</div>
+        </div>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = (() => {
+      const { protocol, hostname, port } = window.location;
+      if (protocol === 'file:') return 'http://localhost:4000';
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        const p = port || '4000';
+        return `${protocol}//${hostname}:${p}`;
+      }
+      return '';
+    })();
+
+    function showStatus(message, type = 'info') {
+      const box = document.getElementById('statusBox');
+      box.innerHTML = `<div class="status ${type}">${message}</div>`;
+    }
+
+    function addLog(message, type = '') {
+      const log = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function updateStats(results, remaining) {
+      document.getElementById('fixedCount').textContent = results.fixed || 0;
+      document.getElementById('skippedCount').textContent = results.skipped || 0;
+      document.getElementById('failedCount').textContent = results.failed || 0;
+      document.getElementById('remainingCount').textContent = remaining !== undefined ? remaining : '-';
+    }
+
+    async function startFix() {
+      const limit = parseInt(document.getElementById('limit').value);
+      const offset = parseInt(document.getElementById('offset').value);
+      const startBtn = document.getElementById('startBtn');
+      const progressBox = document.getElementById('progressBox');
+
+      // 显示进度区域
+      progressBox.classList.add('visible');
+      startBtn.disabled = true;
+
+      // 清空日志
+      document.getElementById('log').innerHTML = '';
+
+      showStatus('正在修复词汇定义...', 'info');
+      addLog(`开始修复 (limit=${limit}, offset=${offset})`, 'info');
+
+      try {
+        const token = localStorage.getItem('linglish_token') ||
+                      sessionStorage.getItem('linglish_token');
+
+        if (!token) {
+          throw new Error('未登录，请先登录');
+        }
+
+        const response = await fetch(`${API_BASE}/admin/fix-definitions?limit=${limit}&offset=${offset}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || '修复失败');
+        }
+
+        const { results, remaining, nextOffset } = data;
+
+        // 更新统计
+        updateStats(results, remaining);
+
+        // 显示详细日志
+        if (results.details && results.details.length > 0) {
+          results.details.forEach(detail => {
+            if (detail.status === 'fixed') {
+              addLog(`✓ ${detail.word} - ${detail.definition?.substring(0, 50)}...`, 'success');
+            } else if (detail.status === 'skipped') {
+              addLog(`⚠ ${detail.word} - ${detail.reason}`, 'warning');
+            } else if (detail.status === 'failed') {
+              addLog(`✗ ${detail.word} - ${detail.error}`, 'error');
+            }
+          });
+        }
+
+        showStatus(
+          `修复完成！成功: ${results.fixed}, 跳过: ${results.skipped}, 失败: ${results.failed}${remaining > 0 ? `, 剩余: ${remaining}` : ''}`,
+          'success'
+        );
+
+        // 如果还有剩余，提示继续修复
+        if (remaining > 0) {
+          addLog(`还有 ${remaining} 个词汇待修复`, 'warning');
+          addLog(`可以设置 offset=${nextOffset} 继续修复`, 'info');
+          document.getElementById('offset').value = nextOffset;
+        } else {
+          addLog('🎉 所有词汇修复完成！', 'success');
+        }
+
+      } catch (error) {
+        console.error('修复错误:', error);
+        showStatus(`错误: ${error.message}`, 'error');
+        addLog(`✗ 错误: ${error.message}`, 'error');
+      } finally {
+        startBtn.disabled = false;
+      }
+    }
+
+    // 页面加载时检查登录状态
+    window.addEventListener('load', () => {
+      const token = localStorage.getItem('linglish_token') ||
+                    sessionStorage.getItem('linglish_token');
+      if (!token) {
+        showStatus('⚠️ 未登录，请先登录后再使用此工具', 'error');
+        document.getElementById('startBtn').disabled = true;
+      }
+    });
+  </script>
+</body>
+</html>

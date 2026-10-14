@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            // Check if it's an error object
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev?.reason;
+            // Check message
+            const msg = reason?.message || reason?.toString?.() || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if from extension
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        });
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = ev?.message || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if error is from extension
+            if (ev?.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              return;
+            }
+            // Check filename for extension patterns
+            const filename = ev?.filename || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的图书馆 - Linglish | 个人学习收藏与进度管理</title>
+  <meta name="description" content="在Linglish图书馆管理你收藏的视频、文章和学习材料。追踪学习进度，复习生词，查看学习统计。个性化的学习内容库，随时随地继续学习。">
+  <meta name="keywords" content="学习图书馆,收藏夹,学习进度,词汇复习,个人学习中心,learning library">
+  <meta name="author" content="Linglish">
+  <meta name="google-site-verification" content="google5a3b03e17f3c3f2c">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://example.com/mobile-library.html">
+  <meta property="og:title" content="我的图书馆 - Linglish">
+  <meta property="og:description" content="管理学习收藏，追踪进度，个性化学习内容库">
+  <meta property="og:image" content="https://example.com/og-image-library.jpg">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://example.com/mobile-library.html">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+
+  <link rel="stylesheet" href="./mobile-styles.css">
+  <script src="./guest-check.js"></script>
+  <script src="./auth-helpers.js"></script>
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="mobile-header">
+    <div class="language-selector">
+      <img src="https://flagcdn.com/w40/gb.png" alt="English" class="flag-icon">
+      <div class="language-info">
+        <h1>English</h1>
+        <a href="#" class="change-language">Change Language &gt;</a>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn search-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+      </button>
+      <button class="icon-btn settings-btn" onclick="location.href='mobile-more.html'">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6"></path>
+          <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24"></path>
+          <path d="m1 12h6m6 0h6"></path>
+          <path d="m4.93 19.07 4.24-4.24m5.66-5.66 4.24-4.24"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="mobile-content">
+    <!-- Challenges Banner -->
+    <div class="challenges-banner">
+      <div class="banner-content">
+        <h2>November Challenges are open:</h2>
+        <p>Hit your targets, compete with fellow learners & make big progress!</p>
+        <div class="banner-actions">
+          <button class="btn-primary">Join a challenge</button>
+          <button class="btn-text">Dismiss</button>
+        </div>
+      </div>
+      <div class="banner-icon">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="35" stroke="#667eea" stroke-width="3"/>
+          <circle cx="40" cy="40" r="25" stroke="#667eea" stroke-width="2"/>
+          <circle cx="40" cy="40" r="15" stroke="#667eea" stroke-width="2"/>
+          <circle cx="40" cy="40" r="5" fill="#667eea"/>
+          <path d="M 50 20 L 55 10 L 60 20 Z" fill="#667eea"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Progress Tracker -->
+    <div class="progress-tracker">
+      <div class="progress-item">
+        <div class="progress-icon fire">🔥</div>
+        <div class="progress-value">0</div>
+        <div class="progress-label">Days</div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-icon coins">💎</div>
+        <div class="progress-value">0 / 50</div>
+        <div class="progress-label">Coins</div>
+      </div>
+      <button class="progress-arrow">›</button>
+    </div>
+
+    <!-- Continue Studying Section -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Continue Studying</h2>
+        <div class="section-tabs">
+          <button class="tab active">Lessons</button>
+          <button class="tab">Courses</button>
+          <button class="tab">Imported Lessons</button>
+          <a href="#" class="tab-link">All ›</a>
+        </div>
+      </div>
+
+      <!-- Lesson Cards -->
+      <div class="lesson-cards">
+        <div class="lesson-card">
+          <img src="https://via.placeholder.com/400x220/1a1a1a/fff?text=SUITS" alt="Suits" class="lesson-image">
+          <div class="lesson-stats">
+            <span class="stat-badge blue">🔵 966</span>
+            <span class="stat-badge yellow">🟡 28</span>
+            <span class="stat-badge white">⚪ 198</span>
+          </div>
+          <h3 class="lesson-title">Suits S1:E1 Pilot, Part 1</h3>
+        </div>
+
+        <div class="lesson-card">
+          <img src="https://via.placeholder.com/400x220/e8e8e8/333?text=Boston" alt="Boston" class="lesson-image">
+          <div class="lesson-stats">
+            <span class="stat-badge blue">🔵 18</span>
+            <span class="stat-badge yellow">🟡 11</span>
+            <span class="stat-badge white">⚪ 141</span>
+          </div>
+          <h3 class="lesson-title">Boston: our</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- Import Button -->
+    <div class="floating-import">
+      <button class="import-btn">
+        <span class="import-icon">🤖</span>
+        <span class="import-text">Lynx AI</span>
+      </button>
+      <button class="import-btn">
+        <span class="import-text">Import</span>
+        <span class="import-icon">+</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="mobile-today.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🎯</span></div>
+      <span>今日</span>
+    </a>
+    <a href="mobile-explore.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🌍</span></div>
+      <span>探索世界</span>
+    </a>
+    <a href="mobile-power.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">⚡</span></div>
+      <span>能量站</span>
+    </a>
+    <a href="mobile-arena.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🎪</span></div>
+      <span>实战场</span>
+    </a>
+    <a href="mobile-treasure.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🪴</span></div>
+      <span>成长中心</span>
+    </a>
+  </nav>
+  <script src="./js/page-tracker.js"></script>
+</body>
+</html>

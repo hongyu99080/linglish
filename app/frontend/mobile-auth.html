@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+  <script src="/env.js"></script>
+  <script src="./js/media-session.js"></script>
+  <meta charset="UTF-8">
+  <script>
+    // CRITICAL: Ultra-aggressive error isolation for browser extension interference
+    // This must be the FIRST script to protect our app from extension errors
+    (function(){
+      'use strict';
+
+      try {
+        // Patterns that indicate extension errors (not our app errors)
+        const extensionErrorPatterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'/i,
+          /Unexpected token 'n'/i,
+          /Unexpected token u in JSON/i,
+          /Unexpected token n in JSON/i,
+          /SyntaxError.*undefined/i,
+          /SyntaxError.*null/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+          /iosMetadata\.js/i,
+          /Access to storage is not allowed/i,
+          /storage is not allowed from this context/i,
+          /ios-webRequest/i,
+          /content script detected/i,
+        ];
+
+        // Check if message matches extension error patterns
+        const isExtensionErrorMessage = (msg) => {
+          try {
+            const str = String(msg || '');
+            return extensionErrorPatterns.some(re => re.test(str));
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Check if error object is from extension (analyze stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+
+            // Check error message first
+            if (error.message && isExtensionErrorMessage(error.message)) {
+              return true;
+            }
+
+            // Check stack trace
+            const stack = error.stack || error.toString();
+            const stackPatterns = [
+              /chrome-extension:\/\//i,
+              /moz-extension:\/\//i,
+              /safari-extension:\/\//i,
+              /safari-web-extension:\/\//i,
+              /webkit-masked-url:\/\//i,
+              /metadata\.js/i,
+              /content\.js/i,
+              /iosMetadata\.js/i,
+              /updateConfig/i,
+              /initConfig/i,
+              /VM\d+:/i, // Injected scripts often appear as VM###
+            ];
+
+            return stackPatterns.some(re => re.test(stack));
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Save original console methods
+        const originalError = console.error.bind(console);
+        const originalWarn = console.warn.bind(console);
+        const originalLog = console.log.bind(console);
+
+        // Override console.error to filter extension errors
+        console.error = function(...args) {
+          try {
+            // Check first argument
+            if (args.length > 0) {
+              const firstArg = args[0];
+
+              // If it's a string message
+              if (typeof firstArg === 'string' && isExtensionErrorMessage(firstArg)) {
+                return; // Suppress
+              }
+
+              // If it's an Error object
+              if (firstArg instanceof Error && isExtensionError(firstArg)) {
+                return; // Suppress
+              }
+            }
+          } catch (_) {}
+
+          // Not an extension error, log normally
+          return originalError(...args);
+        };
+
+        // Override console.warn
+        console.warn = function(...args) {
+          try {
+            if (args.length > 0) {
+              const firstArg = args[0];
+              if ((typeof firstArg === 'string' && isExtensionErrorMessage(firstArg)) ||
+                  (firstArg instanceof Error && isExtensionError(firstArg))) {
+                return; // Suppress
+              }
+            }
+          } catch (_) {}
+          return originalWarn(...args);
+        };
+
+        // Suppress unhandled promise rejections from extensions
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev && ev.reason;
+
+            // Check if it's an extension error
+            if (reason) {
+              // String reason
+              if (typeof reason === 'string' && isExtensionErrorMessage(reason)) {
+                ev.preventDefault();
+                return;
+              }
+
+              // Error object
+              if (reason instanceof Error && isExtensionError(reason)) {
+                ev.preventDefault();
+                return;
+              }
+
+              // Object with message property
+              if (reason.message && isExtensionErrorMessage(reason.message)) {
+                ev.preventDefault();
+                return;
+              }
+            }
+          } catch (_) {}
+        }, true); // Use capture phase
+
+        // Suppress error events from extensions
+        window.addEventListener('error', (ev) => {
+          try {
+            // Check error message
+            const msg = (ev && ev.message) || '';
+            if (isExtensionErrorMessage(msg)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+
+            // Check if error object is from extension
+            if (ev && ev.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+
+            // Check filename for extension patterns
+            const filename = (ev && ev.filename) || '';
+            const filenamePatterns = [
+              /chrome-extension/i,
+              /moz-extension/i,
+              /safari-extension/i,
+              /webkit-masked-url/i,
+              /metadata\.js/i,
+              /content\.js/i,
+              /iosMetadata\.js/i,
+            ];
+
+            if (filenamePatterns.some(re => re.test(filename))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch (_) {}
+        }, true); // Use capture phase to catch early
+
+        // Log that error filter is active
+        originalLog('%c[Linglish] Extension error filter active', 'color: green; font-weight: bold');
+        originalLog('%cBrowser extension errors are being suppressed to keep console clean', 'color: gray');
+
+        // Detect if extensions are injecting scripts and show warning banner
+        let extensionErrorDetected = false;
+        const checkForExtensions = () => {
+          // Check for common extension script patterns in DOM
+          const scripts = document.querySelectorAll('script');
+          for (let script of scripts) {
+            const src = script.src || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url/i.test(src)) {
+              extensionErrorDetected = true;
+              break;
+            }
+          }
+
+          // If extension errors detected, show banner
+          if (extensionErrorDetected) {
+            setTimeout(() => {
+              const banner = document.getElementById('extension-warning-banner');
+              if (banner) {
+                banner.style.display = 'block';
+                originalLog('%c⚠️ Extension errors detected. Banner shown to user.', 'color: orange; font-weight: bold');
+              }
+            }, 1000); // Delay to ensure DOM is ready
+          }
+        };
+
+        // Check after DOM loads
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', checkForExtensions);
+        } else {
+          checkForExtensions();
+        }
+
+        // Override the original error handler to detect extension errors
+        const superOriginalError = originalError;
+        console.error = function(...args) {
+          try {
+            if (args.length > 0) {
+              const firstArg = args[0];
+
+              // Check if it's an extension error
+              if ((typeof firstArg === 'string' && isExtensionErrorMessage(firstArg)) ||
+                  (firstArg instanceof Error && isExtensionError(firstArg))) {
+                // Mark that we detected extension errors
+                if (!extensionErrorDetected) {
+                  extensionErrorDetected = true;
+                  setTimeout(() => {
+                    const banner = document.getElementById('extension-warning-banner');
+                    if (banner) banner.style.display = 'block';
+                  }, 100);
+                }
+                return; // Suppress from console
+              }
+            }
+          } catch (_) {}
+          return superOriginalError(...args);
+        };
+
+      } catch (err) {
+        // If error filter setup fails, log it but don't break the page
+        console.error('[Error Filter] Failed to initialize:', err);
+      }
+    })();
+
+    // Extension guide modal
+    function showExtensionGuide() {
+      const guide = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 如何禁用浏览器扩展（清理 Console）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ 重要：Console 中的红色错误来自浏览器扩展
+   （如 Grammarly、密码管理器等），
+   不是 Linglish 应用的问题！
+
+✅ 这些错误不会影响登录功能
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 方法 1: 使用无痕模式（最简单）
+   Chrome: Cmd+Shift+N (Mac) / Ctrl+Shift+N (Win)
+   Firefox: Cmd+Shift+P (Mac) / Ctrl+Shift+P (Win)
+   Safari: Cmd+Shift+N
+
+   → 无痕模式默认不加载扩展，Console 会干净
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 方法 2: 临时禁用所有扩展
+   1. 打开扩展管理页面：
+      chrome://extensions (Chrome)
+      about:addons (Firefox)
+   2. 关闭所有扩展的开关
+   3. 刷新页面
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 方法 3: 识别问题扩展
+   常见的干扰扩展：
+   • Grammarly (语法检查)
+   • LastPass / 1Password (密码管理器)
+   • Google Translate (翻译)
+   • Honey / 优惠券扩展
+
+   → 在开发时临时禁用这些
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 开发建议：
+   • 日常开发使用无痕模式
+   • 或创建专门的 Chrome Profile 不安装扩展
+   • 只在必要时使用扩展
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+      console.log(guide);
+      alert('📖 扩展禁用指南已输出到 Console（F12）\n\n' +
+            '快速方法：使用无痕模式（Cmd/Ctrl+Shift+N）\n\n' +
+            '详细指南请查看 Console 输出');
+    }
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- SEO Meta Tags -->
+  <title>Linglish - 账号登录 | 沉浸式语言学习</title>
+  <meta name="description" content="登录 Linglish 账号，开始您的沉浸式语言学习之旅。支持邮箱和手机号登录。">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://example.com/mobile-auth.html">
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="alternate icon" href="/linglish-favicon.png?v=1" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="./mobile-styles.css">
+  <script src="./i18n.js"></script>
+  <script src="./js/auth-manager.js"></script>
+  <script src="./js/oauth-bootstrap.js"></script>
+  <script src="./auth-helpers.js"></script>
+  <script src="./guest-check.js"></script>
+  <script src="./js/first-lesson-entry.js?v=1"></script>
+  <style>
+    /* Extension warning banner */
+    .extension-warning-banner {
+      background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+      color: white;
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: none; /* Hidden by default, shown by JS if extensions detected */
+    }
+    .extension-warning-banner a {
+      color: #ffd700;
+      text-decoration: underline;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .extension-warning-banner .close-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+
+    /* 优化移动端布局，减少间距让表单在一屏内完成 */
+    .auth-hero {
+      padding: 20px 16px 16px !important;
+      margin-bottom: 12px !important;
+    }
+
+    .auth-hero .logo-circle {
+      width: 50px !important;
+      height: 50px !important;
+      font-size: 24px !important;
+      margin-bottom: 8px !important;
+    }
+
+    .auth-hero h1 {
+      font-size: 28px !important;
+      margin-bottom: 4px !important;
+    }
+
+    .auth-hero .app-tagline {
+      font-size: 13px !important;
+      margin-bottom: 0 !important;
+    }
+
+    .first-lesson-card {
+      margin: 0 16px 16px;
+      padding: 16px;
+      border-radius: 16px;
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      color: #134e4a;
+    }
+
+    .first-lesson-card h2 {
+      margin: 0 0 6px;
+      font-size: 19px;
+      line-height: 1.4;
+    }
+
+    .first-lesson-card p {
+      margin: 0 0 12px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .first-lesson-btn {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px;
+      border: 0;
+      border-radius: 12px;
+      background: #115e59;
+      color: white;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .first-lesson-btn:focus-visible {
+      outline: 3px solid #0f766e;
+      outline-offset: 3px;
+    }
+
+    .first-lesson-btn:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    .quick-start {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 0 16px 12px;
+      margin-top: 0;
+    }
+
+    .quick-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0ea5e9, #5eead4);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: 0 6px 18px rgba(14, 165, 233, 0.3);
+    }
+
+    .auth-context-card {
+      margin: 0 16px 12px;
+      padding: 14px;
+      border: 1px solid rgba(14, 165, 233, 0.18);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .auth-context-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .auth-context-top strong {
+      display: block;
+      color: #0f172a;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .auth-context-top span {
+      display: block;
+      margin-top: 5px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .auth-context-badge {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: #0369a1;
+      background: rgba(14, 165, 233, 0.12);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .auth-context-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .auth-context-step {
+      min-height: 52px;
+      padding: 8px;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .auth-context-step b {
+      display: block;
+      margin-bottom: 3px;
+      color: #0f766e;
+      font-size: 12px;
+    }
+
+    .auth-main {
+      padding: 16px !important;
+    }
+
+    .form-intent {
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid rgba(15, 118, 110, 0.18);
+      border-radius: 12px;
+      background: rgba(240, 253, 250, 0.9);
+    }
+
+    .form-intent strong {
+      display: block;
+      color: #0f766e;
+      font-size: 14px;
+    }
+
+    .form-intent span {
+      display: block;
+      margin-top: 5px;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .auth-tabs {
+      margin-bottom: 16px !important;
+    }
+
+    .form-group {
+      margin-bottom: 14px !important;
+    }
+
+    .form-label {
+      font-size: 13px !important;
+      margin-bottom: 6px !important;
+    }
+
+    .form-input {
+      padding: 10px 14px !important;
+      font-size: 15px !important;
+    }
+
+    .form-options {
+      margin: 12px 0 !important;
+    }
+
+    .auth-btn {
+      padding: 12px !important;
+      margin-top: 8px !important;
+    }
+
+    .auth-divider {
+      margin: 14px 0 !important;
+    }
+
+    .guest-btn {
+      padding: 10px !important;
+    }
+
+    .form-note {
+      margin-top: 8px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* Level Selector */
+    .level-selector {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .level-option {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 8px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .level-option:hover {
+      border-color: #0ea5e9;
+      background: #f5f3ff;
+    }
+
+    .level-option.active {
+      border-color: #0ea5e9;
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+    }
+
+    .level-icon {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .level-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .level-desc {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .level-option.active .level-name {
+      color: #0284c7;
+    }
+
+    /* Google OAuth Button */
+    .social-login-section {
+      margin-bottom: 16px;
+    }
+
+    .btn-google {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-google:hover {
+      border-color: #4285F4;
+      background: #f8faff;
+    }
+
+    .btn-google:active {
+      transform: scale(0.98);
+    }
+
+    .btn-google svg {
+      flex-shrink: 0;
+    }
+
+    .social-divider {
+      display: flex;
+      align-items: center;
+      margin: 16px 0;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .social-divider::before,
+    .social-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    .social-divider span {
+      padding: 0 12px;
+    }
+
+    .oauth-error-banner {
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #dc2626;
+      font-size: 13px;
+      display: none;
+    }
+
+    .oauth-error-banner.show {
+      display: block;
+    }
+  </style>
+</head>
+<body class="auth-body">
+  <!-- Extension Warning Banner (shown only if extensions detected) -->
+  <div id="extension-warning-banner" class="extension-warning-banner">
+    ⚠️ 检测到浏览器扩展错误（Console 红色错误）。这是<strong>扩展的问题，不影响登录</strong>。
+    <a onclick="showExtensionGuide()">如何禁用？</a>
+    <button class="close-btn" onclick="this.parentElement.style.display='none'">知道了</button>
+  </div>
+
+  <!-- Hero Section -->
+  <div class="auth-hero">
+    <div class="auth-logo">
+      <div class="logo-circle">🌍</div>
+      <h1 class="app-name">linglish</h1>
+      <p class="app-tagline" data-i18n="welcome.tagline">沉浸式语言学习，让进步看得见</p>
+    </div>
+  </div>
+
+  <section class="first-lesson-card" aria-labelledby="first-lesson-title">
+    <h2 id="first-lesson-title">从 3 句真实英语开始</h2>
+    <p id="first-lesson-copy">不用注册，听一句、跟读一句，查看 AI 反馈。</p>
+    <button type="button" id="auth-first-lesson" class="first-lesson-btn" aria-describedby="first-lesson-copy">免注册练 3 句</button>
+  </section>
+
+  <!-- Quick Start CTA -->
+  <div class="quick-start">
+    <a href="#login-form" class="quick-btn" data-action="goto-auth"><span>🎬</span><span data-i18n="auth.quick_video">视频</span></a>
+    <a href="#login-form" class="quick-btn" data-action="goto-auth"><span>🎪</span><span data-i18n="auth.quick_practice">练习</span></a>
+    <a href="#login-form" class="quick-btn" data-action="goto-auth"><span>📚</span><span data-i18n="auth.quick_vocab">词汇</span></a>
+  </div>
+
+  <section class="auth-context-card" aria-label="登录后去向">
+    <div class="auth-context-top">
+      <div>
+        <strong id="auth-context-title">登录后回到今日训练</strong>
+        <span id="auth-context-copy">完成账号操作后直接进入移动端 Today，不再回到泛首页。</span>
+      </div>
+      <div class="auth-context-badge" id="auth-context-badge">Next: Today</div>
+    </div>
+    <div class="auth-context-steps">
+      <div class="auth-context-step"><b>输入</b>真实视频</div>
+      <div class="auth-context-step"><b>输出</b>跟读反馈</div>
+      <div class="auth-context-step"><b>复习</b>明天继续</div>
+    </div>
+  </section>
+
+  <!-- Auth Forms -->
+  <main class="auth-main">
+    <div class="form-intent">
+      <strong id="form-intent-title">继续今日训练</strong>
+      <span id="form-intent-copy">登录后会保存等级、目标和训练记录，并回到刚才的页面。</span>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="login-tab" data-i18n="auth.login_tab">登录</button>
+      <button class="auth-tab" id="register-tab" data-i18n="auth.register_tab">注册</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="login-form" class="auth-form active">
+      <!-- OAuth Error Banner -->
+      <div class="oauth-error-banner" id="oauthErrorBanner"></div>
+
+      <!-- Google Login -->
+      <div class="social-login-section">
+        <button type="button" class="btn-google" id="google-login-btn" onclick="loginWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          <span>使用 Google 登录</span>
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="social-divider">
+        <span>或使用邮箱</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">邮箱或手机号</label>
+        <input type="text" class="form-input" id="login-account" placeholder="请输入邮箱或手机号" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="auth.password">密码</label>
+        <input type="password" class="form-input" id="login-password" placeholder="请输入密码" data-i18n="auth.password_input_placeholder" required>
+      </div>
+      <div class="form-options">
+        <label class="checkbox-label">
+          <input type="checkbox" id="remember-me">
+          <span data-i18n="auth.remember_me">记住我</span>
+        </label>
+        <a href="./reset-password.html?from=mobile_auth" class="forgot-link" data-i18n="auth.forgot_password">忘记密码？</a>
+      </div>
+      <button type="submit" class="auth-btn" data-i18n="auth.login_submit">立即登录</button>
+      <div class="form-note" id="login-note">登录后自动回到移动端 Today。</div>
+      <div class="auth-divider">
+        <span data-i18n="auth.or">或者</span>
+      </div>
+      <button type="button" class="guest-btn" data-i18n="auth.guest_mode">游客体验</button>
+    </form>
+
+    <!-- Register Form -->
+    <form id="register-form" class="auth-form">
+      <div class="form-group">
+        <label class="form-label">邮箱或手机号</label>
+        <input type="text" class="form-input" id="register-account" placeholder="请输入邮箱或手机号" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="auth.username">用户名</label>
+        <input type="text" class="form-input" id="register-username" placeholder="请输入用户名" data-i18n="auth.username_input_placeholder" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="auth.password">密码</label>
+        <input type="password" class="form-input" id="register-password" placeholder="至少6位密码" data-i18n="auth.password_min_placeholder" required minlength="6">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="auth.confirm_password">确认密码</label>
+        <input type="password" class="form-input" id="register-confirm-password" placeholder="再次输入密码" data-i18n="auth.confirm_password_placeholder" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">词汇水平</label>
+        <div class="level-selector" id="level-selector">
+          <button type="button" class="level-option active" data-level="beginner">
+            <span class="level-icon">🌱</span>
+            <span class="level-name">入门</span>
+            <span class="level-desc">核心3000词</span>
+          </button>
+          <button type="button" class="level-option" data-level="intermediate">
+            <span class="level-icon">🌿</span>
+            <span class="level-name">进阶</span>
+            <span class="level-desc">3000-8000词</span>
+          </button>
+          <button type="button" class="level-option" data-level="advanced">
+            <span class="level-icon">🌳</span>
+            <span class="level-name">高级</span>
+            <span class="level-desc">8000词以上</span>
+          </button>
+        </div>
+        <input type="hidden" id="register-level" value="beginner">
+      </div>
+      <label class="checkbox-label agreement">
+        <input type="checkbox" id="agree-terms" required>
+        <span><span data-i18n="auth.agree_terms">我已阅读并同意</span><a href="./terms.html" target="_blank" rel="noopener" data-i18n="auth.terms_of_service">用户协议</a><span data-i18n="auth.and">和</span><a href="./privacy.html" target="_blank" rel="noopener" data-i18n="auth.privacy_policy">隐私政策</a></span>
+      </label>
+      <button type="submit" class="auth-btn" id="register-submit">注册并保存计划</button>
+      <div class="form-note" id="register-note">如果你刚完成测评，注册时会同步测评等级、每日目标和学习兴趣。</div>
+    </form>
+
+    <!-- Features -->
+    <div class="auth-features">
+      <div class="feature-item">
+        <span class="feature-icon">🌍</span>
+        <span class="feature-text" data-i18n="auth.feature_native_video">原生视频</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">⚡</span>
+        <span class="feature-text" data-i18n="auth.feature_smart_vocab">智能词汇</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🎪</span>
+        <span class="feature-text" data-i18n="auth.feature_practice">实战练习</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🪴</span>
+        <span class="feature-text" data-i18n="auth.feature_achievement">成就系统</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast-notification"></div>
+
+  <!-- Extension Error Notice (hidden by default) -->
+  <div id="extension-notice" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #fff3cd; color: #856404; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; max-width: 90%; font-size: 13px; text-align: center;">
+    <strong>💡 提示:</strong> 检测到浏览器扩展错误（已自动过滤），不影响登录功能
+    <button onclick="this.parentElement.style.display='none'" style="margin-left: 10px; background: transparent; border: 1px solid #856404; color: #856404; padding: 2px 8px; border-radius: 4px; cursor: pointer;">知道了</button>
+  </div>
+
+  <script>
+    // Safe storage access helpers (防止隐私设置阻止 storage 访问)
+    const safeStorage = {
+      set: function(storage, key, value) {
+        try {
+          if (storage && typeof storage.setItem === 'function') {
+            storage.setItem(key, value);
+            return true;
+          }
+        } catch (e) {
+          console.warn('[Storage] Failed to set:', key, e.message);
+        }
+        return false;
+      },
+      get: function(storage, key) {
+        try {
+          if (storage && typeof storage.getItem === 'function') {
+            return storage.getItem(key);
+          }
+        } catch (e) {
+          console.warn('[Storage] Failed to get:', key, e.message);
+        }
+        return null;
+      },
+      remove: function(storage, key) {
+        try {
+          if (storage && typeof storage.removeItem === 'function') {
+            storage.removeItem(key);
+            return true;
+          }
+        } catch (e) {
+          console.warn('[Storage] Failed to remove:', key, e.message);
+        }
+        return false;
+      },
+      // 清理所有认证相关数据
+      clearAuth: function(options = {}) {
+        if (!options.skipMediaSession && window.LinglishMediaSession) {
+          window.LinglishMediaSession.clear().catch(() => {});
+        }
+        const keys = ['authToken', 'linglish_token', 'userEmail', 'is_guest', 'guest_id', 'isGuest'];
+        keys.forEach(key => {
+          this.remove(localStorage, key);
+          this.remove(sessionStorage, key);
+        });
+      },
+      // 健康检查: 验证并清理损坏的数据
+      healthCheck: function() {
+        try {
+          // Check if storage is accessible
+          if (!localStorage || typeof localStorage.getItem !== 'function') {
+            console.warn('[Storage] localStorage not accessible');
+            return false;
+          }
+
+          // Test basic operations
+          const testKey = '__storage_test__';
+          const testValue = 'test';
+          localStorage.setItem(testKey, testValue);
+          const retrieved = localStorage.getItem(testKey);
+          localStorage.removeItem(testKey);
+
+          if (retrieved !== testValue) {
+            console.error('[Storage] Basic storage operations failed');
+            return false;
+          }
+
+          // Check for corrupted authentication data
+          const token = this.get(localStorage, 'linglish_token') || this.get(sessionStorage, 'linglish_token');
+          if (token) {
+            // Validate token format (JWT should have 3 parts separated by dots)
+            if (typeof token !== 'string' || token === 'undefined' || token === 'null') {
+              console.warn('[Storage] Invalid token detected, clearing...');
+              this.clearAuth();
+              return true; // Cleaned up
+            }
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+              console.warn('[Storage] Malformed token detected, clearing...');
+              this.clearAuth();
+              return true; // Cleaned up
+            }
+          }
+
+          return true; // Healthy
+        } catch (e) {
+          console.error('[Storage] Health check failed:', e);
+          // Try to clear corrupted data
+          try {
+            this.clearAuth();
+          } catch (clearError) {
+            console.error('[Storage] Failed to clear corrupted data:', clearError);
+          }
+          return false;
+        }
+      }
+    };
+
+    // Version check and cache clearing mechanism
+    (function() {
+      const APP_VERSION = '2024.12.16.002'; // Synced with auth-manager.js
+      const STORAGE_VERSION_KEY = 'linglish_app_version';
+
+      try {
+        const storedVersion = safeStorage.get(localStorage, STORAGE_VERSION_KEY);
+
+        // If version mismatch or no version stored, clear all app data
+        if (storedVersion !== APP_VERSION) {
+          console.log('[Version] Version mismatch detected. Clearing cache...', {
+            stored: storedVersion,
+            current: APP_VERSION
+          });
+
+          // Clear all authentication and app data
+          safeStorage.clearAuth();
+
+          // Clear other possible app data
+          const keysToRemove = ['userSettings', 'lastSync', 'appConfig', 'cachedData'];
+          keysToRemove.forEach(key => {
+            safeStorage.remove(localStorage, key);
+            safeStorage.remove(sessionStorage, key);
+          });
+
+          // Set new version
+          safeStorage.set(localStorage, STORAGE_VERSION_KEY, APP_VERSION);
+
+          console.log('[Version] Cache cleared successfully. New version:', APP_VERSION);
+        }
+      } catch (err) {
+        console.error('[Version] Version check failed:', err);
+      }
+    })();
+
+    // 检查是否从游客模式跳转而来，强制清除游客状态
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('from_guest') === '1') {
+        try {
+          // 强制清除所有可能的游客标记
+          safeStorage.clearAuth();
+
+          console.log('[Auth] Force cleared guest session from URL parameter');
+
+          // Remove from_guest parameter from URL
+          const url = new URL(window.location.href);
+          url.searchParams.delete('from_guest');
+          window.history.replaceState({}, document.title, url.pathname + url.search);
+        } catch (err) {
+          console.error('[Auth] Failed to clear guest session:', err);
+        }
+      }
+    })();
+
+    // Tab Switching
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const VISITOR_ID_KEY = 'linglish_visitor_id';
+    const PENDING_PROFILE_SYNC_KEY = 'linglish_onboarding_pending_profile_sync';
+
+    function setAuthTab(tab, options = {}) {
+      const isRegister = tab === 'register';
+      loginTab.classList.toggle('active', !isRegister);
+      registerTab.classList.toggle('active', isRegister);
+      loginForm.classList.toggle('active', !isRegister);
+      registerForm.classList.toggle('active', isRegister);
+      renderAuthContext(isRegister ? 'register' : 'login');
+      if (options.track) {
+        postPublicAuthEvent('auth_tab_switch', { tab: isRegister ? 'register' : 'login' });
+      }
+    }
+
+    loginTab.addEventListener('click', () => setAuthTab('login', { track: true }));
+    registerTab.addEventListener('click', () => setAuthTab('register', { track: true }));
+
+    // Check URL parameter to determine default tab
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    if (mode === 'register') {
+      setAuthTab('register');
+    } else {
+      setAuthTab('login');
+    }
+
+    // Safe translator: does not throw when i18n is unavailable
+    const tt = (key) => {
+      try { return (typeof i18n !== 'undefined' && i18n && i18n.t) ? i18n.t(key) : key; } catch (_) { return key; }
+    };
+
+    // Toast notification
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast-notification ${type}`;
+      toast.style.display = 'block';
+
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3000);
+    }
+
+    function getSafeNext(fallback) {
+      try {
+        const raw = new URLSearchParams(location.search || '').get('next');
+        if (!raw) return fallback;
+        const target = new URL(raw, location.href);
+        if (target.origin !== location.origin) return fallback;
+        if (/\/(mobile-auth|desktop-auth)\.html$/i.test(target.pathname)) return fallback;
+        return target.pathname + target.search + target.hash;
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    function hasCompletedOnboarding() {
+      try {
+        const value = safeStorage.get(localStorage, 'linglish_onboarding_done');
+        return value === '1' || value === 'true';
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function getDefaultAuthNext(source = 'auth') {
+      if (source === 'login' || source === 'guest' || source === 'auth_cached') {
+        return `mobile-today.html?from=${encodeURIComponent(source)}`;
+      }
+      return hasCompletedOnboarding()
+        ? `mobile-today.html?from=${encodeURIComponent(source)}`
+        : `welcome.html?from=${encodeURIComponent(source)}`;
+    }
+
+    function getVisitorId() {
+      try {
+        const existing = safeStorage.get(localStorage, VISITOR_ID_KEY);
+        if (/^llv_[a-zA-Z0-9_-]{12,64}$/.test(existing || '')) return existing;
+        const random = window.crypto?.getRandomValues
+          ? Array.from(window.crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, '0')).join('')
+          : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`;
+        const visitorId = `llv_${random}`.slice(0, 68);
+        safeStorage.set(localStorage, VISITOR_ID_KEY, visitorId);
+        return visitorId;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getStoredOnboardingProfile() {
+      try {
+        const level = safeStorage.get(localStorage, 'linglish_active_level') || safeStorage.get(localStorage, 'vocab_difficulty_filter') || '';
+        const goal = safeStorage.get(localStorage, 'linglish_onboarding_goal') || '';
+        const minutes = Number(safeStorage.get(localStorage, 'linglish_onboarding_daily_minutes') || '');
+        const validLevel = ['beginner', 'intermediate', 'advanced'].includes(level) ? level : null;
+        return {
+          level: validLevel,
+          daily_goal: Number.isFinite(minutes) && minutes >= 5 && minutes <= 180 ? Math.round(minutes) : null,
+          interests: goal ? [goal].slice(0, 1) : null,
+          has_profile: Boolean(validLevel || goal || minutes)
+        };
+      } catch (_) {
+        return { level: null, daily_goal: null, interests: null, has_profile: false };
+      }
+    }
+
+    function getAuthTrackingContext() {
+      const params = new URLSearchParams(location.search || '');
+      const rawNext = params.get('next') || '';
+      const authMode = (params.get('mode') || 'login').toLowerCase();
+      let authNext = rawNext;
+      let authSource = params.get('from') || authMode || 'auth';
+      if (rawNext) {
+        try {
+          const target = new URL(rawNext, location.href);
+          authNext = target.pathname + target.search + target.hash;
+          authSource = target.searchParams.get('from') || authSource;
+        } catch (_) {}
+      }
+      return {
+        auth_source: authSource || 'auth',
+        auth_next: authNext || '',
+        auth_mode: authMode
+      };
+    }
+
+    function getDestinationMeta() {
+      const params = new URLSearchParams(location.search || '');
+      const authMode = (params.get('mode') || '').toLowerCase() === 'register' ? 'register' : 'login';
+      const target = getSafeNext(getDefaultAuthNext(authMode));
+      const normalized = target.toLowerCase();
+      if (normalized.includes('pricing')) {
+        return {
+          target,
+          label: '会员方案',
+          badge: 'Next: Pricing',
+          title: '登录后回到会员方案',
+          copy: '继续完成升级或团队咨询，不丢失当前选择。',
+          intentTitle: '继续会员流程',
+          intentCopy: '登录后会回到方案页，并保留购买或咨询入口。'
+        };
+      }
+      if (normalized.includes('welcome')) {
+        return {
+          target,
+          label: '个性化测评',
+          badge: 'Next: Onboarding',
+          title: '注册后生成训练计划',
+          copy: '先完成测评，再生成第一天训练处方。',
+          intentTitle: '生成个性化训练计划',
+          intentCopy: '注册后会进入测评，生成等级、目标和每日训练时长。'
+        };
+      }
+      return {
+        target,
+        label: '今日训练',
+        badge: 'Next: Today',
+        title: '登录后回到今日训练',
+        copy: '完成账号操作后直接进入移动端 Today，不再回到泛首页。',
+        intentTitle: '继续今日训练',
+        intentCopy: '登录后会保存等级、目标和训练记录，并回到今天的训练闭环。'
+      };
+    }
+
+    function renderAuthContext(tab = 'login') {
+      const destination = getDestinationMeta();
+      const profile = getStoredOnboardingProfile();
+      const savingPlan = profile.has_profile || destination.target.includes('save_plan');
+      const isRegister = tab === 'register';
+      document.getElementById('auth-context-title').textContent = destination.title;
+      document.getElementById('auth-context-copy').textContent = savingPlan
+        ? `将保存${profile.daily_goal || 15}分钟目标${profile.interests?.[0] ? `、${profile.interests[0]}` : ''}和词汇等级，完成后回到${destination.label}。`
+        : destination.copy;
+      document.getElementById('auth-context-badge').textContent = destination.badge;
+      document.getElementById('form-intent-title').textContent = isRegister && savingPlan ? '注册并保存训练计划' : destination.intentTitle;
+      document.getElementById('form-intent-copy').textContent = isRegister && savingPlan
+        ? '注册后会同步刚才的测评结果、每日目标和学习兴趣，明天回来可以直接继续。'
+        : destination.intentCopy;
+      const loginNote = document.getElementById('login-note');
+      if (loginNote) loginNote.textContent = `登录后自动回到${destination.label}。`;
+      const registerNote = document.getElementById('register-note');
+      if (registerNote) {
+        registerNote.textContent = savingPlan
+          ? '注册时会同步测评等级、每日目标和学习兴趣。'
+          : '注册后建议先完成测评，生成第一天训练处方。';
+      }
+      const registerSubmit = document.getElementById('register-submit');
+      if (registerSubmit) registerSubmit.textContent = savingPlan ? '注册并保存计划' : '注册并生成计划';
+    }
+
+    async function postPublicAuthEvent(eventName, extra = {}) {
+      try {
+        const visitorId = getVisitorId();
+        const token = window.AuthManager?.getToken?.()
+          || safeStorage.get(localStorage, 'authToken')
+          || safeStorage.get(sessionStorage, 'authToken')
+          || safeStorage.get(localStorage, 'linglish_token')
+          || safeStorage.get(sessionStorage, 'linglish_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        await fetch('/track/event', {
+          method: 'POST',
+          headers,
+          keepalive: true,
+          body: JSON.stringify({
+            event_name: eventName,
+            visitor_id: visitorId,
+            properties: {
+              page: 'mobile-auth',
+              visitor_id: visitorId,
+              destination: getDestinationMeta().label,
+              ...getAuthTrackingContext(),
+              ...extra
+            }
+          })
+        });
+      } catch (_) {}
+    }
+
+    async function postAuthSuccessEvent(eventName, extra = {}) {
+      try {
+        const token = window.AuthManager?.getToken?.()
+          || safeStorage.get(localStorage, 'authToken')
+          || safeStorage.get(sessionStorage, 'authToken')
+          || safeStorage.get(localStorage, 'linglish_token')
+          || safeStorage.get(sessionStorage, 'linglish_token');
+        if (!token) return;
+        const visitorId = getVisitorId();
+        await fetch('/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            event_name: eventName,
+            visitor_id: visitorId,
+            properties: {
+              page: 'mobile-auth',
+              visitor_id: visitorId,
+              ...getAuthTrackingContext(),
+              ...extra
+            },
+            source: 'web'
+          })
+        });
+      } catch (_) {}
+    }
+
+    postPublicAuthEvent('auth_page_view', {
+      tab: registerForm.classList.contains('active') ? 'register' : 'login',
+      has_onboarding_profile: getStoredOnboardingProfile().has_profile
+    });
+
+    // Level selector click handlers
+    const levelSelector = document.getElementById('level-selector');
+    if (levelSelector) {
+      levelSelector.querySelectorAll('.level-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+          levelSelector.querySelectorAll('.level-option').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('register-level').value = btn.dataset.level;
+        });
+      });
+    }
+    (function applyStoredProfileToRegister() {
+      const profile = getStoredOnboardingProfile();
+      if (!profile.level || !levelSelector) return;
+      const button = levelSelector.querySelector(`[data-level="${profile.level}"]`);
+      if (!button) return;
+      levelSelector.querySelectorAll('.level-option').forEach(b => b.classList.remove('active'));
+      button.classList.add('active');
+      document.getElementById('register-level').value = profile.level;
+    })();
+
+    // Login Form Submit
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const account = document.getElementById('login-account').value.trim();
+      const password = document.getElementById('login-password').value;
+      const rememberMe = document.getElementById('remember-me').checked;
+
+      // Auto-detect if input is email or phone
+      const loginData = { password };
+      if (account.includes('@')) {
+        loginData.email = account;
+      } else {
+        loginData.phone = account;
+      }
+      postPublicAuthEvent('auth_submit_attempt', { method: 'login', remember: rememberMe });
+
+      try {
+        const response = await fetch('/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(loginData),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          console.log('[Login] Login successful:', { status: response.status });
+
+          // Validate that we received a valid token
+          const token = data.access_token || data.token;
+          if (!token || typeof token !== 'string') {
+            console.error('[Login] Invalid credential payload:', { status: response.status });
+            showToast('登录失败：服务器返回无效的令牌', 'error');
+            return;
+          }
+
+          console.log('[Login] Credential received:', Boolean(token));
+
+          // Clear all old authentication data first (including old tokens and guest flags)
+          console.log('[Login] Clearing old auth data...');
+          if (window.LinglishMediaSession) {
+            await window.LinglishMediaSession.clear();
+          } else {
+            await fetch('/auth/media-session', { method: 'DELETE', credentials: 'include' }).catch(() => {});
+          }
+          if (window.AuthManager) {
+            await window.AuthManager.clearToken({ skipMediaSession: true });
+          } else {
+            safeStorage.clearAuth({ skipMediaSession: true });
+          }
+
+          // Clear guest flags
+          safeStorage.remove(localStorage, 'is_guest');
+          safeStorage.remove(localStorage, 'guest_id');
+          safeStorage.remove(sessionStorage, 'is_guest');
+          safeStorage.remove(sessionStorage, 'isGuest');
+
+          // Save new token using AuthManager (with robust fallback: localStorage → Cookies → Memory)
+          console.log('[Login] Saving token with AuthManager, remember=' + rememberMe);
+          if (window.AuthManager) {
+            await window.AuthManager.setToken(token, rememberMe);
+          } else {
+            // Fallback if AuthManager not available
+            const storage = rememberMe ? localStorage : sessionStorage;
+            safeStorage.set(storage, 'authToken', token);
+            safeStorage.set(storage, 'linglish_token', token);
+          }
+
+          // Save user email
+          if (rememberMe) {
+            safeStorage.set(localStorage, 'userEmail', account);
+          }
+
+          // Verify token was saved correctly
+          const savedToken = window.AuthManager ? window.AuthManager.getToken() : safeStorage.get(rememberMe ? localStorage : sessionStorage, 'linglish_token');
+          if (savedToken !== token) {
+            console.warn('[Login] Token verification mismatch');
+            // Don't fail login here - Cookie/Memory storage might work differently
+          } else {
+            console.log('[Login] Token verified successfully');
+          }
+
+          showToast(tt('auth.toast_login_success'), 'success');
+          await postAuthSuccessEvent('login_success', { remember: rememberMe });
+
+          // Redirect to explore page
+          console.log('[Login] Redirecting after login in 500ms...');
+          setTimeout(() => {
+            window.location.href = getSafeNext(getDefaultAuthNext('login'));
+          }, 500);
+        } else {
+          // If authentication failed with 401, clear any stale tokens
+          if (response.status === 401) {
+            console.warn('[Auth] Login failed with 401, clearing stale tokens');
+            safeStorage.clearAuth();
+          }
+
+          // Translate error message if it's an error code
+          let errorMsg = data.message || 'auth.toast_login_failed';
+          if (errorMsg && tt('error.' + errorMsg) !== 'error.' + errorMsg) {
+            errorMsg = tt('error.' + errorMsg);
+          } else if (errorMsg.startsWith('auth.') || errorMsg.startsWith('error.')) {
+            errorMsg = tt(errorMsg);
+          } else {
+            errorMsg = tt('auth.toast_login_failed');
+          }
+          postPublicAuthEvent('auth_submit_error', { method: 'login', status: response.status, message: data.message || 'LOGIN_FAILED' });
+          showToast(errorMsg, 'error');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        // On network error, run health check to ensure storage is working
+        safeStorage.healthCheck();
+        postPublicAuthEvent('auth_submit_error', { method: 'login', status: 'network', message: 'NETWORK_ERROR' });
+        showToast(tt('auth.toast_network_error'), 'error');
+      }
+    });
+
+    // Register Form Submit
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const account = document.getElementById('register-account').value.trim();
+      const username = document.getElementById('register-username').value;
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+      const agreeTerms = document.getElementById('agree-terms').checked;
+
+      // Validation
+      if (password !== confirmPassword) {
+        showToast(tt('auth.toast_password_mismatch'), 'error');
+        return;
+      }
+
+      if (!agreeTerms) {
+        showToast(tt('auth.toast_agree_terms'), 'error');
+        return;
+      }
+
+      // Get selected level
+      const level = document.getElementById('register-level').value || 'beginner';
+      const onboardingProfile = getStoredOnboardingProfile();
+
+      // Build register payload - auto-detect email or phone
+      const registerData = { username, password, level };
+      if (onboardingProfile.daily_goal != null) registerData.daily_goal = onboardingProfile.daily_goal;
+      if (onboardingProfile.interests) registerData.interests = onboardingProfile.interests;
+      if (account.includes('@')) {
+        registerData.email = account;
+      } else {
+        registerData.phone = account;
+        // For phone registration, generate a temporary email
+        registerData.email = `phone_${account}@linglish.local`;
+      }
+      postPublicAuthEvent('auth_submit_attempt', {
+        method: 'register',
+        level,
+        has_onboarding_profile: onboardingProfile.has_profile,
+        daily_goal: onboardingProfile.daily_goal,
+        primary_interest: onboardingProfile.interests?.[0] || null
+      });
+
+      try {
+        const response = await fetch('/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(registerData),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          const token = data.access_token || data.token;
+          if (token && typeof token === 'string') {
+            if (window.AuthManager) {
+              await window.AuthManager.clearToken();
+              await window.AuthManager.setToken(token, true);
+            } else {
+              safeStorage.clearAuth();
+              safeStorage.set(localStorage, 'authToken', token);
+              safeStorage.set(localStorage, 'linglish_token', token);
+            }
+            safeStorage.set(localStorage, 'userEmail', account);
+            safeStorage.remove(localStorage, 'is_guest');
+            safeStorage.remove(localStorage, 'guest_id');
+            safeStorage.remove(localStorage, PENDING_PROFILE_SYNC_KEY);
+            safeStorage.remove(sessionStorage, 'is_guest');
+            safeStorage.remove(sessionStorage, 'isGuest');
+
+            const verificationCopy = data.email_verification?.already_verified
+              ? '注册成功，邮箱已验证'
+              : (data.email_verification?.delivery_configured ? '注册成功，验证邮件已发送' : tt('auth.toast_register_success'));
+            showToast(verificationCopy, 'success');
+            await postAuthSuccessEvent('register_success', {
+              level,
+              daily_goal: onboardingProfile.daily_goal,
+              primary_interest: onboardingProfile.interests?.[0] || null,
+              profile_synced: onboardingProfile.has_profile,
+              email_verification_delivery_configured: data.email_verification?.delivery_configured === true
+            });
+            setTimeout(() => {
+              window.location.href = getSafeNext(getDefaultAuthNext('register'));
+            }, 500);
+            return;
+          }
+
+          showToast(tt('auth.toast_register_success'), 'success');
+
+          // Switch to login tab
+          setTimeout(() => {
+            loginTab.click();
+            document.getElementById('login-account').value = account;
+          }, 1000);
+        } else {
+          postPublicAuthEvent('auth_submit_error', { method: 'register', status: response.status, message: data.message || 'REGISTER_FAILED' });
+          showToast(data.message || tt('auth.toast_register_failed'), 'error');
+        }
+      } catch (error) {
+        console.error('Register error:', error);
+        postPublicAuthEvent('auth_submit_error', { method: 'register', status: 'network', message: 'NETWORK_ERROR' });
+        showToast(tt('auth.toast_network_error'), 'error');
+      }
+    });
+
+    // A separate trial action must not change ordinary auth/guest return paths.
+    document.getElementById('auth-first-lesson').addEventListener('click', async (event) => {
+      const entry = window.LinglishFirstLessonEntry;
+      if (!entry || typeof entry.start !== 'function') {
+        showToast('体验入口加载失败，请刷新重试，或继续登录。', 'error');
+        return;
+      }
+      try {
+        await entry.start({
+          trigger: event.currentTarget,
+          source: 'mobile_auth_first_lesson',
+          mobile: true,
+          level: 'A1',
+        });
+      } catch (error) {
+        showToast(error?.code === 'FIRST_LESSON_VIDEO_UNAVAILABLE'
+          ? '首课视频暂时不可用，请稍后重试，或继续登录。'
+          : '首课暂时没有准备好，请重试，或继续登录。', 'error');
+      }
+    });
+
+    // Guest Mode
+    document.querySelector('.guest-btn').addEventListener('click', async () => {
+      postPublicAuthEvent('auth_guest_click', { destination: getDestinationMeta().label });
+      try {
+        const response = await fetch('/auth/guest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || i18n.t('auth.guest_login_failed') || '游客登录失败');
+        }
+
+        // Save token using AuthManager with robust fallback
+        const token = data.access_token || data.token;
+
+        // Validate token exists
+        if (!token) {
+          console.error('Guest credential missing:', { status: response.status });
+          throw new Error('游客登录失败：服务器未返回令牌');
+        }
+
+        console.log('[Guest Login] Credential received:', Boolean(token));
+        console.log('[Guest Login] Response accepted:', { status: response.status });
+
+        if (window.LinglishMediaSession) {
+          await window.LinglishMediaSession.clear();
+        } else {
+          await fetch('/auth/media-session', { method: 'DELETE', credentials: 'include' }).catch(() => {});
+        }
+
+        if (window.AuthManager) {
+          await window.AuthManager.clearToken({ skipMediaSession: true });
+        } else {
+          safeStorage.clearAuth({ skipMediaSession: true });
+        }
+
+        // Use AuthManager for robust token storage (localStorage → Cookies → Memory)
+        if (window.AuthManager) {
+          await window.AuthManager.setToken(token, true); // remember=true for guest mode
+        } else {
+          // Fallback if AuthManager not available
+          safeStorage.set(localStorage, 'linglish_token', token);
+          safeStorage.set(localStorage, 'authToken', token);
+          safeStorage.set(sessionStorage, 'authToken', token);
+          safeStorage.set(sessionStorage, 'linglish_token', token);
+        }
+
+        // Set guest flags
+        safeStorage.set(localStorage, 'is_guest', 'true');
+        safeStorage.set(localStorage, 'guest_id', data.guest_id || '');
+        safeStorage.set(sessionStorage, 'is_guest', 'true');
+        safeStorage.set(sessionStorage, 'isGuest', 'true');
+
+        // Verify storage
+        const savedToken = window.AuthManager ? window.AuthManager.getToken() : safeStorage.get(localStorage, 'linglish_token');
+        const savedGuestFlag = safeStorage.get(localStorage, 'is_guest');
+        console.log('[Guest Login] Token saved successfully:', {
+          tokenSavedCorrectly: savedToken === token || !!savedToken, // Cookie/Memory might differ
+          guestFlagSaved: savedGuestFlag === 'true',
+          tokenPresent: Boolean(savedToken)
+        });
+
+        showToast(tt('auth.toast_guest_mode'), 'info');
+        await postAuthSuccessEvent('guest_login_success', { guest: true });
+
+        setTimeout(() => {
+          window.location.href = getSafeNext(getDefaultAuthNext('guest'));
+        }, 500);
+      } catch (error) {
+        console.error('Guest login error:', error);
+        postPublicAuthEvent('auth_submit_error', { method: 'guest', status: 'network', message: error.message || 'GUEST_LOGIN_FAILED' });
+        showToast(error.message || tt('auth.toast_network_error'), 'error');
+      }
+    });
+
+    // Quick Start taps -> 引导到登录/游客
+    document.querySelectorAll('.quick-btn[data-action="goto-auth"]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        var loginTab = document.getElementById('login-tab');
+        if (loginTab) loginTab.click();
+        var loginEmail = document.getElementById('login-account');
+        if (loginEmail) loginEmail.focus();
+        showToast(tt('auth.toast_quick_start'), 'info');
+        var loginForm = document.getElementById('login-form');
+        if (loginForm) loginForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Check if already logged in
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Run storage health check first
+      const isHealthy = safeStorage.healthCheck();
+      if (!isHealthy) {
+        console.warn('[Auth] Storage health check failed or data was cleaned');
+      }
+
+      if (window.LinglishOAuthBootstrap && window.LinglishOAuthBootstrap.isCookieFlow()) {
+        await window.LinglishOAuthBootstrap.ready;
+        return;
+      }
+
+      // Check for valid authentication.
+      // 必须优先走 AuthManager.getToken():它校验 JWT exp 并自动清过期 token。
+      // 只查三段格式会把过期 token 当有效 → 弹回目标页 → 目标页 401 显示"登录"
+      // → 点登录又被弹回,死循环。
+      const token = (window.AuthManager && typeof AuthManager.getToken === 'function')
+        ? AuthManager.getToken()
+        : (safeStorage.get(localStorage, 'authToken') || safeStorage.get(sessionStorage, 'authToken'));
+      if (token && typeof token === 'string' && token !== 'undefined' && token !== 'null' && token.split('.').length === 3) {
+        // Token valid and unexpired, redirect to main app
+        window.location.href = getSafeNext(getDefaultAuthNext('auth_cached'));
+      } else if (token) {
+        // Token exists but is invalid, clear it
+        console.warn('[Auth] Invalid token detected on page load, clearing...');
+        safeStorage.clearAuth();
+      }
+    });
+
+    // Initialize i18n
+    try {
+      if (typeof i18n !== 'undefined') {
+        i18n.init();
+      }
+    } catch (error) {
+      console.error('i18n initialization error:', error);
+    }
+
+    // ===== Google OAuth Login =====
+    window.loginWithGoogle = function() {
+      console.log('[OAuth] Google login clicked');
+      postPublicAuthEvent('auth_submit_attempt', { method: 'google_oauth' });
+      const env = window.__LINGLISH_ENV__ || {};
+      if (env.enableGoogleOAuth === false) {
+        alert('当前区域暂不支持 Google 登录');
+        return;
+      }
+      const redirectTarget = '/mobile-auth.html' + (location.search || '');
+      window.location.href = `/auth/google?redirect=${encodeURIComponent(redirectTarget)}&mobile=1&flow=cookie_v1`;
+    };
+
+    (function () {
+      const env = window.__LINGLISH_ENV__ || {};
+      const googleBtn = document.getElementById('google-login-btn');
+      if (googleBtn && env.enableGoogleOAuth === false) {
+        googleBtn.style.display = 'none';
+      }
+    })();
+
+    // Handle the cookie_v1 OAuth callback.
+    async function handleOAuthCallback() {
+      const scopedResult = window.LinglishOAuthBootstrap
+        ? await window.LinglishOAuthBootstrap.ready
+        : null;
+      if (scopedResult && scopedResult.access_token) {
+        const isNew = scopedResult.is_new === true;
+        const signedRedirect = scopedResult.redirect_url;
+        showToast(isNew ? '注册成功！' : '登录成功！', 'success');
+        postAuthSuccessEvent(isNew ? 'register_success' : 'login_success', { method: 'google_oauth' });
+        setTimeout(() => {
+          window.location.href = !isNew && signedRedirect
+            ? signedRedirect
+            : getSafeNext(getDefaultAuthNext(isNew ? 'register' : 'login'));
+        }, 500);
+        return;
+      }
+      if (scopedResult && scopedResult.error) {
+        showToast('登录会话未完成，请重试。', 'error');
+        return;
+      }
+
+      // Handle OAuth errors from query params
+      const urlParams = new URLSearchParams(window.location.search);
+      const oauthError = urlParams.get('error');
+      if (oauthError) {
+        const errorBanner = document.getElementById('oauthErrorBanner');
+        const errorMessages = {
+          'oauth_denied': '您取消了 Google 登录授权',
+          'oauth_invalid': '登录参数无效，请重试',
+          'oauth_expired': '登录会话已过期，请重试',
+          'oauth_failed': 'Google 登录失败，请重试'
+        };
+        if (errorBanner) {
+          errorBanner.textContent = errorMessages[oauthError] || '登录失败，请重试';
+          errorBanner.classList.add('show');
+        }
+        // Clear error from URL
+        history.replaceState(null, '', window.location.pathname);
+      }
+    }
+
+    // Call OAuth callback handler on page load
+    handleOAuthCallback();
+  </script>
+  <script src="./js/page-tracker.js"></script>
+</body>
+</html>

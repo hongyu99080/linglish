@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+      // IMPORTANT: This must be the first script to catch extension errors
+      (function(){
+        try {
+          const patterns = [
+            /\"undefined\" is not valid JSON/i,
+            /\"null\" is not valid JSON/i,
+            /Unexpected token 'u'.*JSON/i,
+            /Unexpected token 'n'.*JSON/i,
+            /SyntaxError.*undefined.*JSON/i,
+            /SyntaxError.*null.*JSON/i,
+            /JSON\.parse/i,
+            /updateConfig/i,
+            /initConfig/i,
+            /metadata\.js/i,
+            /content\.js/i,
+          ];
+          const matchMsg = (msg) => {
+            try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+          };
+
+          // Check if error is from extension (check stack trace)
+          const isExtensionError = (error) => {
+            try {
+              if (!error) return false;
+              const stack = error.stack || error.toString();
+              // Check for common extension patterns
+              if (/chrome-extension:\/\//i.test(stack)) return true;
+              if (/moz-extension:\/\//i.test(stack)) return true;
+              if (/safari-extension:\/\//i.test(stack)) return true;
+              if (/webkit-masked-url:\/\//i.test(stack)) return true;
+              if (/metadata\.js/i.test(stack)) return true;
+              if (/content\.js/i.test(stack)) return true;
+              if (/updateConfig|initConfig/i.test(stack)) return true;
+              return false;
+            } catch (_) {
+              return false;
+            }
+          };
+
+          // Override console methods
+          const ce = console.error ? console.error.bind(console) : null;
+          const cw = console.warn ? console.warn.bind(console) : null;
+          if (ce) {
+            console.error = function(...args){
+              const head = args && args.length ? String(args[0]) : '';
+              if (matchMsg(head)) return;
+              // Check if it's an error object
+              if (args[0] instanceof Error && isExtensionError(args[0])) return;
+              return ce(...args);
+            };
+          }
+          if (cw) {
+            console.warn = function(...args){
+              const head = args && args.length ? String(args[0]) : '';
+              if (matchMsg(head)) return;
+              if (args[0] instanceof Error && isExtensionError(args[0])) return;
+              return cw(...args);
+            };
+          }
+
+          // Catch unhandled promise rejections
+          window.addEventListener('unhandledrejection', (ev) => {
+            try {
+              const reason = ev?.reason;
+              // Check message
+              const msg = reason?.message || reason?.toString?.() || reason;
+              if (matchMsg(String(msg||''))) {
+                ev.preventDefault();
+                return;
+              }
+              // Check if from extension
+              if (isExtensionError(reason)) {
+                ev.preventDefault();
+                return;
+              }
+            } catch(_) {}
+          });
+
+          // Catch error events
+          window.addEventListener('error', (ev) => {
+            try {
+              const msg = ev?.message || '';
+              if (matchMsg(String(msg))) {
+                ev.preventDefault();
+                return;
+              }
+              // Check if error is from extension
+              if (ev?.error && isExtensionError(ev.error)) {
+                ev.preventDefault();
+                return;
+              }
+              // Check filename for extension patterns
+              const filename = ev?.filename || '';
+              if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+                ev.preventDefault();
+                return;
+              }
+            } catch(_) {}
+          }, true);
+        } catch (_) {}
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>智能阅读器 - Linglish | AI辅助英文原版阅读</title>
+    <meta name="description" content="Linglish智能阅读器支持PDF和文本文件阅读，提供AI实时翻译、生词标注、智能词汇推荐。边读边学，让英文阅读变得简单高效。适合各个水平的英语学习者。">
+    <meta name="keywords" content="英文阅读器,PDF阅读,AI翻译,生词标注,英语阅读,原版书阅读,English reader,PDF reader">
+    <meta name="author" content="Linglish">
+    <meta name="google-site-verification" content="google5a3b03e17f3c3f2c">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://example.com/reader.html">
+    <meta property="og:title" content="智能阅读器 - Linglish AI辅助英文阅读">
+    <meta property="og:description" content="AI辅助英文原版阅读，实时翻译、生词标注、智能推荐，让阅读学习更高效">
+    <meta property="og:image" content="https://example.com/og-image-reader.jpg">
+    <meta property="og:locale" content="zh_CN">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+    <link rel="alternate icon" href="/favicon.ico">
+    <link rel="alternate icon" href="/linglish-favicon.png?v=1" type="image/png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="twitter:url" content="https://example.com/reader.html">
+    <meta name="twitter:title" content="智能阅读器 - Linglish AI辅助英文阅读">
+    <meta name="twitter:description" content="AI辅助英文原版阅读，实时翻译、生词标注、智能推荐">
+    <meta name="twitter:image" content="https://example.com/og-image-reader.jpg">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://example.com/reader.html">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Linglish智能阅读器",
+      "applicationCategory": "EducationalApplication",
+      "description": "AI辅助英文原版阅读工具",
+      "url": "https://example.com/reader.html",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CNY"
+      },
+      "featureList": [
+        "AI实时翻译",
+        "生词自动标注",
+        "智能词汇推荐",
+        "PDF文件支持",
+        "阅读进度同步"
+      ]
+    }
+    </script>
+
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./auth-helpers.js"></script>
+    <style>
+      .reader-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .book-selector {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .book-selector h2 {
+        margin-top: 0;
+      }
+
+      .book-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .book-card {
+        padding: 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .book-card:hover {
+        border-color: #4a5ff7;
+        background: #f8f9ff;
+      }
+
+      .book-card.active {
+        border-color: #4a5ff7;
+        background: #f0f2ff;
+      }
+
+      .book-card h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+      }
+
+      .book-card .meta {
+        font-size: 0.85rem;
+        color: #666;
+      }
+
+      .book-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .book-card-title {
+        flex: 1;
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .delete-book-btn {
+        padding: 0.25rem 0.5rem;
+        background: #f0f0f0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        color: #666;
+        opacity: 0;
+        transition: all 0.2s;
+      }
+
+      .book-card:hover .delete-book-btn {
+        opacity: 1;
+      }
+
+      .delete-book-btn:hover {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .delete-book-btn:active {
+        background: #ffcdd2;
+      }
+
+      .reading-area {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+      }
+
+      .reading-controls {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+      }
+
+      .reading-controls button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-primary {
+        background: #4a5ff7;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #3a4fd7;
+      }
+
+      .btn-secondary {
+        background: #e0e0e0;
+        color: #333;
+      }
+
+      .btn-secondary:hover {
+        background: #d0d0d0;
+      }
+
+      .article-title {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        color: #333;
+      }
+
+      .article-meta {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      .article-meta span {
+        padding: 0.25rem 0.75rem;
+        background: #f0f0f0;
+        border-radius: 4px;
+      }
+
+      .article-content {
+        line-height: 1.8;
+        font-size: 1.1rem;
+        color: #333;
+        white-space: pre-wrap;
+      }
+
+      .article-content.highlight-reading {
+        user-select: none;
+      }
+
+      .article-content .sentence {
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 3px;
+      }
+
+      .article-content .sentence:hover {
+        background: #fff9e6;
+      }
+
+      .article-content .sentence.playing {
+        background: #ffeb3b;
+        font-weight: 500;
+      }
+
+      .tts-controls {
+        background: #f8f9ff;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-top: 1.5rem;
+      }
+
+      .audio-player {
+        width: 100%;
+        margin-top: 1rem;
+      }
+
+      .language-selector {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .language-selector select {
+        padding: 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+
+      .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 1rem 0;
+      }
+
+      .navigation {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+      }
+
+      .navigation button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #4a5ff7;
+        color: white;
+      }
+
+      .navigation button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <h1>📚 linglish Reader</h1>
+        <p>Interactive Book Reading</p>
+      </div>
+      <div>
+        <a href="./index.html" style="color: white; text-decoration: none; margin-right: 1rem;">← Back to App</a>
+        <span id="user-email" style="color: white; margin-right: 1rem;"></span>
+      </div>
+    </header>
+
+    <main class="reader-container">
+      <!-- Book Selection -->
+      <div class="book-selector" id="book-selector">
+        <h2>📚 Select a Book or Article</h2>
+        <div class="book-list" id="book-list">
+          <div class="loading">Loading books...</div>
+        </div>
+      </div>
+
+      <!-- Reading Area -->
+      <div class="reading-area" id="reading-area" style="display: none;">
+        <div class="reading-controls">
+          <button class="btn-primary" onclick="readAloud()" id="read-btn">
+            🔊 Read Aloud
+          </button>
+          <button class="btn-secondary" onclick="stopReading()" id="stop-btn" disabled>
+            ⏹️ Stop
+          </button>
+          <div class="language-selector">
+            <label>Language:</label>
+            <select id="tts-lang">
+              <option value="en">English</option>
+              <option value="zh-CN">Chinese (Simplified)</option>
+              <option value="zh-TW">Chinese (Traditional)</option>
+            </select>
+          </div>
+          <label>
+            <input type="checkbox" id="slow-speech" />
+            Slow Speed
+          </label>
+        </div>
+
+        <h1 class="article-title" id="article-title"></h1>
+
+        <div class="article-meta" id="article-meta"></div>
+
+        <div class="article-content" id="article-content"></div>
+
+        <div class="tts-controls">
+          <audio id="audio-player" class="audio-player" controls></audio>
+          <div id="tts-status" style="margin-top: 0.5rem; color: #666;"></div>
+        </div>
+
+        <div class="navigation">
+          <button onclick="loadPreviousArticle()" id="prev-btn">← Previous</button>
+          <button onclick="loadNextArticle()" id="next-btn">Next →</button>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const API_BASE = '';
+      let token = localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token')
+        || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      let currentArticles = [];
+      let currentArticleIndex = -1;
+      let currentSentences = [];
+      let isReading = false;
+
+      // Check authentication
+      console.log('[Auth] Token available:', Boolean(token));
+      console.log('[Auth] localStorage available:', typeof(Storage) !== 'undefined');
+
+      if (!token || token === 'null' || token === 'undefined') {
+        console.error('[Auth] No valid token found, redirecting to login');
+        alert('Please login first');
+        window.location.href = './index.html';
+        throw new Error('Authentication required'); // Prevent further execution
+      }
+
+      // Load user info
+      async function loadUserInfo() {
+        try {
+          const response = await fetch(`${API_BASE}/users/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const user = await response.json();
+          document.getElementById('user-email').textContent = user.email;
+        } catch (err) {
+          console.error('Failed to load user:', err);
+        }
+      }
+
+      // Load books/articles
+      async function loadBooks() {
+        try {
+          const response = await fetch(`${API_BASE}/articles`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await response.json();
+
+          currentArticles = data.items || [];
+
+          const bookList = document.getElementById('book-list');
+
+          if (currentArticles.length === 0) {
+            bookList.innerHTML = '<p>No articles available. Please import some content first.</p>';
+            return;
+          }
+
+          bookList.innerHTML = currentArticles
+            .map((article, index) => `
+              <div class="book-card" onclick="event.target.classList.contains('delete-book-btn') ? null : loadArticle(${index})">
+                <div class="book-card-header">
+                  <h3 class="book-card-title">${article.title}</h3>
+                  <button class="delete-book-btn" onclick="event.stopPropagation(); deleteArticle(${article.id}, '${article.title.replace(/'/g, "\\'")}');" title="删除">🗑️</button>
+                </div>
+                <div class="meta">
+                  Level: ${article.level || 'N/A'}<br>
+                  ${article.tags ? article.tags.slice(0, 2).join(', ') : ''}
+                </div>
+              </div>
+            `)
+            .join('');
+
+        } catch (err) {
+          console.error('Failed to load books:', err);
+          document.getElementById('book-list').innerHTML = '<p class="error-message">Failed to load books</p>';
+        }
+      }
+
+      // Delete article
+      async function deleteArticle(articleId, articleTitle) {
+        const confirmMsg = `确定要删除文章"${articleTitle}"吗？\n\n此操作无法撤销，将会删除：\n- 文章内容\n- PDF 文件（如果有）\n- 相关的音频和学习记录`;
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/articles/${articleId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.message || 'Failed to delete article');
+          }
+
+          const result = await response.json();
+          console.log('[DELETE] Article deleted successfully:', result);
+
+          // 检查是否删除的是当前正在阅读的文章
+          const wasCurrentArticle = currentArticleIndex >= 0 &&
+                                    currentArticles[currentArticleIndex]?.id === articleId;
+
+          // 如果删除的是当前正在阅读的文章，隐藏阅读区域
+          if (wasCurrentArticle) {
+            document.getElementById('reading-area').style.display = 'none';
+            currentArticleIndex = -1;
+          }
+
+          // 重新加载书籍列表
+          await loadBooks();
+
+          alert('文章已成功删除');
+        } catch (err) {
+          console.error('[DELETE] Failed to delete article:', err);
+          alert(`删除失败：${err.message}`);
+        }
+      }
+
+      // Load article content
+      function loadArticle(index) {
+        if (index < 0 || index >= currentArticles.length) return;
+
+        currentArticleIndex = index;
+        const article = currentArticles[index];
+
+        // Update UI
+        document.getElementById('article-title').textContent = article.title;
+
+        const meta = document.getElementById('article-meta');
+        meta.innerHTML = `
+          <span>📊 Level: ${article.level || 'N/A'}</span>
+          <span>📝 ${article.word_count || 0} words</span>
+          ${article.tags ? `<span>🏷️ ${article.tags.join(', ')}</span>` : ''}
+        `;
+
+        const content = document.getElementById('article-content');
+        content.textContent = article.content || 'No content available.';
+
+        // Show reading area
+        document.getElementById('reading-area').style.display = 'block';
+
+        // Update navigation buttons
+        document.getElementById('prev-btn').disabled = index === 0;
+        document.getElementById('next-btn').disabled = index === currentArticles.length - 1;
+
+        // Highlight selected book card
+        document.querySelectorAll('.book-card').forEach((card, i) => {
+          card.classList.toggle('active', i === index);
+        });
+
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // Read aloud functionality
+      async function readAloud() {
+        const text = document.getElementById('article-content').textContent;
+        const lang = document.getElementById('tts-lang').value;
+        const slow = document.getElementById('slow-speech').checked;
+
+        if (!text || text.trim().length === 0) {
+          alert('No content to read');
+          return;
+        }
+
+        // Split into chunks (Google TTS limit: 200 chars)
+        const chunks = splitTextIntoChunks(text, 200);
+
+        document.getElementById('read-btn').disabled = true;
+        document.getElementById('stop-btn').disabled = false;
+        document.getElementById('tts-status').textContent = `Reading ${chunks.length} segments...`;
+
+        isReading = true;
+
+        for (let i = 0; i < chunks.length && isReading; i++) {
+          const chunk = chunks[i];
+
+          try {
+            document.getElementById('tts-status').textContent = `Reading segment ${i + 1}/${chunks.length}...`;
+
+            // Respect global voice selection
+            let selectedVoice = 'en-US-AriaNeural';
+            try { selectedVoice = localStorage.getItem('linglish_tts_voice') || selectedVoice; } catch(_) {}
+            const voiceLang = selectedVoice.startsWith('en-') ? 'en' : (selectedVoice.startsWith('zh-') ? 'zh-CN' : lang);
+            const response = await fetch(`${API_BASE}/tts/generate`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ text: chunk, lang: voiceLang, slow, provider: 'edge', voice: 'en-US-AriaNeural' })
+            });
+
+            const { audioUrl } = await response.json();
+
+            const audio = document.getElementById('audio-player');
+            audio.src = audioUrl;
+
+            // Wait for audio to finish
+            await new Promise((resolve, reject) => {
+              audio.onended = resolve;
+              audio.onerror = reject;
+              audio.play();
+            });
+
+          } catch (err) {
+            console.error('TTS error:', err);
+            document.getElementById('tts-status').textContent = `Error: ${err.message}`;
+            break;
+          }
+        }
+
+        document.getElementById('read-btn').disabled = false;
+        document.getElementById('stop-btn').disabled = true;
+        document.getElementById('tts-status').textContent = 'Finished reading.';
+        isReading = false;
+      }
+
+      // Stop reading
+      function stopReading() {
+        isReading = false;
+        const audio = document.getElementById('audio-player');
+        audio.pause();
+        audio.currentTime = 0;
+
+        document.getElementById('read-btn').disabled = false;
+        document.getElementById('stop-btn').disabled = true;
+        document.getElementById('tts-status').textContent = 'Stopped.';
+      }
+
+      // Split text into chunks
+      function splitTextIntoChunks(text, maxLength) {
+        const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+        const chunks = [];
+        let currentChunk = '';
+
+        for (const sentence of sentences) {
+          if ((currentChunk + sentence).length > maxLength) {
+            if (currentChunk) chunks.push(currentChunk.trim());
+            currentChunk = sentence;
+          } else {
+            currentChunk += ' ' + sentence;
+          }
+        }
+
+        if (currentChunk) chunks.push(currentChunk.trim());
+
+        return chunks;
+      }
+
+      // Navigation
+      function loadPreviousArticle() {
+        if (currentArticleIndex > 0) {
+          loadArticle(currentArticleIndex - 1);
+        }
+      }
+
+      function loadNextArticle() {
+        if (currentArticleIndex < currentArticles.length - 1) {
+          loadArticle(currentArticleIndex + 1);
+        }
+      }
+
+      // Keyboard navigation
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') loadPreviousArticle();
+        if (e.key === 'ArrowRight') loadNextArticle();
+        if (e.key === ' ' && e.target.tagName !== 'INPUT') {
+          e.preventDefault();
+          if (isReading) stopReading();
+          else readAloud();
+        }
+      });
+
+      // Initialize
+      loadUserInfo();
+      loadBooks();
+    </script>
+  </body>
+</html>

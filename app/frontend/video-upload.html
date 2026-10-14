@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+          /iosMetadata\.js/i,
+          /Wu\.updateConfig/i,
+          /ul\.updateConfig/i,
+          /cloudflareinsights/i,
+          /beacon\.min\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            const name = error.name || '';
+            const message = error.message || '';
+
+            // Check error message and name
+            if (matchMsg(message) || matchMsg(name)) return true;
+
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/iosMetadata\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            if (/Wu\.|ul\./i.test(stack)) return true;
+            if (/cloudflare|beacon/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev && ev.reason;
+            if (reason && reason.name === 'SyntaxError') {
+              const msg = reason.message || '';
+              if (matchMsg(msg)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                ev.stopImmediatePropagation();
+                return;
+              }
+            }
+            const msg = (reason && reason.message) || (reason && reason.toString && reason.toString()) || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = (ev && ev.message) || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (ev && ev.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            const filename = (ev && ev.filename) || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js|iosMetadata\.js|^VM\d+:/i.test(filename)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>上传新视频 - linglish</title>
+  <link rel="stylesheet" href="./membership.css" />
+  <script src="./i18n.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .upload-container {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      overflow: hidden;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .upload-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .upload-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .upload-header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+      position: relative;
+    }
+
+    .upload-header p {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      position: relative;
+    }
+
+    .back-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateX(-3px);
+    }
+
+    .upload-form {
+      padding: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group input[type="text"],
+    .form-group select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s;
+      background: #f8f9fa;
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      display: block;
+      width: 100%;
+      min-height: 150px;
+      border: 2px dashed #667eea;
+      border-radius: 10px;
+      background: #f8f9ff;
+      cursor: pointer;
+      transition: all 0.3s;
+      overflow: hidden;
+    }
+
+    .file-input-wrapper:hover {
+      border-color: #764ba2;
+      background: #f0f2ff;
+      transform: translateY(-2px);
+    }
+
+    .file-input-wrapper.drag-over {
+      border-color: #4caf50;
+      background: #e8f5e9;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .file-input-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 150px;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .file-input-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .file-input-text {
+      font-size: 1rem;
+      color: #667eea;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .file-input-hint {
+      font-size: 0.85rem;
+      color: #999;
+    }
+
+    .file-selected {
+      background: #e8f5e9;
+      border-color: #4caf50;
+    }
+
+    .file-selected .file-input-icon {
+      color: #4caf50;
+    }
+
+    .file-selected .file-input-text {
+      color: #2e7d32;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .submit-btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4);
+    }
+
+    .submit-btn:active {
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .submit-btn:disabled:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .status-message {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      text-align: center;
+      display: none;
+    }
+
+    .status-message.show {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+
+    .status-message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+
+    .status-message.error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #f44336;
+    }
+
+    .status-message.info {
+      background: #e3f2fd;
+      color: #1565c0;
+      border: 1px solid #2196f3;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-right: 0.5rem;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 标签选择器样式 */
+    .tag-selector {
+      margin-bottom: 1.5rem;
+    }
+
+    .tag-selector-title {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.75rem;
+    }
+
+    .tag-selector-hint {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+
+    .tag-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.5rem 0.8rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      background: #f8f9fa;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9rem;
+      user-select: none;
+    }
+
+    .tag-option:hover {
+      border-color: #667eea;
+      background: #f0f2ff;
+      transform: translateY(-2px);
+    }
+
+    .tag-option.selected {
+      border-color: #667eea;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+
+    .tag-option.default {
+      border-color: #4caf50;
+      background: #e8f5e9;
+    }
+
+    .tag-option.default.selected {
+      background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+      border-color: #4caf50;
+    }
+
+    .tag-option .tag-icon {
+      font-size: 1.1rem;
+    }
+
+    .tag-option .tag-name {
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .upload-container {
+        border-radius: 16px;
+      }
+
+      .upload-header {
+        padding: 1.5rem;
+      }
+
+      .upload-header h1 {
+        font-size: 1.5rem;
+      }
+
+      .upload-icon {
+        font-size: 2.5rem;
+      }
+
+      .upload-form {
+        padding: 1.5rem;
+      }
+
+      .file-input-wrapper,
+      .file-input-label {
+        min-height: 120px;
+        height: 120px;
+      }
+
+      .back-btn {
+        top: 0.75rem;
+        right: 0.75rem;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+      }
+
+      .tag-option {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="upload-container">
+    <div class="upload-header">
+      <a href="#" class="back-btn" id="back-btn" title="返回">
+        <span>← 返回</span>
+      </a>
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 600px;">
+        <div style="flex: 1;">
+          <div class="upload-icon">📤</div>
+          <h1 data-i18n="upload.title">上传新视频</h1>
+          <p data-i18n="upload.description">上传视频文件，系统将自动生成字幕和转录文本</p>
+        </div>
+        <div class="lang-selector" style="position: relative; display: inline-block;">
+          <button type="button" id="lang-btn-upload" style="padding: 0.6rem 1rem; background: white; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+            <span>🌐</span>
+            <span id="current-lang-upload">中文</span>
+          </button>
+          <div id="lang-dropdown-upload" style="position: absolute; top: calc(100% + 0.5rem); right: 0; background: white; border: 2px solid #e0e0e0; border-radius: 10px; padding: 0.5rem; min-width: 130px; display: none; z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div class="lang-option active" data-lang="zh" style="padding: 0.7rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+              <span>🇨🇳</span>
+              <span>中文</span>
+            </div>
+            <div class="lang-option" data-lang="en" style="padding: 0.7rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+              <span>🇺🇸</span>
+              <span>English</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload-form">
+      <form id="upload-form">
+        <div class="form-group">
+          <label for="video-title" data-i18n="upload.title_label">视频标题</label>
+          <input
+            id="video-title"
+            name="title"
+            type="text"
+            placeholder="例如：My listening video"
+            data-i18n="upload.title_placeholder"
+          />
+        </div>
+
+        <div class="form-group">
+          <label data-i18n="upload.file_label">选择视频文件</label>
+          <div class="file-input-wrapper" id="file-input-wrapper">
+            <input
+              id="video-file"
+              name="video"
+              type="file"
+              accept="video/*"
+              multiple
+              required
+            />
+            <div class="file-input-label" id="file-input-label">
+              <div class="file-input-icon">🎬</div>
+              <div class="file-input-text" data-i18n="upload.select_file">点击或拖拽文件到这里</div>
+              <div class="file-input-hint" data-i18n="upload.file_help">支持 MP4, MOV, AVI 等格式</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="video-language">音频语言</label>
+          <select id="video-language" name="language">
+            <option value="en" selected>English (英语)</option>
+            <option value="auto">Auto detect (自动检测)</option>
+          </select>
+        </div>
+
+        <div class="tag-selector">
+          <label class="tag-selector-title">选择视频标签 <span style="color: #ef4444;">*</span></label>
+          <div class="tag-selector-hint">请至少选择一个标签，方便分类和查找</div>
+          <div class="tag-options" id="tag-options">
+            <!-- 标签选项将由JavaScript动态生成 -->
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="collection-name">合集（可选）</label>
+          <input
+            id="collection-name"
+            name="collection_name"
+            type="text"
+            maxlength="120"
+            placeholder="例如：小猪佩奇 / Friends S01"
+          />
+          <div class="tag-selector-hint" style="margin-top: 6px;">同一系列的多集视频可以归到同一个合集里</div>
+        </div>
+
+        <div class="form-group">
+          <label for="difficulty-level">难度级别 <span style="color: #ef4444;">*</span></label>
+          <select id="difficulty-level" name="difficulty_level" required>
+            <option value="">请选择难度级别</option>
+            <option value="beginner">🌱 Beginner - 初级</option>
+            <option value="intermediate">🌿 Intermediate - 中级</option>
+            <option value="advanced">🌳 Advanced - 高级</option>
+          </select>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">
+          <span id="btn-text" data-i18n="upload.submit">上传并转录</span>
+        </button>
+
+        <div class="status-message" id="status-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./membership.js"></script>
+  <script src="./guest-check.js"></script>
+  <script src="./auth-helpers.js"></script>
+  <script src="./video-tag-system.js?v=20251223"></script>
+  <script>
+    // 智能返回导航
+    function setupBackButton() {
+      const backBtn = document.getElementById('back-btn');
+      if (!backBtn) return;
+
+      backBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        // 检测来源页面
+        const referrer = document.referrer || '';
+        const isDesktopReferrer = referrer.includes('index-desktop.html') || referrer.includes('video-reader-desktop.html');
+        const isMobileReferrer = referrer.includes('mobile-') || (referrer.includes('index.html') && !isDesktopReferrer);
+
+        // 如果有历史记录且来自本站，使用 history.back()
+        if (window.history.length > 1 && referrer.includes(window.location.host)) {
+          window.history.back();
+        } else {
+          // 否则根据referrer或设备类型智能跳转
+          if (isMobileReferrer) {
+            window.location.href = './mobile-explore.html';
+          } else if (isDesktopReferrer) {
+            window.location.href = './index-desktop.html';
+          } else {
+            // 默认根据视口宽度判断
+            const isMobileViewport = window.innerWidth <= 768;
+            window.location.href = isMobileViewport ? './mobile-explore.html' : './index-desktop.html';
+          }
+        }
+      });
+    }
+
+    let serverMembershipSynced = false;
+
+    function getFreeMembershipInfo() {
+      const freeFeatures = membershipSystem.getFeaturesByTier('free');
+      return { tier: 'free', name: freeFeatures.name, icon: freeFeatures.icon, ...freeFeatures };
+    }
+
+    function getTrustedMembershipInfo() {
+      const membershipInfo = membershipSystem.getMembershipInfo();
+      if (!serverMembershipSynced && membershipInfo.tier !== 'free') {
+        return getFreeMembershipInfo();
+      }
+      return membershipInfo;
+    }
+
+    async function syncMembershipFromServer() {
+      try {
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token');
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const me = await res.json();
+        const raw = (me.entitlement?.effective_tier || me.membership_type || '').toLowerCase();
+        const tier = raw === 'pro'
+          ? 'vip'
+          : (raw === 'family'
+            ? 'family'
+            : (raw === 'svip'
+              ? 'svip'
+              : (raw === 'vip' ? 'vip' : 'free')));
+        const features = membershipSystem.getFeaturesByTier(tier);
+        membershipSystem.data.tier = tier;
+        membershipSystem.data.features = features;
+        membershipSystem.data.expiryDate = me.membership_expires_at || null;
+        membershipSystem.saveData();
+        serverMembershipSynced = true;
+      } catch (_) {}
+    }
+
+    // ===== 标签选择功能 =====
+    const selectedTags = new Set();
+    let serverTagLoadOk = false;
+
+    // 渲染标签选项
+    function renderTagOptions() {
+      const tagOptionsContainer = document.getElementById('tag-options');
+      if (!tagOptionsContainer || typeof VideoTagSystem === 'undefined') return;
+
+      const tagSystem = window.VideoTagSystem;
+
+      // 优先使用服务器返回的标签（与网络上传一致），失败则回退到预设标签
+      const allTags = (() => {
+        try {
+          const globals = Array.isArray(tagSystem?.serverCache?.globalTags) ? tagSystem.serverCache.globalTags.map(t => ({ ...t, scope: 'global' })) : [];
+          const personals = (typeof tagSystem.getCustomTags === 'function') ? tagSystem.getCustomTags() : [];
+          const merged = [...globals, ...personals];
+          if (merged.length) return merged;
+        } catch (_) {}
+        return tagSystem.getVisibleTags ? tagSystem.getVisibleTags() : tagSystem.getAllTags();
+      })();
+
+      tagOptionsContainer.innerHTML = '';
+      selectedTags.clear();
+
+      allTags.forEach(tag => {
+        const tagOption = document.createElement('div');
+        tagOption.className = 'tag-option';
+        tagOption.dataset.tagId = tag.id;
+
+        // "我的"标签默认选中（兼容 name='我的'）
+        const isMyTag = tag.name === '我的';
+        if (isMyTag) {
+          tagOption.classList.add('default', 'selected');
+          selectedTags.add(String(tag.id));
+        }
+
+        // 个人标签添加特殊样式
+        const isPersonal = (tag.scope || '').startsWith('user');
+        const scopeLabel = isPersonal ? ' <span style="font-size:0.7em;color:#2dd4bf;">(我的)</span>' : '';
+
+        tagOption.innerHTML = `
+          <span class="tag-icon">${tag.icon || '🏷️'}</span>
+          <span class="tag-name">${tag.displayName || tag.name}${scopeLabel}</span>
+        `;
+
+        // 点击切换选中状态
+        tagOption.addEventListener('click', () => {
+          const tagId = String(tag.id);
+          if (selectedTags.has(tagId)) {
+            selectedTags.delete(tagId);
+            tagOption.classList.remove('selected');
+          } else {
+            selectedTags.add(tagId);
+            tagOption.classList.add('selected');
+          }
+        });
+
+        tagOptionsContainer.appendChild(tagOption);
+      });
+    }
+
+    // 获取选中的标签ID数组
+    function getSelectedTagIds() {
+      return Array.from(selectedTags);
+    }
+
+    // 保存视频标签
+    async function saveVideoTags(videoId) {
+      if (!videoId || typeof VideoTagSystem === 'undefined') return;
+
+      const tagSystem = window.VideoTagSystem;
+      const tagIds = getSelectedTagIds();
+
+      // 设置视频的所有标签
+      tagSystem.setVideoTags(videoId, tagIds);
+      console.log(`[视频上传] 已为视频 ${videoId} 添加标签:`, tagIds);
+
+      // 同步到服务器（用于其它页面/设备展示与筛选）
+      try {
+        if (!token) return;
+        const globalTagIds = [];
+        const userTagIds = [];
+        tagIds.forEach((tid) => {
+          const sid = String(tid);
+          if (sid.startsWith('u:')) {
+            const num = Number(sid.slice(2));
+            if (Number.isInteger(num) && num > 0) userTagIds.push(num);
+            return;
+          }
+          if (/^\d+$/.test(sid)) {
+            globalTagIds.push(Number(sid));
+            return;
+          }
+          const resolved = (typeof tagSystem.getNumericId === 'function') ? tagSystem.getNumericId(sid) : null;
+          if (Number.isInteger(resolved) && resolved > 0) globalTagIds.push(resolved);
+        });
+
+        const uniq = (arr) => Array.from(new Set(arr));
+        const payload = {
+          global_tag_ids: uniq(globalTagIds),
+          user_tag_ids: uniq(userTagIds),
+        };
+
+        const base = API_BASE || '';
+        const url = base ? `${base}/videos/${encodeURIComponent(String(videoId))}/tags` : `/videos/${encodeURIComponent(String(videoId))}/tags`;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) {
+          const text = await resp.text().catch(() => '');
+          console.warn('[视频上传] 同步标签到服务器失败:', resp.status, text);
+        } else {
+          console.log('[视频上传] 标签已同步到服务器', payload);
+        }
+      } catch (e) {
+        console.warn('[视频上传] 同步标签到服务器异常:', e);
+      }
+    }
+
+    // 初始化返回按钮
+    setupBackButton();
+
+    // 初始化标签选择器（从服务器加载全局标签 + 个人标签）
+    async function initTagSystem() {
+      if (typeof VideoTagSystem === 'undefined') {
+        console.warn('[视频上传] VideoTagSystem 未加载');
+        return;
+      }
+
+      const tagSystem = window.VideoTagSystem;
+      const token = localStorage.getItem('linglish_token');
+
+      // 从服务器加载标签
+      if (token) {
+        try {
+          serverTagLoadOk = await tagSystem.loadFromServer('', token);
+          console.log('[视频上传] 标签已从服务器同步');
+        } catch (e) {
+          console.warn('[视频上传] 从服务器加载标签失败:', e);
+          serverTagLoadOk = false;
+        }
+      }
+
+      renderTagOptions();
+    }
+
+    initTagSystem();
+
+    // 初始化多语言
+    if (typeof i18n !== 'undefined') {
+      i18n.init();
+
+      // 设置语言选择器
+      const currentLangEl = document.getElementById('current-lang-upload');
+      const langBtn = document.getElementById('lang-btn-upload');
+      const langDropdown = document.getElementById('lang-dropdown-upload');
+      const langNames = { zh: '中文', en: 'English' };
+
+      if (currentLangEl) {
+        currentLangEl.textContent = langNames[i18n.currentLang] || '中文';
+      }
+
+      langBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (langDropdown) {
+          langDropdown.style.display = langDropdown.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+
+      document.addEventListener('click', () => {
+        if (langDropdown) langDropdown.style.display = 'none';
+      });
+
+      langDropdown?.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      document.querySelectorAll('#lang-dropdown-upload .lang-option').forEach(option => {
+        option.addEventListener('click', () => {
+          const lang = option.dataset.lang;
+          if (lang) {
+            i18n.setLang(lang);
+            if (currentLangEl) {
+              currentLangEl.textContent = langNames[lang] || lang;
+            }
+            document.querySelectorAll('#lang-dropdown-upload .lang-option').forEach(opt => {
+              const isActive = opt.dataset.lang === lang;
+              opt.classList.toggle('active', isActive);
+              opt.style.background = isActive ? '#0ea5e9' : '';
+              opt.style.color = isActive ? 'white' : '';
+            });
+            if (langDropdown) langDropdown.style.display = 'none';
+          }
+        });
+      });
+
+      document.querySelectorAll('#lang-dropdown-upload .lang-option').forEach(opt => {
+        const isActive = opt.dataset.lang === i18n.currentLang;
+        opt.classList.toggle('active', isActive);
+        opt.style.background = isActive ? '#0ea5e9' : '';
+        opt.style.color = isActive ? 'white' : '';
+      });
+    }
+
+    const API_BASE = (() => {
+      const { protocol, hostname, port } = window.location;
+      if (protocol === 'file:') {
+        return 'http://localhost:8000';
+      }
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        const resolvedPort = port || '8000';
+        return `${protocol}//${hostname}:${resolvedPort}`;
+      }
+      return '';
+    })();
+    // Allow overriding upload origin to bypass CDN/proxy caps (set localStorage 'linglish_upload_base' or window.UPLOAD_API_BASE)
+    const UPLOAD_API_BASE = (() => {
+      try {
+        const override = window.UPLOAD_API_BASE || localStorage.getItem('linglish_upload_base');
+        if (override && /^https?:\/\//i.test(override)) return override.replace(/\/$/, '');
+      } catch (_) {}
+      return API_BASE;
+    })();
+
+    // 获取token（桌面版使用 linglish_token，移动版使用 authToken）
+    const token = localStorage.getItem('linglish_token') ||
+                  sessionStorage.getItem('linglish_token') ||
+                  localStorage.getItem('authToken') ||
+                  sessionStorage.getItem('authToken');
+
+    // 检查是否为游客
+    const isGuest = localStorage.getItem('is_guest') === 'true' ||
+                    sessionStorage.getItem('is_guest') === 'true' ||
+                    sessionStorage.getItem('isGuest') === 'true';
+
+    // 游客不能上传视频
+    if (isGuest) {
+      const message = (typeof i18n !== 'undefined' && i18n.currentLang === 'en')
+        ? 'Guest users cannot upload videos. Please register for a full account.'
+        : '游客模式下无法上传视频\n\n请注册正式账号以使用上传功能';
+      alert(message);
+      // 根据视口宽度或来源页面判断应该跳转到移动端还是桌面端
+      const referrer = document.referrer || '';
+      const isMobileReferrer = referrer.includes('mobile-');
+      const isMobileViewport = window.innerWidth <= 768;
+      const redirectUrl = (isMobileReferrer || isMobileViewport) ? './mobile-auth.html' : './index-desktop.html';
+      window.location.href = redirectUrl;
+    }
+
+    // 检查登录状态
+    if (!token) {
+      alert('请先登录');
+      window.location.href = './index.html';
+    }
+
+    const uploadForm = document.getElementById('upload-form');
+    const statusMessage = document.getElementById('status-message');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const fileInput = document.getElementById('video-file');
+    const fileInputWrapper = document.getElementById('file-input-wrapper');
+    const fileInputLabel = document.getElementById('file-input-label');
+
+    // 显示会员限制信息
+    async function showMembershipLimits() {
+      const membershipInfo = getTrustedMembershipInfo();
+
+      // 获取当前视频数量（按用户）
+      currentVideoCount = 0;
+      try {
+        // 当前用户
+        let me = null;
+        try {
+          const meRes = await fetch(`${API_BASE}/users/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (meRes.ok) me = await meRes.json();
+        } catch(_) {}
+        const myId = me?.id ?? me?.user_id ?? null;
+        const myEmail = me?.email || null;
+
+        // 仅本人视频（若接口支持），否则前端过滤
+        let response = await fetch(`${API_BASE}/video-resources?lite=1&mine=1`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!response.ok) {
+          response = await fetch(`${API_BASE}/video-resources?lite=1`, { headers: { 'Authorization': `Bearer ${token}` } });
+        }
+        const data = await response.json().catch(()=>({ items: [] }));
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const ownerKeys = ['user_id','owner_user_id','owner_id','uid','userId','ownerId'];
+        const belongsToMe = (item) => {
+          try {
+            if (myId != null) {
+              for (const k of ownerKeys) if (Number(item?.[k]) === Number(myId)) return true;
+              if (Number(item?.user?.id) === Number(myId)) return true;
+              if (Number(item?.owner?.id) === Number(myId)) return true;
+            }
+            if (myEmail) {
+              const e = String(item?.user?.email || item?.owner?.email || item?.email || '').toLowerCase();
+              if (e && e === String(myEmail).toLowerCase()) return true;
+            }
+          } catch(_) {}
+          // 如果使用了 mine=1，默认就是本人
+          return String(response.url||'').includes('mine=1');
+        };
+        currentVideoCount = items.filter(belongsToMe).length;
+      } catch (err) {
+        console.error('Failed to load video count:', err);
+      }
+
+      // 在表单上方插入限制信息
+      const t = (key) => typeof i18n !== 'undefined' ? i18n.t(key) : key;
+      const limitsDiv = document.createElement('div');
+      limitsDiv.className = 'upload-limits';
+      const tierName = membershipInfo.name || (membershipInfo.tier || '').toUpperCase() || t('upload.free_member');
+      limitsDiv.innerHTML = `
+        <div class="limit-title">📊 ${tierName} ${t('upload.free_limit')}</div>
+        <div class="limit-items">
+          <div class="limit-item">
+            <span class="limit-label">${t('upload.uploaded_videos')}</span>
+            <span class="limit-value ${currentVideoCount >= membershipInfo.maxVideos ? 'warning' : ''}">
+              ${currentVideoCount} / ${membershipInfo.maxVideos === Infinity ? '∞' : membershipInfo.maxVideos}
+            </span>
+          </div>
+          <div class="limit-item">
+            <span class="limit-label">${t('upload.video_size')}</span>
+            <span class="limit-value">${t('upload.max')} ${membershipInfo.maxVideoSize === Infinity ? '∞' : membershipInfo.maxVideoSize + 'MB'}</span>
+          </div>
+          <div class="limit-item">
+            <span class="limit-label">${t('upload.storage_time')}</span>
+            <span class="limit-value">${membershipInfo.videoDuration === Infinity ? t('upload.forever') : membershipInfo.videoDuration + t('upload.days')}</span>
+          </div>
+        </div>
+        <div class="limit-progress">
+          <div class="limit-bar">
+            <div class="limit-fill ${currentVideoCount >= membershipInfo.maxVideos ? 'danger' : (currentVideoCount >= membershipInfo.maxVideos * 0.8 ? 'warning' : '')}" style="width: ${Math.min(100, (currentVideoCount / membershipInfo.maxVideos) * 100)}%;"></div>
+          </div>
+        </div>
+      `;
+
+      const formContainer = document.querySelector('.upload-form');
+      formContainer.insertBefore(limitsDiv, uploadForm);
+
+      // 如果已达上限，显示升级按钮
+      if (currentVideoCount >= membershipInfo.maxVideos) {
+        const promptMsg = (typeof i18n !== 'undefined' && i18n.currentLang === 'en')
+          ? 'Upload limit reached. Upgrade to VIP for more space!'
+          : '已达到上传数量上限，升级VIP解锁更多空间！';
+        const btnTextI18n = (typeof i18n !== 'undefined') ? i18n.t('upload.upgrade_vip') : '升级 VIP';
+        const upgradeDiv = document.createElement('div');
+        upgradeDiv.innerHTML = `
+          <div style="text-align: center; margin: 1rem 0;">
+            <button class="upgrade-btn primary" onclick="window.location.href = (window.i18n && i18n.currentLang && i18n.currentLang.startsWith('en') ? './membership-en.html?from=upload' : './membership.html?from=upload')">
+              ⬆️ ${btnTextI18n}
+            </button>
+          </div>
+        `;
+        limitsDiv.appendChild(upgradeDiv);
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+      }
+    }
+
+    // 同步服务器会员状态后再展示限制
+    syncMembershipFromServer().then(() => showMembershipLimits());
+
+    // 全局计数（供提交/校验使用）
+    let currentVideoCount = 0;
+
+    // 文件选择处理
+    fileInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) {
+        fileInputWrapper.classList.remove('file-selected');
+        fileInputLabel.innerHTML = `
+          <div class="file-input-icon">🎬</div>
+          <div class="file-input-text">点击或拖拽文件到这里</div>
+          <div class="file-input-hint">支持 MP4, MOV, AVI 等格式</div>
+        `;
+        return;
+      }
+
+      // 检查会员限制
+      const membershipInfo = getTrustedMembershipInfo();
+      const maxSizeMB = membershipInfo.maxVideoSize;
+      const oversize = files.find(f => {
+        const fileSizeMB = f.size / (1024 * 1024);
+        return maxSizeMB !== Infinity && fileSizeMB > maxSizeMB;
+      });
+
+      if (oversize) {
+        const fileSizeMB = oversize.size / (1024 * 1024);
+        showStatus(`文件太大！${membershipInfo.name}单个视频最大${maxSizeMB}MB`, 'error');
+        membershipSystem.showUpgradePrompt(`文件大小${fileSizeMB.toFixed(1)}MB超出限制，升级可提升容量！`);
+        fileInput.value = '';
+        fileInputWrapper.classList.remove('file-selected');
+        fileInputLabel.innerHTML = `
+          <div class="file-input-icon">🎬</div>
+          <div class="file-input-text">点击或拖拽文件到这里</div>
+          <div class="file-input-hint">支持 MP4, MOV, AVI 等格式</div>
+        `;
+        return;
+      }
+
+      fileInputWrapper.classList.add('file-selected');
+      if (files.length === 1) {
+        const file = files[0];
+        const fileSizeMB = file.size / (1024 * 1024);
+        fileInputLabel.innerHTML = `
+          <div class="file-input-icon">✓</div>
+          <div class="file-input-text">${file.name}</div>
+          <div class="file-input-hint">${fileSizeMB.toFixed(2)} MB</div>
+        `;
+      } else {
+        const totalMB = files.reduce((sum, f) => sum + f.size, 0) / (1024 * 1024);
+        fileInputLabel.innerHTML = `
+          <div class="file-input-icon">✓</div>
+          <div class="file-input-text">已选择 ${files.length} 个文件</div>
+          <div class="file-input-hint">合计 ${totalMB.toFixed(2)} MB</div>
+        `;
+      }
+    });
+
+    // 拖拽上传
+    fileInputWrapper.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      fileInputWrapper.classList.add('drag-over');
+    });
+
+    fileInputWrapper.addEventListener('dragleave', () => {
+      fileInputWrapper.classList.remove('drag-over');
+    });
+
+    fileInputWrapper.addEventListener('drop', (e) => {
+      e.preventDefault();
+      fileInputWrapper.classList.remove('drag-over');
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        fileInput.files = files;
+        const event = new Event('change');
+        fileInput.dispatchEvent(event);
+      }
+    });
+
+    // 显示状态消息
+    function showStatus(message, type = 'info') {
+      statusMessage.textContent = message;
+      statusMessage.className = `status-message show ${type}`;
+      setTimeout(() => {
+        statusMessage.classList.remove('show');
+      }, 5000);
+    }
+
+    // XHR-based uploader with progress + stall detection.
+    // Bare fetch() gives no progress on mobile/tablet (a frozen spinner during a
+    // slow upload is indistinguishable from a dead connection), and no way to
+    // abort a stalled connection. XHR fixes both. Returns a fetch-Response-like
+    // object: { status, ok, contentType, text() } so downstream parsing is unchanged.
+    // A stall is "no bytes moved for STALL_MS" — this catches dropped connections
+    // without killing legitimately slow-but-progressing large uploads.
+    function xhrUpload(url, formData, token, onProgress) {
+      const STALL_MS = 60000; // abort if upload makes no progress for 60s
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        let lastMovement = Date.now();
+        const stallTimer = setInterval(() => {
+          if (Date.now() - lastMovement > STALL_MS) {
+            clearInterval(stallTimer);
+            try { xhr.abort(); } catch (_) {}
+          }
+        }, 5000);
+        const done = () => clearInterval(stallTimer);
+
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+        xhr.upload.onprogress = (e) => {
+          lastMovement = Date.now();
+          if (e.lengthComputable && typeof onProgress === 'function') {
+            onProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          done();
+          const contentType = xhr.getResponseHeader('content-type') || '';
+          const text = xhr.responseText || '';
+          resolve({
+            status: xhr.status,
+            ok: xhr.status >= 200 && xhr.status < 300,
+            contentType,
+            text: () => text,
+          });
+        };
+        xhr.onerror = () => { done(); const err = new Error('NETWORK_ERROR'); err.code = 'NETWORK_ERROR'; reject(err); };
+        xhr.onabort = () => { done(); const err = new Error('UPLOAD_STALLED'); err.code = 'UPLOAD_STALLED'; reject(err); };
+        xhr.ontimeout = () => { done(); const err = new Error('UPLOAD_STALLED'); err.code = 'UPLOAD_STALLED'; reject(err); };
+
+        xhr.send(formData);
+      });
+    }
+
+    // 获取选中的标签名称（而不是ID）
+    function getSelectedTagNames() {
+      if (typeof VideoTagSystem === 'undefined') return [];
+      const tagSystem = window.VideoTagSystem;
+      const tagIds = getSelectedTagIds();
+      return tagIds.map(tagId => {
+        const tag = tagSystem.getTagById(tagId);
+        return tag ? tag.name : null;
+      }).filter(Boolean);
+    }
+
+    // 表单提交处理
+    uploadForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const t = (key) => typeof i18n !== 'undefined' ? i18n.t(key) : key;
+      const files = Array.from(fileInput.files || []);
+      if (!files.length) { showStatus(t('upload.select_file_error'), 'error'); return; }
+
+      const tagNames = getSelectedTagNames();
+      const difficultyLevel = document.getElementById('difficulty-level')?.value;
+
+      // 验证：必须选择难度级别
+      if (!difficultyLevel) {
+        showStatus('请选择视频难度级别', 'error');
+        document.getElementById('difficulty-level')?.focus();
+        return;
+      }
+
+      // 验证：必须至少选择一个标签
+      if (!tagNames.length) {
+        showStatus('请至少选择一个视频标签', 'error');
+        document.getElementById('tag-options')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const membershipInfo = getTrustedMembershipInfo();
+
+      // 数量限制
+      // 防御：如果 currentVideoCount 尚未加载，按 0 计算
+      let slots = membershipInfo.maxVideos - (typeof currentVideoCount === 'number' ? currentVideoCount : 0);
+      if (slots <= 0) {
+        showStatus(`已达上限：${membershipInfo.name}最多上传${membershipInfo.maxVideos}个视频`, 'error');
+        return;
+      }
+      if (files.length > slots) {
+        showStatus(`只能再上传 ${slots} 个视频，本次仅处理前 ${slots} 个`, 'warn');
+        files.splice(slots);
+      }
+
+      // 单文件大小预检
+      const oversize = files.find(f => {
+        const sizeMB = f.size / (1024 * 1024);
+        return membershipInfo.maxVideoSize !== Infinity && sizeMB > membershipInfo.maxVideoSize;
+      });
+      if (oversize) {
+        showStatus(`文件太大！${membershipInfo.name}单个视频最大${membershipInfo.maxVideoSize}MB`, 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      btnText.innerHTML = `<span class="loading-spinner"></span>${t('upload.uploading')}`;
+
+      const uploadedIds = [];
+      try {
+        for (let idx = 0; idx < files.length; idx++) {
+          const file = files[idx];
+          const formData = new FormData(uploadForm);
+          formData.set('video', file);
+          // 批量时自动用文件名；单个时为空也允许
+          if ((!formData.get('title') || String(formData.get('title')).trim() === '') ) {
+            formData.set('title', file.name.replace(/\.[^.]+$/, '') || `视频${idx + 1}`);
+          }
+          if (tagNames.length > 0) formData.set('tags', JSON.stringify(tagNames));
+          if (difficultyLevel) formData.set('difficulty_level', difficultyLevel);
+
+          // Multi-file batch: show which file. Single file: no prefix.
+          const filePrefix = files.length > 1 ? `(${idx + 1}/${files.length}) ` : '';
+          const onProgress = (pct) => {
+            btnText.innerHTML = `<span class="loading-spinner"></span>${filePrefix}${t('upload.uploading')} ${pct}%`;
+          };
+
+          // One automatic retry on transient network failure / stall. A real
+          // dropped connection or a brief mobile-radio glitch shouldn't require
+          // the user to re-pick the file and start over.
+          let response;
+          let attempt = 0;
+          while (true) {
+            try {
+              response = await xhrUpload(`${UPLOAD_API_BASE}/video-resources/upload`, formData, token, onProgress);
+              break;
+            } catch (netErr) {
+              attempt++;
+              if (attempt >= 2) {
+                const lang = (typeof i18n !== 'undefined' ? i18n.currentLang : (navigator.language || 'zh')).toLowerCase();
+                const isEn = lang.startsWith('en');
+                throw new Error(netErr.code === 'UPLOAD_STALLED'
+                  ? (isEn ? 'Upload stalled — please check your connection and retry' : '上传停滞，请检查网络后重试')
+                  : (isEn ? 'Network error during upload — please retry' : '网络中断，上传失败，请重试'));
+              }
+              onProgress(0);
+              btnText.innerHTML = `<span class="loading-spinner"></span>${filePrefix}${t('upload.uploading')}…`;
+              await new Promise(r => setTimeout(r, 1500 * attempt));
+            }
+          }
+
+          if (response.status === 401) throw new Error(t('upload.login_expired'));
+
+          let result;
+          const ct = response.contentType || '';
+          const rawText = response.text();
+          if (ct.includes('application/json')) {
+            try { result = JSON.parse(rawText); } catch (_) { result = { message: rawText }; }
+          } else {
+            try { result = JSON.parse(rawText); } catch (_) { result = { message: rawText && rawText.slice ? rawText.slice(0, 200) : 'Unexpected response' }; }
+          }
+
+          if (!response.ok) {
+            console.warn('[Upload] HTTP error', response.status, 'payload:', result);
+            const tx = (key, zh, en) => {
+              try { if (typeof i18n !== 'undefined') { const txt = i18n.t(key); if (txt && txt !== key) return txt; } } catch (_) {}
+              const lang = (typeof i18n !== 'undefined' ? i18n.currentLang : (navigator.language || 'zh')).toLowerCase();
+              return lang.startsWith('en') ? (en || key) : (zh || key);
+            };
+            let msg = result.message || '';
+            const isHtml = (ct).includes('text/html') || /^\s*<!DOCTYPE/i.test(msg);
+            if (response.status === 429) {
+              const retryAfter = Number(result.retryAfter) || 0;
+              const mins = retryAfter > 0 ? Math.ceil(retryAfter / 60) : 0;
+              msg = mins > 0
+                ? tx('upload.rate_limited', `上传太频繁，请约 ${mins} 分钟后再试`, `Too many uploads. Please try again in about ${mins} min`)
+                : tx('upload.rate_limited_generic', '上传太频繁，请稍后再试', 'Too many uploads. Please wait a moment and retry');
+            } else if (response.status === 413) {
+              if (msg === 'PROXY_UPLOAD_LIMIT') msg = tx('upload.proxy_limit', '上传被中断：可能超过服务器网关限制，请尝试更小的文件或压缩后再试', 'Upload interrupted by gateway size limit. Try a smaller file or compress it');
+              else msg = tx('upload.file_too_large', '文件过大，超出服务器限制', 'File too large (server limit)');
+            } else if (response.status === 408) {
+              msg = tx('upload.aborted', '上传中断，请检查网络后重试', 'Upload aborted. Please retry');
+            } else if (response.status === 403) {
+              const isBan = /ban/i.test(msg || '');
+              msg = isBan
+                ? tx('auth.banned', '账户已封禁，请联系管理员', 'Your account has been banned. Please contact support')
+                : tx('auth.forbidden', '权限不足或登录状态失效，请重新登录后再试', 'Permission denied or session expired. Please re-login.');
+              if (isBan) {
+                alert(msg);
+                try { localStorage.removeItem('linglish_token'); sessionStorage.removeItem('linglish_token'); } catch (_) {}
+                setTimeout(() => { window.location.href = './index.html'; }, 800);
+              }
+            } else if (response.status >= 500 || isHtml) {
+              msg = tx('upload.proxy_limit', '上传被中断：可能超过服务器网关限制，请尝试更小的文件或压缩后再试', 'Upload interrupted by gateway size limit. Try a smaller file or compress it');
+            }
+            throw new Error(msg || tx('upload.upload_failed', '上传失败', 'Upload failed'));
+          }
+
+          const vid = result?.video?.id || result?.id;
+          if (vid) {
+            const videoMetadata = {
+              title: formData.get('title'),
+              size: file.size,
+              duration: 0,
+              language: formData.get('language')
+            };
+            videoManagementSystem.addVideo(vid, videoMetadata);
+            await saveVideoTags(vid);
+            uploadedIds.push(vid);
+          }
+          currentVideoCount += 1;
+        }
+
+        uploadForm.reset();
+        fileInputWrapper.classList.remove('file-selected');
+        fileInputLabel.innerHTML = `
+          <div class="file-input-icon">🎬</div>
+          <div class="file-input-text">点击或拖拽文件到这里</div>
+          <div class="file-input-hint">支持 MP4, MOV, AVI 等格式</div>
+        `;
+
+        if (uploadedIds.length === 1) {
+          const targetId = String(uploadedIds[0]);
+          setTimeout(() => {
+            const url = targetId ? `./video-reader.html?videoId=${encodeURIComponent(targetId)}` : './video-reader.html';
+            window.location.href = url;
+          }, 1200);
+        } else if (uploadedIds.length > 1) {
+          showStatus('批量上传完成，正在刷新列表', 'success');
+          setTimeout(() => { window.location.href = './index-desktop.html'; }, 1000);
+        }
+      } catch (err) {
+        console.error('Upload failed:', err);
+        showStatus(err.message || '上传失败，请重试', 'error');
+        // 如果是权限/禁用错误，尝试刷新登录状态
+        if (/banned|permission denied|forbidden/i.test(String(err && err.message))) {
+          try { localStorage.removeItem('linglish_token'); sessionStorage.removeItem('linglish_token'); } catch (_) {}
+        }
+      } finally {
+        submitBtn.disabled = false;
+        btnText.textContent = '上传并转录';
+      }
+    });
+  </script>
+  <script src="./js/page-tracker.js"></script>
+</body>
+</html>

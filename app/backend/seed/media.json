@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "article_id": 1,
+    "kind": "audio",
+    "url": "/static/audio/sample-shadowing.wav",
+    "duration_sec": 42
+  },
+  {
+    "id": 2,
+    "article_id": 2,
+    "kind": "audio",
+    "url": "/static/audio/sample-shadowing.wav",
+    "duration_sec": 68
+  }
+]

@@ -1,0 +1,3031 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日训练 - Linglish</title>
+  <meta name="description" content="Linglish 今日训练工作台：按你的等级安排真实视频、跟读、AI反馈和词汇复习。">
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="./styles/tokens.css?v=1">
+  <script src="./js/auth-manager.js?v=1"></script>
+  <script src="./js/visitor-context.js?v=1"></script>
+  <script src="./js/first-lesson-entry.js?v=1"></script>
+  <script src="./js/video-reader/first-lesson-progress.js?v=20260822"></script>
+  <script src="./js/video-reader/first-lesson-goal.js?v=20260922"></script>
+  <link rel="stylesheet" href="./styles/first-lesson-goal.css?v=20260922">
+  <script src="./js/page-tracker.js?v=1"></script>
+  <script src="./js/video-recommendation-client.js?v=20260925"></script>
+  <style>
+    :root {
+      --ink: var(--lx-ink-900, #0f172a);
+      --muted: var(--lx-ink-500, #64748b);
+      --paper: var(--lx-paper, #f8fafc);
+      --surface: var(--lx-surface, #ffffff);
+      --line: var(--lx-line, #e2e8f0);
+      --teal: var(--lx-primary, #0f766e);
+      --teal-strong: var(--lx-primary-strong, #0b5f59);
+      --blue: var(--lx-sky-strong, #0284c7);
+      --amber: var(--lx-amber, #b45309);
+      --rose: var(--lx-rose, #be123c);
+      --green: var(--lx-success, #10b981);
+      --shadow: var(--lx-shadow-lg, 0 18px 46px rgba(15, 23, 42, 0.1));
+      --radius: var(--lx-radius-md, 12px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 420px at 85% -80px, rgba(45, 212, 191, 0.14), transparent 70%),
+        linear-gradient(180deg, rgba(15, 118, 110, 0.08), rgba(248, 250, 252, 0) 360px),
+        var(--paper);
+      font-family: var(--lx-font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      padding: 0 clamp(18px, 5vw, 64px);
+      background: rgba(255, 255, 255, 0.9);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 850;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: var(--teal);
+      font-weight: 900;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-link {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .nav-link:hover {
+      color: var(--teal-strong);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: var(--lx-radius-pill, 999px);
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn[aria-disabled="true"] {
+      cursor: wait;
+      opacity: 0.76;
+      pointer-events: none;
+      transform: none;
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--lx-grad-brand, var(--teal));
+      box-shadow: 0 14px 30px rgba(15, 118, 110, 0.22);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 16px 34px rgba(15, 118, 110, 0.32);
+    }
+
+    .btn-secondary {
+      color: var(--ink);
+      background: #ffffff;
+      border-color: var(--line);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--teal);
+      color: var(--teal-strong);
+    }
+
+    .btn-blue {
+      color: #ffffff;
+      background: var(--blue);
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: clamp(24px, 4vw, 48px) 0 56px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: clamp(22px, 4vw, 42px);
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .hero-main,
+    .hero-panel,
+    .section,
+    .task-card,
+    .word-card,
+    .video-card,
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--lx-radius-lg, 16px);
+      background: var(--lx-grad-card, var(--surface));
+      box-shadow: var(--lx-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
+    }
+
+    .hero-main {
+      padding: clamp(24px, 4vw, 38px);
+      border-radius: var(--lx-radius-xl, 24px);
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      color: var(--teal-strong);
+      font-size: 13px;
+      font-weight: 850;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 12px 0 14px;
+      font-family: var(--lx-font-display, Georgia, serif);
+      font-weight: 700;
+      font-size: clamp(36px, 5.5vw, 58px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 19px);
+      line-height: 1.68;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .learning-choices { display: grid; gap: 10px; margin-top: 22px; }
+    .learning-choice {
+      justify-content: space-between;
+      min-height: 72px;
+      padding: 14px 18px;
+      border-radius: var(--lx-radius-lg, 16px);
+    }
+    .learning-choice-copy { display: grid; gap: 4px; }
+    .learning-choice strong { font-size: 20px; }
+    .learning-choice small { font-size: 13px; font-weight: 500; }
+    .learning-choice:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+    .learning-entry-more { margin: 16px 0 0; font-size: 14px; color: var(--muted); }
+    .learning-entry-more a { color: var(--teal-strong); text-decoration: underline; text-underline-offset: 3px; }
+
+    .first-lesson {
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .first-lesson.completed {
+      padding: 16px;
+      border: 1px solid rgba(22, 163, 74, 0.18);
+      border-radius: 8px;
+      background: #f0fdf4;
+    }
+
+    .first-lesson-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .first-lesson-title {
+      margin: 0;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 850;
+    }
+
+    .first-lesson-copy {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .first-lesson-time {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 78px;
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: var(--teal-strong);
+      background: rgba(15, 118, 110, 0.1);
+      font-size: 13px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .first-lesson.completed .first-lesson-time {
+      color: #166534;
+      background: rgba(22, 163, 74, 0.12);
+    }
+
+    .first-lesson-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .first-lesson-step {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .first-lesson-step strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .first-lesson-action {
+      margin-top: 16px;
+    }
+
+    .hero-panel {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .level-box {
+      padding: 18px;
+      border-radius: var(--lx-radius-lg, 16px);
+      color: #ffffff;
+      background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e, #0ea5e9));
+      box-shadow: var(--lx-shadow-brand, 0 8px 24px rgba(15, 118, 110, 0.18));
+    }
+
+    .level-label {
+      font-size: 13px;
+      font-weight: 850;
+      opacity: 0.9;
+    }
+
+    .level-name {
+      margin-top: 6px;
+      font-family: var(--lx-font-display, Georgia, serif);
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .level-desc {
+      margin-top: 10px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 14px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 14px;
+    }
+
+    .metric strong {
+      display: block;
+      font-family: var(--lx-font-display, Georgia, serif);
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .today-progress {
+      display: grid;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .today-progress-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .today-progress-bar {
+      overflow: hidden;
+      height: 9px;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .today-progress-bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--lx-grad-fresh, linear-gradient(90deg, var(--teal), var(--green)));
+      transition: width var(--lx-dur-slow, 400ms) var(--lx-ease, ease);
+    }
+
+    .today-progress-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .streak-box {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid rgba(15, 118, 110, 0.18);
+      border-radius: var(--radius);
+      background: #f0fdfa;
+    }
+
+    .streak-value {
+      display: grid;
+      width: 58px;
+      height: 58px;
+      place-items: center;
+      border-radius: var(--lx-radius-lg, 16px);
+      color: #ffffff;
+      background: var(--lx-grad-fresh, var(--teal));
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1;
+      box-shadow: var(--lx-shadow-brand, 0 8px 24px rgba(15, 118, 110, 0.18));
+    }
+
+    .streak-value span {
+      display: block;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .streak-title {
+      font-weight: 900;
+    }
+
+    .streak-copy {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #ffffff;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .pill.good {
+      color: #065f46;
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+
+    .pill.warn {
+      color: #92400e;
+      background: #fffbeb;
+      border-color: #fcd34d;
+    }
+
+    .save-plan-band {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 16px;
+      border: 1px solid rgba(37, 99, 235, 0.18);
+      border-radius: var(--radius);
+      background: #eff6ff;
+    }
+
+    .save-plan-band strong {
+      display: block;
+      color: #1e3a8a;
+      font-size: 16px;
+    }
+
+    .save-plan-band p {
+      margin: 5px 0 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .save-plan-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 20px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .section-title {
+      margin: 0;
+      font-family: var(--lx-font-display, Georgia, serif);
+      font-weight: 700;
+      font-size: 23px;
+      line-height: 1.2;
+    }
+
+    .section-subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .task-card {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      box-shadow: none;
+      transition: transform var(--lx-dur, 250ms) var(--lx-ease, ease), box-shadow var(--lx-dur, 250ms) var(--lx-ease, ease);
+    }
+
+    .task-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--lx-shadow-md, 0 8px 16px rgba(15, 23, 42, 0.06));
+    }
+
+    .task-index {
+      display: inline-grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: var(--lx-radius-md, 12px);
+      color: #ffffff;
+      background: var(--lx-grad-brand, var(--ink));
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .task-card.done {
+      border-color: #a7f3d0;
+      background: #f0fdf4;
+    }
+
+    .task-card.done .task-index {
+      background: var(--green);
+    }
+
+    .task-state {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .task-card.done .task-state {
+      color: #047857;
+    }
+
+
+    .task-card h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .task-card p {
+      min-height: 48px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .review-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .review-summary {
+      display: grid;
+      align-content: start;
+      gap: 16px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fafc;
+    }
+
+    .review-count {
+      font-family: var(--lx-font-display, Georgia, serif);
+      font-size: clamp(34px, 5vw, 52px);
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .review-count span {
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .review-next {
+      display: grid;
+      gap: 8px;
+    }
+
+    .review-next strong {
+      font-size: 18px;
+    }
+
+    .review-next p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .review-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .commitment-card {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid rgba(37, 99, 235, 0.18);
+      border-radius: var(--radius);
+      background: #eff6ff;
+    }
+
+    .commitment-title {
+      color: #1e3a8a;
+      font-weight: 900;
+    }
+
+    .commitment-copy {
+      margin: 0;
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .commitment-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .commitment-chip {
+      min-height: 36px;
+      padding: 0 11px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      color: #1d4ed8;
+      background: #ffffff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .commitment-chip:hover {
+      border-color: #2563eb;
+      color: #1e40af;
+    }
+
+    .commitment-custom {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    .commitment-custom input {
+      min-width: 0;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: #ffffff;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .review-steps {
+      display: grid;
+      gap: 10px;
+    }
+
+    .review-step {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+
+    .review-step.done {
+      border-color: #a7f3d0;
+      background: #f0fdf4;
+    }
+
+    .review-dot {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .review-step.done .review-dot {
+      background: var(--green);
+    }
+
+    .review-step-title {
+      font-weight: 850;
+    }
+
+    .review-step-meta {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .review-step-state {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .review-step.done .review-step-state {
+      color: #047857;
+    }
+
+    .weekly-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .weekly-score {
+      display: grid;
+      align-content: start;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+
+    .weekly-score-value {
+      font-family: var(--lx-font-display, Georgia, serif);
+      font-size: clamp(38px, 5vw, 56px);
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .weekly-score-value span {
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .weekly-score-copy {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .weekly-bars {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+      align-items: end;
+      min-height: 168px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fafc;
+    }
+
+    .weekly-day {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      min-width: 0;
+    }
+
+    .weekly-bar {
+      display: flex;
+      align-items: end;
+      width: 100%;
+      height: 104px;
+      padding: 4px;
+      border-radius: var(--radius);
+      background: #e2e8f0;
+    }
+
+    .weekly-bar span {
+      display: block;
+      width: 100%;
+      min-height: 8px;
+      border-radius: 6px;
+      background: var(--lx-grad-fresh, var(--teal));
+    }
+
+    .weekly-day.inactive .weekly-bar span {
+      background: #cbd5e1;
+    }
+
+    .weekly-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .video-list,
+    .word-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .video-card,
+    .word-card {
+      display: grid;
+      gap: 8px;
+      padding: 14px;
+      box-shadow: none;
+    }
+
+    .video-card {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
+
+    .video-title,
+    .word-title {
+      font-weight: 850;
+    }
+
+    .video-meta,
+    .word-meta {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .video-reason {
+      color: var(--teal-strong);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .video-item {
+      display: grid;
+      gap: 6px;
+    }
+
+    .video-card .pill.done {
+      color: var(--muted);
+      background: var(--lx-surface-muted, #f1f5f9);
+    }
+
+    .video-watched {
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--lx-surface-muted, #f1f5f9);
+      font-size: 11px;
+      font-weight: 750;
+      vertical-align: 2px;
+    }
+
+    .video-feedback {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .video-feedback button {
+      padding: 3px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: transparent;
+      font: inherit;
+      font-weight: 750;
+      cursor: pointer;
+      transition: color var(--lx-dur-fast, 150ms) ease, border-color var(--lx-dur-fast, 150ms) ease, background-color var(--lx-dur-fast, 150ms) ease;
+    }
+
+    .video-feedback button:hover,
+    .video-feedback button:focus-visible {
+      color: var(--teal-strong);
+      border-color: var(--teal);
+    }
+
+    .video-feedback button:focus-visible {
+      outline: 2px solid var(--teal);
+      outline-offset: 2px;
+    }
+
+    .video-feedback button:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+
+    .video-feedback[data-state="sent"] {
+      color: var(--teal-strong);
+      font-weight: 750;
+    }
+
+    .word-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .quota-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .quota-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .quota-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .bar {
+      overflow: hidden;
+      height: 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--lx-grad-fresh, var(--teal));
+      transition: width var(--lx-dur-slow, 400ms) var(--lx-ease, ease);
+    }
+
+    .empty {
+      padding: 22px;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: #ffffff;
+      text-align: center;
+    }
+
+    .loading {
+      color: var(--muted);
+    }
+
+    .upgrade-band {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(180, 83, 9, 0.24);
+      border-radius: var(--radius);
+      background: #fffbeb;
+    }
+
+    .upgrade-band strong {
+      display: block;
+    }
+
+    .upgrade-band span {
+      display: block;
+      margin-top: 4px;
+      color: #92400e;
+      font-size: 14px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .content-grid,
+      .task-grid,
+      .review-panel,
+      .weekly-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .word-list,
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        padding: 0 16px;
+      }
+
+      .nav-actions .nav-link {
+        display: none;
+      }
+
+      .section-head,
+      .upgrade-band,
+      .save-plan-band,
+      .first-lesson-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .save-plan-band {
+        grid-template-columns: 1fr;
+      }
+
+      .first-lesson-steps {
+        grid-template-columns: 1fr;
+      }
+
+      .section-actions {
+        justify-content: stretch;
+      }
+
+      .save-plan-actions {
+        justify-content: stretch;
+      }
+
+      .save-plan-actions .btn {
+        flex: 1 1 120px;
+      }
+    }
+
+    /* ============================================================
+       V2 visual upgrade — Duolingo-style tactile layer + AI showcase
+       ============================================================ */
+
+    /* 3D 按压主按钮 */
+    .btn-primary {
+      border-radius: var(--lx-radius-lg, 16px);
+      box-shadow: var(--lx-btn-shadow-3d, 0 4px 0 #0b5f59);
+      transition: transform var(--lx-dur-fast, 150ms) var(--lx-ease, ease), box-shadow var(--lx-dur-fast, 150ms) var(--lx-ease, ease);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--lx-btn-shadow-3d, 0 4px 0 #0b5f59), 0 10px 24px rgba(45, 212, 191, 0.3);
+    }
+
+    .btn-primary:active {
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+
+    .btn-blue {
+      box-shadow: var(--lx-btn-shadow-3d-sky, 0 4px 0 #0284c7);
+      border-radius: var(--lx-radius-lg, 16px);
+    }
+
+    .btn-blue:active {
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+
+    /* 3分钟首课:AI 渐变描边焦点卡 */
+    .first-lesson {
+      position: relative;
+      margin-top: 30px;
+      padding: 22px 18px 18px;
+      border-top: none;
+      border: 2px solid transparent;
+      border-radius: var(--lx-radius-lg, 16px);
+      background:
+        linear-gradient(var(--surface, #fff), var(--surface, #fff)) padding-box,
+        var(--lx-grad-ai, #0f766e) border-box;
+      box-shadow: var(--lx-ai-glow, 0 8px 24px rgba(14, 165, 233, 0.18));
+    }
+
+    .first-lesson > .lx-badge-ai {
+      position: absolute;
+      top: -12px;
+      left: 16px;
+    }
+
+    .first-lesson.completed {
+      border: 2px solid rgba(22, 163, 74, 0.3);
+      background: #f0fdf4;
+      box-shadow: none;
+    }
+
+    .first-lesson-step strong {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .first-lesson-step:nth-child(1) strong::before,
+    .first-lesson-step:nth-child(2) strong::before,
+    .first-lesson-step:nth-child(3) strong::before {
+      display: inline-grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .first-lesson-step:nth-child(1) strong::before { content: "1"; background: var(--lx-teal-500, #14b8a6); }
+    .first-lesson-step:nth-child(2) strong::before { content: "2"; background: var(--lx-sky, #0ea5e9); }
+    .first-lesson-step:nth-child(3) strong::before { content: "3"; background: var(--lx-gold, #f7b733); }
+
+    /* 右栏:AI 评估等级卡 */
+    .level-box {
+      background: var(--lx-grad-ai, linear-gradient(135deg, #0f766e, #0ea5e9));
+    }
+
+    /* metrics 三格彩色软背景 */
+    .metrics .metric {
+      border: var(--lx-border-bold, 2px solid #e2e8f0);
+      border-bottom-width: 4px;
+    }
+
+    .metrics .metric:nth-child(1) { background: var(--lx-soft-teal, #f0fdfa); }
+    .metrics .metric:nth-child(2) { background: var(--lx-soft-sky, #f0f9ff); }
+    .metrics .metric:nth-child(3) { background: var(--lx-soft-gold, #fffbeb); }
+
+    .metrics .metric:nth-child(1) strong { color: var(--lx-primary, #0f766e); }
+    .metrics .metric:nth-child(2) strong { color: var(--lx-sky-strong, #0284c7); }
+    .metrics .metric:nth-child(3) strong { color: var(--lx-amber, #b45309); }
+
+    /* 连弧火焰 + 数字弹入 */
+    .streak-value {
+      border-radius: 50%;
+    }
+
+    .streak-value strong {
+      animation: lx-pop 0.5s var(--lx-ease-spring, ease) backwards;
+      animation-delay: 0.3s;
+    }
+
+    .streak-title::before {
+      content: "🔥 ";
+    }
+
+    /* 进度条渐变 */
+    .today-progress-bar span {
+      background: var(--lx-grad-ai, linear-gradient(90deg, #0f766e, #0ea5e9));
+    }
+
+    /* 任务卡:三色 + 粗边 + 底厚边 */
+    .task-card {
+      border: var(--lx-border-bold, 2px solid #e2e8f0);
+      border-bottom-width: 4px;
+    }
+
+    .task-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .task-grid .task-card:nth-child(1):not(.done) { background: var(--lx-soft-teal, #f0fdfa); }
+    .task-grid .task-card:nth-child(2):not(.done) { background: var(--lx-soft-sky, #f0f9ff); }
+    .task-grid .task-card:nth-child(3):not(.done) { background: var(--lx-soft-gold, #fffbeb); }
+
+    .task-index {
+      border-radius: 50%;
+    }
+
+    .task-grid .task-card:nth-child(2) .task-index { background: var(--lx-sky, #0ea5e9); }
+    .task-grid .task-card:nth-child(3) .task-index { background: var(--lx-gold, #f7b733); }
+
+    .task-card.done {
+      border-color: #a7f3d0;
+    }
+
+    .task-card.done .task-index {
+      animation: lx-pop 0.4s var(--lx-ease-spring, ease);
+    }
+
+    /* 今日复盘:环形装饰 + AI 建议气泡 */
+    .review-count {
+      position: relative;
+      display: inline-grid;
+      place-items: center;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: conic-gradient(var(--lx-mint, #2dd4bf), var(--lx-sky, #0ea5e9), var(--lx-primary, #0f766e), var(--lx-mint, #2dd4bf));
+    }
+
+    .review-count::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: #f8fafc;
+    }
+
+    .review-count span,
+    .review-count {
+      z-index: 0;
+    }
+
+    .review-count > * {
+      position: relative;
+    }
+
+    .review-next {
+      padding: 14px;
+      border-radius: 4px 16px 16px 16px;
+      background: var(--lx-soft-sky, #f0f9ff);
+      border: 1px solid rgba(14, 165, 233, 0.2);
+    }
+
+    /* 周报徽章间距 */
+    .section-title .lx-badge-ai {
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    @media (max-width: 760px) {
+      .review-count {
+        width: 84px;
+        height: 84px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./index-desktop.html" aria-label="Linglish 首页">
+      <span class="brand-mark">L</span>
+      <span>Linglish</span>
+    </a>
+    <nav class="nav-actions">
+      <a class="nav-link" href="./video-reader-desktop.html" data-track="nav_video" data-section="topbar">精选视频库</a>
+      <a class="nav-link" href="./video-vocabulary-desktop.html" data-track="nav_vocab" data-section="topbar">词汇复习</a>
+      <a class="nav-link" href="./pricing.html" data-track="nav_pricing" data-section="topbar">会员方案</a>
+      <a class="btn btn-secondary" id="auth-action" href="./desktop-auth.html?next=./today.html" data-track="auth_action" data-section="topbar">登录</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-main">
+        <div class="eyebrow" id="hero-eyebrow">今日学习</div>
+        <h1 id="hero-title">今天想怎么学？</h1>
+        <p class="hero-copy" id="hero-copy">先选学习方式，点一下就进入。</p>
+        <nav class="learning-choices" aria-label="选择学习方式">
+          <a class="btn btn-primary learning-choice" id="learning-entry-shadowing" href="./practice-session-desktop.html?mode=shadowing&from=today" data-track="learning_choice_shadowing" data-section="hero"><span class="learning-choice-copy"><strong>跟读</strong><small>听一句，跟着开口说一句</small></span><span aria-hidden="true">›</span></a>
+          <a class="btn btn-secondary learning-choice" id="learning-entry-listening" href="./video-reader-desktop.html?from=today" data-track="learning_choice_listening" data-section="hero"><span class="learning-choice-copy"><strong>听原声</strong><small>看视频、读字幕，按自己的节奏听</small></span><span aria-hidden="true">›</span></a>
+          <a class="btn btn-secondary learning-choice" id="learning-entry-game" href="./game.html" data-track="learning_choice_game" data-section="hero"><span class="learning-choice-copy"><strong>游戏</strong><small>闯关练单词，边玩边记</small></span><span aria-hidden="true">›</span></a>
+        </nav>
+        <p class="learning-entry-more">已有精选视频可直接学习。<a href="./youtube-import.html" data-track="import_content" data-section="hero">导入自己的内容</a></p>
+        <section id="first-lesson-resume" hidden aria-label="继续上次跟读"></section>
+        <div class="first-lesson" id="first-lesson">
+          <span class="lx-badge-ai">✨ AI 定制</span>
+          <div class="first-lesson-head">
+            <div>
+              <p class="first-lesson-title" id="first-lesson-title">3 分钟首课：先跟读一句真实表达</p>
+              <p class="first-lesson-copy" id="first-lesson-copy">不用先配置课程，完成一句听懂、跟读、复听，就算今天已经开始。</p>
+            </div>
+            <span class="first-lesson-time" id="first-lesson-time">3 min</span>
+          </div>
+          <div class="first-lesson-steps">
+            <div class="first-lesson-step"><strong>1. 听一句</strong><span id="first-lesson-step-1">选一段匹配你等级的真实内容。</span></div>
+            <div class="first-lesson-step"><strong>2. 跟读</strong><span id="first-lesson-step-2">录下自己的声音，对齐节奏和重音。</span></div>
+            <div class="first-lesson-step"><strong>3. 得到反馈</strong><span id="first-lesson-step-3">完成后进入今日复盘和下一步建议。</span></div>
+          </div>
+          <div class="first-lesson-action">
+            <a class="btn btn-primary" id="first-lesson-start" href="./video-reader-desktop.html?from=today_first_lesson&focus=first_lesson" data-track="first_lesson_start" data-section="first_lesson">开始 3 分钟首课</a>
+          </div>
+        </div>
+        <div class="status-strip" id="status-strip">
+          <span class="pill">未加载学习计划</span>
+        </div>
+      </div>
+
+      <aside class="hero-panel">
+        <div class="level-box">
+          <div class="level-label">AI 评估 · 当前训练等级</div>
+          <div class="level-name" id="level-name">准备中</div>
+          <div class="level-desc" id="level-desc">登录后会按你的词汇与练习记录生成今日计划。</div>
+        </div>
+        <div class="metrics">
+          <div class="metric">
+            <strong id="metric-minutes">15</strong>
+            <span>预计分钟</span>
+          </div>
+          <div class="metric">
+            <strong id="metric-new-words">0</strong>
+            <span>新词</span>
+          </div>
+          <div class="metric">
+            <strong id="metric-review-words">0</strong>
+            <span>复习</span>
+          </div>
+        </div>
+        <div class="today-progress" id="today-progress">
+          <div class="today-progress-label">
+            <span>今日完成</span>
+            <strong id="today-progress-count">0 / 3</strong>
+          </div>
+          <div class="today-progress-bar"><span id="today-progress-bar"></span></div>
+          <div class="today-progress-note" id="today-progress-note">登录后同步今日任务进度。</div>
+        </div>
+        <div class="streak-box" id="streak-box">
+          <div class="streak-value"><strong id="streak-count">0</strong><span>天</span></div>
+          <div>
+            <div class="streak-title" id="streak-title">连续训练</div>
+            <div class="streak-copy" id="streak-copy">登录后记录你的连续训练天数。</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section" id="guest-section" hidden>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">先体验一轮，再决定是否升级。</h2>
+          <p class="section-subtitle">游客也可以进入训练；登录后会保留进度、AI 反馈和复习记录。</p>
+        </div>
+        <a class="btn btn-primary" href="./desktop-auth.html?next=./today.html" data-track="guest_auth_cta" data-section="guest">登录 / 注册</a>
+      </div>
+      <div class="save-plan-band" id="save-plan-band">
+        <div>
+          <strong id="save-plan-title">保存这份个性化训练计划</strong>
+          <p id="save-plan-copy">注册后会同步你的等级、目标和每日时长，明天回来直接继续。</p>
+        </div>
+        <div class="save-plan-actions">
+          <a class="btn btn-primary" id="save-plan-register" href="./desktop-auth.html?mode=register&next=./today.html?from=save_plan" data-track="save_plan_register" data-section="guest">注册保存</a>
+          <a class="btn btn-secondary" id="save-plan-login" href="./desktop-auth.html?next=./today.html?from=save_plan_login" data-track="save_plan_login" data-section="guest">已有账号</a>
+        </div>
+      </div>
+      <div class="task-grid">
+        <div class="task-card">
+          <span class="task-index">01</span>
+          <h3>看 1 段真实视频</h3>
+          <p>从完整语境理解一句表达，而不是孤立背句子。</p>
+          <a class="btn btn-secondary" href="./video-reader-desktop.html?from=today" data-track="guest_video_action" data-section="guest">打开视频训练</a>
+        </div>
+        <div class="task-card">
+          <span class="task-index">02</span>
+          <h3>跟读 5 句</h3>
+          <p>录音、听回放、对照原句，先把节奏和连读练起来。</p>
+          <a class="btn btn-secondary" href="./practice-session-desktop.html?from=today&mode=shadowing" data-track="guest_shadowing_action" data-section="guest">开始跟读</a>
+        </div>
+        <div class="task-card">
+          <span class="task-index">03</span>
+          <h3>复习 3 个高频词</h3>
+          <p>把今天遇到的词放回真实句子里复现，降低遗忘。</p>
+          <a class="btn btn-secondary" href="./video-vocabulary-desktop.html?from=today" data-track="guest_vocab_action" data-section="guest">打开词汇</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="plan-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">今日任务</h2>
+          <p class="section-subtitle" id="plan-summary">正在加载你的个性化训练计划。</p>
+        </div>
+        <a class="btn btn-blue" id="practice-action" href="./practice-session-desktop.html?from=today&mode=shadowing" data-track="practice_action" data-section="plan">进入跟读</a>
+      </div>
+      <div class="task-grid" id="task-grid">
+        <div class="empty loading">正在生成今日任务...</div>
+      </div>
+    </section>
+
+    <section class="section" id="review-section" hidden>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">今日复盘</h2>
+          <p class="section-subtitle" id="review-subtitle">完成任意一步后，这里会给出下一步建议。</p>
+        </div>
+        <a class="btn btn-secondary" href="./pricing.html#plans" data-track="review_pricing" data-section="review">提升训练强度</a>
+      </div>
+      <div class="review-panel">
+        <div class="review-summary">
+          <div class="review-count" id="review-count">0<span>/3</span></div>
+          <div class="review-next">
+            <span class="lx-badge-ai">🤖 AI 建议</span>
+            <strong id="review-next-title">先完成第一步训练</strong>
+            <p id="review-next-copy">从一个真实视频开始，完成输入理解后再进入跟读和复习。</p>
+          </div>
+          <div class="review-actions" id="review-actions">
+            <a class="btn btn-primary" href="./video-reader-desktop.html?from=today" data-track="review_next_action" data-section="review">继续训练</a>
+          </div>
+          <div class="commitment-card" id="commitment-card">
+            <div class="commitment-title" id="commitment-title">安排下次训练</div>
+            <p class="commitment-copy" id="commitment-copy">把下一次训练时间先定下来，明天回到这里直接继续。</p>
+            <div class="commitment-actions">
+              <button class="commitment-chip" type="button" data-track="commit_tonight" data-section="review" data-commitment-preset="tonight">今晚 20:00</button>
+              <button class="commitment-chip" type="button" data-track="commit_tomorrow" data-section="review" data-commitment-preset="tomorrow_morning">明早 08:00</button>
+              <button class="commitment-chip" type="button" data-track="commit_next_evening" data-section="review" data-commitment-preset="next_evening">明晚 20:00</button>
+            </div>
+            <div class="commitment-custom">
+              <input id="commitment-custom-input" type="datetime-local" aria-label="自定义下次训练时间">
+              <button class="commitment-chip" id="commitment-custom-save" type="button" data-track="commit_custom" data-section="review">保存</button>
+            </div>
+          </div>
+        </div>
+        <div class="review-steps" id="review-steps"></div>
+      </div>
+    </section>
+
+    <section class="section" id="weekly-section" hidden>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">本周进展<span class="lx-badge-ai">✨ AI 周报</span></h2>
+          <p class="section-subtitle" id="weekly-subtitle">最近 7 天的训练节奏和下一步建议。</p>
+        </div>
+        <div class="section-actions">
+          <a class="btn btn-primary" href="./learning-reports.html?from=today" data-track="weekly_report_action" data-section="weekly">查看完整报告</a>
+          <a class="btn btn-secondary" href="./video-vocabulary-desktop.html?from=today" data-track="weekly_review_action" data-section="weekly">复习词句</a>
+        </div>
+      </div>
+      <div class="weekly-grid">
+        <div class="weekly-score">
+          <div class="weekly-score-value" id="weekly-active-days">0<span>/7</span></div>
+          <div class="weekly-score-copy" id="weekly-score-copy">登录后显示最近 7 天训练报告。</div>
+          <div class="status-strip" id="weekly-stats">
+            <span class="pill">0 分钟</span>
+            <span class="pill">0 次跟读</span>
+          </div>
+        </div>
+        <div class="weekly-bars" id="weekly-bars"></div>
+      </div>
+    </section>
+
+    <div class="content-grid">
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">推荐内容</h2>
+            <p class="section-subtitle">已有精选视频可直接学习，无需导入。也可以导入自己的内容。</p>
+          </div>
+          <a class="btn btn-secondary" href="./video-reader-desktop.html" data-track="view_all_videos" data-section="recommendations">浏览精选视频库</a>
+        </div>
+        <div class="video-list" id="video-list">
+          <div class="empty loading">正在加载推荐视频...</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">AI 与复习额度</h2>
+            <p class="section-subtitle" id="quota-subtitle">登录后显示今日额度。</p>
+          </div>
+          <a class="btn btn-secondary" href="./membership.html" data-track="membership_center" data-section="quota">会员中心</a>
+        </div>
+        <div class="quota-list" id="quota-list">
+          <div class="empty">暂无额度数据</div>
+        </div>
+        <div class="upgrade-band" id="upgrade-band" hidden>
+          <div>
+            <strong>免费额度适合体验，完整训练建议升级。</strong>
+            <span>解锁更高频 AI 打分、单词深度解析和更多视频上传额度。</span>
+          </div>
+          <a class="btn btn-primary" href="./pricing.html#plans" data-track="upgrade_pricing" data-section="quota">查看会员</a>
+        </div>
+      </section>
+    </div>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">今天要处理的词</h2>
+          <p class="section-subtitle">先复习到期词，再补充少量新词，避免计划过重。</p>
+        </div>
+        <a class="btn btn-secondary" href="./video-vocabulary-desktop.html?from=today" data-track="vocab_action" data-section="words">进入词汇训练</a>
+      </div>
+      <div class="word-list" id="word-list">
+        <div class="empty loading">正在加载词汇...</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = (() => {
+      if (window.API_BASE) return window.API_BASE;
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return window.location.port === '4000' ? '' : 'http://localhost:4000';
+      }
+      return '';
+    })();
+
+    const state = {
+      token: null,
+      user: null,
+      plan: null,
+      progress: null,
+      streak: null,
+      weeklyReport: null,
+      firstVideo: null,
+      reviewPanelTracked: false,
+      weeklyPanelTracked: false,
+      firstLessonTracked: false,
+      firstLessonCompletionTracked: false,
+      guestFirstLessonLoading: false,
+    };
+    const COMMITMENT_KEY = 'linglish_next_training_commitment';
+    const FIRST_LESSON_COMPLETION_KEY = 'linglish_first_lesson_completion';
+    const PENDING_PROFILE_SYNC_KEY = 'linglish_onboarding_pending_profile_sync';
+    const ONBOARDING_LEVEL_KEY = 'linglish_active_level';
+    const ONBOARDING_GOAL_KEY = 'linglish_onboarding_goal';
+    const ONBOARDING_DAILY_MINUTES_KEY = 'linglish_onboarding_daily_minutes';
+
+    const LEVEL_META = {
+      beginner: { name: '初级', desc: '核心 3000 词，适合建立真实输入和基础表达。' },
+      intermediate: { name: '中级', desc: '扩展表达能力，开始处理更丰富的真实内容。' },
+      advanced: { name: '高级', desc: '面向复杂话题、阅读写作和高阶口语表达。' },
+    };
+
+    function getToken() {
+      try {
+        if (window.AuthManager && typeof window.AuthManager.getToken === 'function') {
+          return window.AuthManager.getToken();
+        }
+      } catch (_) {}
+      try {
+        return localStorage.getItem('linglish_token') || localStorage.getItem('authToken') ||
+          sessionStorage.getItem('linglish_token') || sessionStorage.getItem('authToken') || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function hasGuestStorageFlag() {
+      try {
+        return localStorage.getItem('is_guest') === 'true' || sessionStorage.getItem('is_guest') === 'true';
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function isTemporaryGuestUser(user = state.user) {
+      const email = String(user?.email || '').toLowerCase();
+      if (email.startsWith('guest_') && email.endsWith('@temp.linglish.local')) return true;
+      if (user?.is_guest === true || user?.isGuest === true || user?.guest_id || user?.guestId) return true;
+      return !user && hasGuestStorageFlag();
+    }
+
+    function hasRegisteredAccount() {
+      return Boolean(state.user && !isTemporaryGuestUser(state.user));
+    }
+
+    function getAudienceMode() {
+      if (hasRegisteredAccount()) return 'logged_in';
+      return state.token || isTemporaryGuestUser() ? 'guest_token' : 'guest';
+    }
+
+    function getLocalDateKey() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function readFirstLessonCompletion() {
+      try {
+        const raw = localStorage.getItem(FIRST_LESSON_COMPLETION_KEY);
+        if (!raw) return null;
+        const saved = JSON.parse(raw);
+        if (!saved || saved.date !== getLocalDateKey()) return null;
+        return saved;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function syncFirstLessonCompletionFromUrl() {
+      const params = new URLSearchParams(location.search || '');
+      if (params.get('from') !== 'first_lesson_complete') return readFirstLessonCompletion();
+
+      const existing = readFirstLessonCompletion() || {};
+      const videoId = params.get('videoId') || state.firstVideo?.id || existing.video_id || null;
+      const lines = Number(params.get('lines') || existing.lines || 3);
+      const payload = {
+        date: getLocalDateKey(),
+        completed_at: existing.completed_at || new Date().toISOString(),
+        video_id: videoId,
+        lines: Number.isFinite(lines) && lines > 0 ? Math.round(lines) : 3,
+        target_lines: Number(existing.target_lines || 3) || 3,
+        source: existing.source || 'today-return',
+      };
+      try {
+        localStorage.setItem(FIRST_LESSON_COMPLETION_KEY, JSON.stringify(payload));
+      } catch (_) { }
+      return payload;
+    }
+
+    function headers() {
+      return state.token ? { Authorization: `Bearer ${state.token}` } : {};
+    }
+
+    function jsonHeaders() {
+      return state.token
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${state.token}` }
+        : { 'Content-Type': 'application/json' };
+    }
+
+    async function getJson(path) {
+      const res = await fetch(`${API_BASE}${path}`, { headers: headers() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.message || `HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    }
+
+    async function putJson(path, body) {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: 'PUT',
+        headers: jsonHeaders(),
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.message || `HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    }
+
+    function saveGuestSession(payload = {}) {
+      const token = payload.access_token || payload.token || payload.accessToken;
+      if (!token) return null;
+
+      try {
+        if (window.AuthManager && typeof window.AuthManager.setToken === 'function') {
+          window.AuthManager.setToken(token, true);
+        }
+      } catch (err) {
+        console.warn('[Today] Failed to save guest token via AuthManager:', err?.message || err);
+      }
+
+      try {
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('linglish_token', token);
+        localStorage.setItem('is_guest', 'true');
+        localStorage.setItem('guest_id', payload.guest_id || '');
+      } catch (err) {
+        console.warn('[Today] Failed to persist guest token:', err?.message || err);
+      }
+
+      state.token = token;
+      return token;
+    }
+
+    function extractVideoItems(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (Array.isArray(payload?.items)) return payload.items;
+      if (Array.isArray(payload?.videos)) return payload.videos;
+      if (Array.isArray(payload?.data?.items)) return payload.data.items;
+      if (Array.isArray(payload?.data?.videos)) return payload.data.videos;
+      return [];
+    }
+
+    function pickFirstLessonVideo(videos) {
+      const items = extractVideoItems(videos).filter((video) => video && video.id);
+      return items.find((video) => video.has_subtitles || Number(video.total_segments || 0) > 0 || Number(video.word_count || 0) > 0)
+        || items.find((video) => String(video.status || '').toLowerCase() !== 'failed')
+        || items[0]
+        || null;
+    }
+
+    async function loadFirstLessonVideoForGuest() {
+      if (state.firstVideo?.id) return state.firstVideo;
+      const data = await getJson('/video-resources?lite=1');
+      const video = pickFirstLessonVideo(data);
+      if (video) state.firstVideo = video;
+      return video;
+    }
+
+    function setFirstLessonStartLoading(trigger, isLoading) {
+      if (!trigger) return;
+      if (isLoading) {
+        trigger.dataset.idleText = trigger.textContent || '';
+        trigger.textContent = '正在准备首课';
+        trigger.setAttribute('aria-disabled', 'true');
+        return;
+      }
+      trigger.removeAttribute('aria-disabled');
+      if (trigger.dataset.idleText) {
+        trigger.textContent = trigger.dataset.idleText;
+        delete trigger.dataset.idleText;
+      }
+    }
+
+    async function startGuestFirstLesson(event, trigger) {
+      if (event) event.preventDefault();
+      if (state.guestFirstLessonLoading) return;
+      state.guestFirstLessonLoading = true;
+      const source = trigger?.dataset?.track || 'first_lesson_start';
+      const isContinue = source === 'first_lesson_continue';
+      setFirstLessonStartLoading(trigger, true);
+      postEvent('today_guest_first_lesson_start', {
+        href: trigger?.getAttribute('href') || (isContinue ? practiceHref(state.firstVideo) : firstLessonHref()),
+        source,
+      });
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/guest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitor_id: window.LinglishVisitor?.getId() || null }),
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const err = new Error(payload.message || `HTTP ${res.status}`);
+          err.status = res.status;
+          throw err;
+        }
+        const token = saveGuestSession(payload);
+        if (!token) throw new Error('GUEST_TOKEN_MISSING');
+
+        const video = await loadFirstLessonVideoForGuest().catch((err) => {
+          console.warn('[Today] Failed to preload guest first lesson video:', err?.message || err);
+          return null;
+        });
+        const href = isContinue ? practiceHref(video || state.firstVideo) : firstLessonHref();
+        postEvent('today_guest_first_lesson_ready', {
+          href,
+          guest_id: payload.guest_id || null,
+          has_video: Boolean(video),
+          video_resource_id: video?.id || null,
+          destination: isContinue ? 'full_practice' : 'quick_first_lesson',
+        });
+        window.location.assign(href);
+      } catch (err) {
+        console.warn('[Today] Guest first lesson start failed:', err?.message || err);
+        postEvent('today_guest_first_lesson_error', {
+          status: err?.status || null,
+          message: compactText(err?.message || 'unknown_error', 120),
+        });
+        setFirstLessonStartLoading(trigger, false);
+        window.location.assign(buildAuthHref({ mode: 'register', source: 'first_lesson_guest_error' }));
+      } finally {
+        state.guestFirstLessonLoading = false;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function normalizeLevel(value) {
+      const raw = String(value || '').toLowerCase();
+      return LEVEL_META[raw] ? raw : 'beginner';
+    }
+
+    function readPendingOnboardingProfile() {
+      try {
+        if (localStorage.getItem(PENDING_PROFILE_SYNC_KEY) !== '1') return null;
+        const level = normalizeLevel(localStorage.getItem(ONBOARDING_LEVEL_KEY));
+        const goal = String(localStorage.getItem(ONBOARDING_GOAL_KEY) || '').trim();
+        const dailyGoal = Number(localStorage.getItem(ONBOARDING_DAILY_MINUTES_KEY));
+        const payload = { level };
+        if (Number.isFinite(dailyGoal) && dailyGoal >= 5 && dailyGoal <= 180) {
+          payload.daily_goal = Math.round(dailyGoal);
+        }
+        if (goal) payload.interests = [goal];
+        return payload;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function syncPendingOnboardingProfile() {
+      if (!state.token) return false;
+      const payload = readPendingOnboardingProfile();
+      if (!payload) return false;
+      try {
+        await putJson('/auth/profile', payload);
+        try { localStorage.removeItem(PENDING_PROFILE_SYNC_KEY); } catch (_) {}
+        postEvent('onboarding_profile_synced', {
+          synced_level: payload.level || null,
+          synced_daily_goal: payload.daily_goal || null,
+          synced_goal: Array.isArray(payload.interests) ? payload.interests[0] : null,
+        });
+        return true;
+      } catch (err) {
+        console.warn('[Today] Failed to sync onboarding profile:', err);
+        return false;
+      }
+    }
+
+    function formatDuration(seconds) {
+      const n = Number(seconds) || 0;
+      if (n <= 0) return '时长待补充';
+      const minutes = Math.max(1, Math.round(n / 60));
+      return `${minutes} 分钟`;
+    }
+
+    function parseDefinition(definitions) {
+      if (!definitions) return '暂无释义';
+      let value = definitions;
+      if (typeof value === 'string') {
+        try { value = JSON.parse(value); } catch (_) { return value.slice(0, 48); }
+      }
+      if (Array.isArray(value)) {
+        const first = value[0];
+        if (typeof first === 'string') return first.slice(0, 48);
+        if (first && typeof first.definition === 'string') return first.definition.slice(0, 48);
+        if (first && typeof first.meaning === 'string') return first.meaning.slice(0, 48);
+      }
+      if (value && typeof value === 'object') {
+        if (typeof value.definition === 'string') return value.definition.slice(0, 48);
+        if (typeof value.meaning === 'string') return value.meaning.slice(0, 48);
+        if (Array.isArray(value.meanings) && value.meanings[0]) {
+          const firstMeaning = value.meanings[0];
+          if (typeof firstMeaning === 'string') return firstMeaning.slice(0, 48);
+          if (firstMeaning.definitions && firstMeaning.definitions[0]) {
+            const firstDef = firstMeaning.definitions[0];
+            if (typeof firstDef === 'string') return firstDef.slice(0, 48);
+            if (firstDef.definition) return String(firstDef.definition).slice(0, 48);
+          }
+        }
+      }
+      return '暂无释义';
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function setHref(id, href) {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute('href', href);
+    }
+
+    function compactText(value, max = 90) {
+      return String(value == null ? '' : value).replace(/\s+/g, ' ').trim().slice(0, max);
+    }
+
+    function getEffectiveTier() {
+      if (!hasRegisteredAccount()) return 'free';
+      const entitlement = state.user?.entitlement || {};
+      return entitlement.effective_tier || entitlement.tier || state.user?.membership_type || 'free';
+    }
+
+    function getTrackingContext(extra = {}) {
+      const params = new URLSearchParams(location.search || '');
+      const plan = state.plan || {};
+      const planData = plan.plan || {};
+      const videos = planData.videos?.videos || [];
+      const profile = plan.profile || {};
+      return {
+        page: 'today',
+        url: `${location.pathname}${location.search || ''}`,
+        mode: getAudienceMode(),
+        tier: getEffectiveTier(),
+        level: normalizeLevel(plan.currentLevel?.level || params.get('level')),
+        entry_level: params.has('level') ? normalizeLevel(params.get('level')) : null,
+        estimated_minutes: Number(plan.estimatedMinutes || 15),
+        new_words: Number(planData.newWords?.count || 0),
+        review_words: Number(planData.reviewWords?.count || 0),
+        video_count: Number(planData.videos?.count || videos.length || 0),
+        has_video: Boolean(state.firstVideo),
+        daily_goal: Number(profile.dailyGoal || state.user?.daily_goal || 15),
+        learning_goal: Array.isArray(profile.interests) && profile.interests.length ? profile.interests[0] : null,
+        completed_steps: Number(state.progress?.completed || 0),
+        progress_percent: Number(state.progress?.percent || 0),
+        current_streak: Number(state.streak?.currentStreak || 0),
+        longest_streak: Number(state.streak?.longestStreak || 0),
+        trained_today: Boolean(state.streak?.hasTrainedToday),
+        weekly_active_days: Number(state.weeklyReport?.totals?.activeDays || 0),
+        weekly_minutes: Number(state.weeklyReport?.totals?.estimatedMinutes || 0),
+        plan_intensity: plan.targets?.intensity || null,
+        target_new_words: Number(plan.targets?.newWords || planData.newWords?.targetCount || 0),
+        target_review_words: Number(plan.targets?.reviewWords || planData.reviewWords?.targetCount || 0),
+        matched_videos: Number(plan.personalization?.matchedVideos || 0),
+        referrer: document.referrer || null,
+        ...extra,
+      };
+    }
+
+    function postEvent(eventName, properties = {}) {
+      try {
+        const token = getToken();
+        const endpoint = token ? `${API_BASE}/events` : `${API_BASE}/track/event`;
+        const requestHeaders = { 'Content-Type': 'application/json' };
+        if (token) requestHeaders.Authorization = `Bearer ${token}`;
+        fetch(endpoint, {
+          method: 'POST',
+          headers: requestHeaders,
+          body: JSON.stringify(window.LinglishVisitor.decorateEvent({
+            event_name: eventName,
+            properties: getTrackingContext(properties),
+            source: 'web',
+          })),
+          keepalive: true,
+        }).catch(() => {});
+      } catch (_) {}
+    }
+
+    function trackPlanLoaded(status) {
+      if (state.planTracked) return;
+      state.planTracked = true;
+      postEvent('today_workspace_view', { status });
+      postEvent('today_plan_loaded', { status });
+    }
+
+    function trackPlanError(err) {
+      postEvent('today_plan_error', {
+        status: err?.status || null,
+        message: compactText(err?.message || 'unknown_error', 120),
+      });
+    }
+
+    function trackClick(el) {
+      if (!el) return;
+      const href = el.getAttribute('href') || '';
+      const name = el.dataset.track || 'unknown';
+      const props = {
+        name,
+        label: compactText(el.dataset.trackLabel || el.innerText || el.getAttribute('aria-label') || el.title || name),
+        href,
+        section: el.dataset.section || null,
+        action_key: el.dataset.actionKey || null,
+        video_resource_id: el.dataset.videoId ? Number(el.dataset.videoId) || el.dataset.videoId : null,
+      };
+      postEvent('click', props);
+      if (name === 'first_lesson_start') {
+        postEvent('today_first_lesson_start', props);
+      }
+      if (name.includes('guest') || href.includes('desktop-auth')) {
+        postEvent('today_guest_cta_click', props);
+      }
+    }
+
+    function bindTracking() {
+      document.addEventListener('click', (event) => {
+        const target = event.target && event.target.closest ? event.target.closest('[data-track]') : null;
+        if (target) trackClick(target);
+      }, true);
+    }
+
+    function handleFirstLessonStart(event, trigger) {
+      if (trigger?.dataset?.track === 'first_lesson_continue') return;
+      event.preventDefault();
+      if (!window.LinglishFirstLessonEntry) {
+        window.location.href = trigger?.href || firstLessonHref();
+        return;
+      }
+      window.LinglishFirstLessonEntry.start({
+        trigger,
+        source: 'today_first_lesson',
+        level: normalizeLevel(state.plan?.currentLevel?.level),
+        videoId: state.firstVideo?.id,
+      }).catch((error) => {
+        console.warn('[Today] First lesson entry failed:', error);
+      });
+    }
+
+    function bindFirstLessonStart() {
+      const start = document.getElementById('first-lesson-start');
+      if (!start) return;
+      start.addEventListener('click', (event) => {
+        const trigger = event.currentTarget;
+        handleFirstLessonStart(event, trigger);
+      });
+    }
+
+    function videoHref(video) {
+      if (!video || !video.id) return './video-reader-desktop.html?from=today';
+      return `./video-reader-desktop.html?videoId=${encodeURIComponent(video.id)}&from=today`;
+    }
+
+    function practiceHref(video) {
+      const query = new URLSearchParams({ from: 'today', mode: 'shadowing' });
+      if (video && video.id) query.set('videoId', video.id);
+      return `./practice-session-desktop.html?${query.toString()}`;
+    }
+
+    function firstLessonHref() {
+      const query = new URLSearchParams({ from: 'today_first_lesson', focus: 'first_lesson' });
+      if (state.firstVideo && state.firstVideo.id) query.set('videoId', state.firstVideo.id);
+      return `./video-reader-desktop.html?${query.toString()}`;
+    }
+
+    function getSavedCommitmentLabel() {
+      const saved = getSavedCommitment();
+      return saved ? formatCommitmentLabel(saved.scheduledAt) : null;
+    }
+
+    function getSavedCommitment() {
+      try {
+        const raw = localStorage.getItem(COMMITMENT_KEY);
+        if (!raw) return null;
+        const saved = JSON.parse(raw);
+        const date = new Date(saved.scheduledAt);
+        if (Number.isNaN(date.getTime())) return null;
+        return { ...saved, scheduledAt: date.toISOString() };
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function formatCommitmentLabel(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return null;
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mi = String(date.getMinutes()).padStart(2, '0');
+      return `${mm}/${dd} ${hh}:${mi}`;
+    }
+
+    function formatLocalInputValue(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mi = String(date.getMinutes()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+    }
+
+    function commitmentPresetDate(preset) {
+      const now = new Date();
+      const target = new Date(now);
+      if (preset === 'tomorrow_morning') {
+        target.setDate(target.getDate() + 1);
+        target.setHours(8, 0, 0, 0);
+        return target;
+      }
+      if (preset === 'next_evening') {
+        target.setDate(target.getDate() + 1);
+        target.setHours(20, 0, 0, 0);
+        return target;
+      }
+      target.setHours(20, 0, 0, 0);
+      if (target.getTime() - now.getTime() < 30 * 60 * 1000) {
+        target.setDate(target.getDate() + 1);
+      }
+      return target;
+    }
+
+    function saveNextTrainingCommitment(date, source) {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return false;
+      }
+      const now = new Date();
+      if (date.getTime() - now.getTime() < 15 * 60 * 1000) {
+        return false;
+      }
+      const payload = {
+        scheduledAt: date.toISOString(),
+        source: source || 'custom',
+        createdAt: now.toISOString(),
+        completedSteps: Number(state.progress?.completed || 0),
+        tier: getEffectiveTier(),
+      };
+      try {
+        localStorage.setItem(COMMITMENT_KEY, JSON.stringify(payload));
+      } catch (_) {
+        return false;
+      }
+      postEvent('today_next_session_committed', {
+        scheduled_at: payload.scheduledAt,
+        commitment_source: payload.source,
+        minutes_until: Math.round((date.getTime() - now.getTime()) / 60000),
+      });
+      renderCommitment();
+      renderStatusPills();
+      return true;
+    }
+
+    function actionHref(key) {
+      const actions = Array.isArray(state.plan?.actions) ? state.plan.actions : [];
+      const action = actions.find((item) => item.key === key);
+      if (action?.href) return action.href;
+      if (key === 'shadowing') return practiceHref(state.firstVideo);
+      if (key === 'review') return './video-vocabulary-desktop.html?from=today';
+      return videoHref(state.firstVideo);
+    }
+
+    function renderStatusPills() {
+      const strip = document.getElementById('status-strip');
+      if (!strip) return;
+      const commitmentLabel = getSavedCommitmentLabel();
+      if (!hasRegisteredAccount()) {
+        const levelLabel = state.plan?.currentLevel?.name || '初级';
+        const matchedVideos = Number(state.plan?.personalization?.matchedVideos || 0);
+        strip.innerHTML = `
+          <span class="pill warn">${state.token ? '游客体验中' : '游客模式'}</span>
+          <span class="pill">注册后保存进度</span>
+          <span class="pill">等级 ${escapeHtml(levelLabel)}</span>
+          ${matchedVideos > 0 ? `<span class="pill good">匹配内容 ${matchedVideos} 条</span>` : '<span class="pill">可先体验训练闭环</span>'}
+          ${commitmentLabel ? `<span class="pill good">下次 ${escapeHtml(commitmentLabel)}</span>` : ''}
+        `;
+        return;
+      }
+      const entitlement = state.user.entitlement || {};
+      const tier = entitlement.effective_tier || entitlement.tier || 'free';
+      const isPremium = tier !== 'free';
+      const profile = state.plan?.profile || {};
+      const primaryGoal = Array.isArray(profile.interests) && profile.interests.length ? profile.interests[0] : null;
+      const streak = Number(state.streak?.currentStreak || 0);
+      const matchedVideos = Number(state.plan?.personalization?.matchedVideos || 0);
+      strip.innerHTML = `
+        <span class="pill good">${isPremium ? '会员权益已生效' : '免费计划'}</span>
+        <span class="pill">等级 ${escapeHtml(state.plan?.currentLevel?.name || '初级')}</span>
+        <span class="pill">目标 ${profile.dailyGoal || state.plan?.estimatedMinutes || 15} 分钟</span>
+        ${streak > 0 ? `<span class="pill good">连续 ${streak} 天</span>` : ''}
+        ${commitmentLabel ? `<span class="pill good">下次 ${escapeHtml(commitmentLabel)}</span>` : ''}
+        ${matchedVideos > 0 ? `<span class="pill good">匹配内容 ${matchedVideos} 条</span>` : ''}
+        ${primaryGoal ? `<span class="pill">${escapeHtml(primaryGoal)}</span>` : ''}
+      `;
+    }
+
+    function buildAuthHref({ mode = null, source = 'today_guest' } = {}) {
+      const next = `./today.html?from=${encodeURIComponent(source)}`;
+      const params = new URLSearchParams({ next });
+      if (mode) params.set('mode', mode);
+      return `./desktop-auth.html?${params.toString()}`;
+    }
+
+    function renderTopbarAuthAction() {
+      const authAction = document.getElementById('auth-action');
+      if (!authAction) return;
+
+      const hasAccountToken = Boolean(state.token && !isTemporaryGuestUser());
+      if (hasRegisteredAccount() || hasAccountToken) {
+        authAction.textContent = '会员中心';
+        authAction.href = './membership.html';
+        authAction.dataset.track = 'topbar_membership';
+        return;
+      }
+
+      if (state.token) {
+        authAction.textContent = '注册保存';
+        authAction.href = buildAuthHref({ mode: 'register', source: 'topbar_guest_save' });
+        authAction.dataset.track = 'topbar_guest_save';
+        return;
+      }
+
+      authAction.textContent = '登录';
+      authAction.href = buildAuthHref({ source: 'topbar_login' });
+      authAction.dataset.track = 'topbar_login';
+    }
+
+    function renderSavePlanBand() {
+      const band = document.getElementById('save-plan-band');
+      if (!band) return;
+      if (hasRegisteredAccount()) {
+        band.hidden = true;
+        return;
+      }
+
+      band.hidden = false;
+      const profile = state.plan?.profile || {};
+      const levelName = state.plan?.currentLevel?.name || '初级';
+      const dailyGoal = profile.dailyGoal || state.plan?.estimatedMinutes || 15;
+      const primaryGoal = Array.isArray(profile.interests) && profile.interests.length ? profile.interests[0] : null;
+      const localCompletion = readFirstLessonCompletion();
+      setText('save-plan-title', localCompletion
+        ? '保存今天的首课记录'
+        : (primaryGoal ? `保存「${primaryGoal}」训练计划` : '保存这份个性化训练计划'));
+      setText('save-plan-copy', localCompletion
+        ? `已完成 ${Number(localCompletion.lines || localCompletion.target_lines || 3)} 句跟读。注册后会保留首课、目标、AI 反馈和复习记录。`
+        : `等级 ${levelName} · 每天 ${dailyGoal} 分钟。注册后会同步目标、进度、AI 反馈和复习记录。`);
+      setHref('save-plan-register', buildAuthHref({ mode: 'register', source: localCompletion ? 'first_lesson_save' : 'save_plan' }));
+      setHref('save-plan-login', buildAuthHref({ source: localCompletion ? 'first_lesson_login' : 'save_plan_login' }));
+      const guestAuth = document.querySelector('[data-track="guest_auth_cta"]');
+      if (guestAuth) {
+        guestAuth.setAttribute('href', buildAuthHref({ mode: 'register', source: 'guest_auth_cta' }));
+        guestAuth.textContent = localCompletion ? '注册保存首课' : '注册保存计划';
+      }
+    }
+
+    function renderHero() {
+      const plan = state.plan;
+      const level = normalizeLevel(plan?.currentLevel?.level);
+      const meta = LEVEL_META[level];
+      const levelName = plan?.currentLevel?.name || meta.name;
+      const desc = plan?.currentLevel?.description || meta.desc;
+      const newCount = plan?.plan?.newWords?.count || 0;
+      const reviewCount = plan?.plan?.reviewWords?.count || 0;
+      const videoCount = plan?.plan?.videos?.count || 0;
+      const minutes = plan?.estimatedMinutes || 15;
+
+      setText('level-name', levelName);
+      setText('level-desc', desc);
+      setText('metric-minutes', minutes);
+      setText('metric-new-words', newCount);
+      setText('metric-review-words', reviewCount);
+      setText('plan-summary', plan?.summary || `今日计划：${newCount} 个新词 + ${reviewCount} 个复习 + ${videoCount} 个视频`);
+      renderLearningEntryLinks();
+      const shadowingAction = (plan?.actions || []).find((action) => action.key === 'shadowing');
+      setHref('practice-action', shadowingAction?.href || practiceHref(state.firstVideo));
+      renderStatusPills();
+    }
+
+    function renderLearningEntryLinks() {
+      setHref('learning-entry-shadowing', practiceHref(state.firstVideo));
+      setHref('learning-entry-listening', videoHref(state.firstVideo));
+    }
+
+    function renderFirstLesson() {
+      const lesson = document.getElementById('first-lesson');
+      const start = document.getElementById('first-lesson-start');
+      if (!lesson || !start) return;
+
+      const progress = state.progress || {};
+      const completed = Number(progress.completed || 0);
+      const isComplete = Boolean(progress.isComplete || completed >= Number(progress.total || 3));
+      const plan = state.plan || {};
+      const profile = plan.profile || {};
+      const levelName = plan.currentLevel?.name || LEVEL_META[normalizeLevel(plan.currentLevel?.level)]?.name || '初级';
+      const primaryGoal = Array.isArray(profile.interests) && profile.interests.length ? profile.interests[0] : null;
+      const videoTitle = state.firstVideo?.title || state.firstVideo?.original_filename || '';
+      const href = firstLessonHref();
+      const localCompletion = syncFirstLessonCompletionFromUrl();
+
+      if (localCompletion) {
+        const lines = Number(localCompletion.lines || localCompletion.target_lines || 3);
+        lesson.hidden = false;
+        lesson.classList.add('completed');
+        setText('first-lesson-title', '首课已完成：今天已经开口了');
+        setText('first-lesson-copy', `已完成 ${lines} 句真实跟读。下一步进入完整训练，把刚才的节奏延长到 5-8 句。`);
+        setText('first-lesson-time', 'Done');
+        setText('first-lesson-step-1', '首课跟读已完成。');
+        setText('first-lesson-step-2', '继续完整训练，巩固节奏、重音和连读。');
+        setText('first-lesson-step-3', hasRegisteredAccount() ? '进度会同步到今日训练闭环。' : '注册后可保存首课记录和后续反馈。');
+        start.setAttribute('href', practiceHref(state.firstVideo));
+        start.dataset.track = 'first_lesson_continue';
+        start.dataset.section = 'first_lesson_complete';
+        start.textContent = '继续完整训练';
+
+        if (!state.firstLessonCompletionTracked) {
+          state.firstLessonCompletionTracked = true;
+          postEvent('today_first_lesson_complete_view', {
+            has_video: Boolean(state.firstVideo),
+            video_resource_id: localCompletion.video_id || state.firstVideo?.id || null,
+            lines,
+            source: localCompletion.source || null,
+          });
+        }
+        return;
+      }
+
+      lesson.classList.remove('completed');
+      start.dataset.track = 'first_lesson_start';
+      start.dataset.section = 'first_lesson';
+      start.textContent = '开始 3 分钟首课';
+
+      lesson.hidden = isComplete;
+      if (isComplete) return;
+
+      setText('first-lesson-title', primaryGoal ? `3 分钟首课：围绕「${primaryGoal}」开口` : '3 分钟首课：先跟读一句真实表达');
+      setText('first-lesson-copy', hasRegisteredAccount()
+        ? `${levelName}计划已就绪。先完成一句听懂、跟读、复听，系统会把今天记为已开始。`
+        : '不用先配置课程，完成一句听懂、跟读、复听，就能判断 Linglish 是否适合你。');
+      setText('first-lesson-step-1', videoTitle ? `从「${videoTitle.slice(0, 28)}」开始。` : '选一段匹配你等级的真实内容。');
+      setText('first-lesson-step-2', '录下自己的声音，对齐节奏和重音。');
+      setText('first-lesson-step-3', hasRegisteredAccount() ? '完成后进入今日复盘和下一步建议。' : '注册后可保存录音、反馈和复习记录。');
+      start.setAttribute('href', href);
+
+      if (!state.firstLessonTracked) {
+        state.firstLessonTracked = true;
+        postEvent('today_first_lesson_view', {
+          href,
+          has_video: Boolean(state.firstVideo),
+          video_resource_id: state.firstVideo?.id || null,
+          is_complete: isComplete,
+        });
+      }
+    }
+
+    function getProgressStep(key) {
+      const steps = state.progress?.steps || [];
+      return steps.find((step) => step.key === key) || null;
+    }
+
+    function renderProgress() {
+      const countEl = document.getElementById('today-progress-count');
+      const barEl = document.getElementById('today-progress-bar');
+      const noteEl = document.getElementById('today-progress-note');
+      if (!countEl || !barEl || !noteEl) return;
+
+      const progress = state.progress;
+      const localCompletion = readFirstLessonCompletion();
+      const registered = hasRegisteredAccount();
+      if (!state.user || !progress) {
+        const completed = localCompletion ? 1 : 0;
+        countEl.textContent = `${completed} / 3`;
+        barEl.style.width = localCompletion ? '33%' : '0%';
+        noteEl.textContent = localCompletion
+          ? '首课已完成；注册后可同步后续训练进度。'
+          : '注册后同步今日任务进度。';
+        return;
+      }
+
+      const completed = Math.max(Number(progress.completed || 0), localCompletion ? 1 : 0);
+      const total = Number(progress.total || 3);
+      const percent = Math.max(0, Math.min(100, Math.max(Number(progress.percent || 0), total ? (completed / total) * 100 : 0)));
+      countEl.textContent = `${completed} / ${total}`;
+      barEl.style.width = `${percent}%`;
+      noteEl.textContent = progress.isComplete
+        ? (registered ? '今日闭环已完成，可以继续复习或明天回来。' : '今日闭环已完成；注册后明天可以直接继续。')
+        : (localCompletion
+          ? `首课已完成，还差 ${Math.max(0, total - completed)} 步完成今日闭环。${registered ? '' : '注册后长期保存。'}`
+          : `还差 ${Math.max(0, total - completed)} 步完成今日闭环。${registered ? '' : '注册后长期保存。'}`);
+    }
+
+    function renderStreak() {
+      const box = document.getElementById('streak-box');
+      const countEl = document.getElementById('streak-count');
+      const titleEl = document.getElementById('streak-title');
+      const copyEl = document.getElementById('streak-copy');
+      if (!box || !countEl || !titleEl || !copyEl) return;
+
+      if (!state.user || isTemporaryGuestUser()) {
+        countEl.textContent = '0';
+        titleEl.textContent = '连续训练';
+        copyEl.textContent = '注册后记录 streak，完成任一步即可点亮今天。';
+        return;
+      }
+
+      const streak = state.streak || {};
+      const current = Number(streak.currentStreak || 0);
+      const longest = Number(streak.longestStreak || 0);
+      countEl.textContent = String(current);
+      titleEl.textContent = streak.hasTrainedToday ? '今日已点亮' : (streak.canExtendToday ? '今天待点亮' : '连续训练');
+      if (streak.hasTrainedToday) {
+        copyEl.textContent = `已连续 ${current} 天训练；历史最长 ${longest || current} 天。`;
+      } else if (streak.canExtendToday) {
+        copyEl.textContent = `完成任一步即可延续 ${current} 天连续训练。`;
+      } else {
+        copyEl.textContent = '今天完成第一步，开始建立连续训练记录。';
+      }
+    }
+
+    function renderTasks() {
+      const grid = document.getElementById('task-grid');
+      if (!grid) return;
+      const plan = state.plan || {};
+      const actions = Array.isArray(plan.actions) ? plan.actions.slice(0, 3) : [];
+      if (actions.length) {
+        grid.innerHTML = actions.map((action, index) => `
+          <div class="task-card${getProgressStep(action.key)?.done ? ' done' : ''}">
+            <span class="task-index">${String(index + 1).padStart(2, '0')}</span>
+            <h3>${escapeHtml(action.title || '今日任务')}</h3>
+            <p>${escapeHtml(action.description || '完成这一步，推进今日训练闭环。')}</p>
+            <div class="task-state">${getProgressStep(action.key)?.done ? '已完成' : '待完成'}</div>
+            <a class="btn btn-secondary" href="${escapeHtml(action.href || './video-reader-desktop.html?from=today')}" data-track="plan_${escapeHtml(action.key || 'action')}" data-action-key="${escapeHtml(action.key || 'action')}" data-section="plan">开始</a>
+          </div>
+        `).join('');
+        return;
+      }
+      const newCount = plan.plan?.newWords?.count || 0;
+      const reviewCount = plan.plan?.reviewWords?.count || 0;
+      const videoCount = plan.plan?.videos?.count || 0;
+      const videoTitle = state.firstVideo?.title || '选择一段真实视频';
+      grid.innerHTML = `
+        <div class="task-card${getProgressStep('watch')?.done ? ' done' : ''}">
+          <span class="task-index">01</span>
+          <h3>输入：看懂一段内容</h3>
+          <p>${escapeHtml(videoTitle)}。先听懂语境，再进入逐句训练。</p>
+          <div class="task-state">${getProgressStep('watch')?.done ? '已完成' : '待完成'}</div>
+          <a class="btn btn-secondary" href="${videoHref(state.firstVideo)}" data-track="fallback_video_action" data-section="plan">打开视频</a>
+        </div>
+        <div class="task-card${getProgressStep('shadowing')?.done ? ' done' : ''}">
+          <span class="task-index">02</span>
+          <h3>输出：跟读关键句</h3>
+          <p>完成 5-8 句跟读，听自己的录音，关注节奏、重音和连读。</p>
+          <div class="task-state">${getProgressStep('shadowing')?.done ? '已完成' : '待完成'}</div>
+          <a class="btn btn-secondary" href="${practiceHref(state.firstVideo)}" data-track="fallback_shadowing_action" data-section="plan">开始跟读</a>
+        </div>
+        <div class="task-card${getProgressStep('review')?.done ? ' done' : ''}">
+          <span class="task-index">03</span>
+          <h3>巩固：复习词句</h3>
+          <p>${reviewCount} 个到期复习，${newCount} 个新词；今天先少量完成。</p>
+          <div class="task-state">${getProgressStep('review')?.done ? '已完成' : '待完成'}</div>
+          <a class="btn btn-secondary" href="./video-vocabulary-desktop.html?from=today" data-track="fallback_vocab_action" data-section="plan">复习词汇</a>
+        </div>
+      `;
+    }
+
+    function formatStepProgress(step) {
+      if (!step) return '等待开始';
+      const value = Number(step.value || 0);
+      const target = Number(step.target || 0);
+      if (step.unit === 'seconds') {
+        return `${Math.min(value, target)} / ${target} 秒`;
+      }
+      if (step.unit === 'sessions') {
+        const lines = Number(step.lines || 0);
+        return lines > 0 ? `${value} 次 · ${lines} 句` : `${value} / ${target} 次`;
+      }
+      return `${value} / ${target}`;
+    }
+
+    function renderReview() {
+      const section = document.getElementById('review-section');
+      if (!section) return;
+
+      if (!state.user) {
+        section.hidden = true;
+        return;
+      }
+
+      section.hidden = false;
+      const progress = state.progress || { completed: 0, total: 3, percent: 0, steps: [] };
+      const localCompletion = readFirstLessonCompletion();
+      const completed = Math.max(Number(progress.completed || 0), localCompletion ? 1 : 0);
+      const total = Number(progress.total || 3);
+      let steps = Array.isArray(progress.steps) && progress.steps.length ? progress.steps : [
+        { key: 'watch', label: '看一段真实视频', done: false, value: 0, target: 60, unit: 'seconds' },
+        { key: 'shadowing', label: '完成跟读练习', done: false, value: 0, target: 1, unit: 'sessions' },
+        { key: 'review', label: '复习词汇', done: false, value: 0, target: 30, unit: 'seconds' },
+      ];
+      if (localCompletion && !steps.some((step) => step.done)) {
+        steps = steps.map((step, index) => index === 0
+          ? {
+            ...step,
+            key: 'first_lesson',
+            label: '完成 3 分钟首课',
+            done: true,
+            value: 1,
+            target: 1,
+            unit: 'sessions',
+            lines: Number(localCompletion.lines || 3),
+          }
+          : step);
+      }
+      const nextStep = steps.find((step) => !step.done) || steps[steps.length - 1] || { key: 'watch', label: '看一段真实视频' };
+      const isComplete = Boolean(progress.isComplete || completed >= total);
+      const tier = getEffectiveTier();
+      const isFree = tier === 'free';
+      const registered = hasRegisteredAccount();
+      const countEl = document.getElementById('review-count');
+      const subtitleEl = document.getElementById('review-subtitle');
+      const nextTitleEl = document.getElementById('review-next-title');
+      const nextCopyEl = document.getElementById('review-next-copy');
+      const actionsEl = document.getElementById('review-actions');
+      const stepsEl = document.getElementById('review-steps');
+
+      if (countEl) countEl.innerHTML = `${completed}<span>/${total}</span>`;
+      if (subtitleEl) {
+        subtitleEl.textContent = isComplete
+          ? '今天的输入、输出和复习已经闭环，下一步是保持节奏。'
+          : `还差 ${Math.max(0, total - completed)} 步完成今日闭环。`;
+      }
+      if (nextTitleEl) {
+        nextTitleEl.textContent = isComplete ? '今天已经完成，继续加深记忆' : `下一步：${nextStep.label || '继续训练'}`;
+      }
+      if (nextCopyEl) {
+        nextCopyEl.textContent = isComplete
+          ? (registered
+            ? `今日 streak ${state.streak?.hasTrainedToday ? '已点亮' : '待点亮'}。可以继续复习今天的词句，或升级到更高频 AI 打分。`
+            : '今天已经完成一次真实训练。注册后会保存首课记录、复习队列和后续 AI 反馈。')
+          : (registered
+            ? '按顺序完成输入、跟读和复习，系统会把今日完成状态写入训练进度。'
+            : '按顺序完成输入、跟读和复习；注册后会长期保存训练进度。');
+      }
+      if (actionsEl) {
+        const primaryHref = isComplete ? './video-vocabulary-desktop.html?from=today&review=extra' : actionHref(nextStep.key);
+        const secondaryHref = registered
+          ? (isFree ? './pricing.html#plans' : './membership.html')
+          : buildAuthHref({ mode: 'register', source: 'review_save_progress' });
+        const secondaryTrack = registered
+          ? (isFree ? 'review_upgrade_action' : 'review_membership_action')
+          : 'review_register_save';
+        actionsEl.innerHTML = `
+          <a class="btn btn-primary" href="${escapeHtml(primaryHref)}" data-track="review_next_action" data-action-key="${escapeHtml(nextStep.key || 'review')}" data-section="review">${isComplete ? '继续复习' : '继续下一步'}</a>
+          <a class="btn btn-secondary" href="${escapeHtml(secondaryHref)}" data-track="${secondaryTrack}" data-section="review">${registered ? (isFree ? '升级高频训练' : '查看会员权益') : '注册保存进度'}</a>
+        `;
+      }
+      if (stepsEl) {
+        stepsEl.innerHTML = steps.map((step, index) => `
+          <div class="review-step${step.done ? ' done' : ''}">
+            <span class="review-dot">${step.done ? '✓' : String(index + 1)}</span>
+            <div>
+              <div class="review-step-title">${escapeHtml(step.label || '训练步骤')}</div>
+              <div class="review-step-meta">${escapeHtml(formatStepProgress(step))}</div>
+            </div>
+            <div class="review-step-state">${step.done ? '已完成' : '待完成'}</div>
+          </div>
+        `).join('');
+      }
+
+      if (!state.reviewPanelTracked) {
+        state.reviewPanelTracked = true;
+        postEvent('today_review_panel_view', {
+          status: isComplete ? 'complete' : 'in_progress',
+          next_step: nextStep.key || null,
+        });
+      }
+      renderCommitment();
+    }
+
+    function renderCommitment() {
+      const card = document.getElementById('commitment-card');
+      const titleEl = document.getElementById('commitment-title');
+      const copyEl = document.getElementById('commitment-copy');
+      const inputEl = document.getElementById('commitment-custom-input');
+      if (!card || !titleEl || !copyEl) return;
+      if (!state.user) {
+        card.hidden = true;
+        return;
+      }
+
+      card.hidden = false;
+      const saved = getSavedCommitment();
+      const label = saved ? formatCommitmentLabel(saved.scheduledAt) : null;
+      const scheduledAt = saved ? new Date(saved.scheduledAt) : null;
+      const isPast = scheduledAt ? scheduledAt.getTime() < Date.now() : false;
+      if (label && !isPast) {
+        titleEl.textContent = `下次训练：${label}`;
+        copyEl.textContent = '已保存到本机。下次打开今日训练，会直接看到这个时间提醒。';
+        if (inputEl) inputEl.value = formatLocalInputValue(scheduledAt);
+        return;
+      }
+      if (label && isPast) {
+        titleEl.textContent = '该继续训练了';
+        copyEl.textContent = `你上次约定的是 ${label}。现在完成任一步，就能重新点亮今天。`;
+        if (inputEl) inputEl.value = formatLocalInputValue(commitmentPresetDate('next_evening'));
+        return;
+      }
+      titleEl.textContent = Number(state.progress?.completed || 0) >= 3 ? '安排下一次训练' : '先把下一次训练定下来';
+      copyEl.textContent = Number(state.progress?.completed || 0) >= 3
+        ? '今天已经闭环，定好下一次时间，明天回来直接继续。'
+        : '不用等到有空才学，先约定一个小时间点，更容易连续完成。';
+      if (inputEl && !inputEl.value) {
+        inputEl.value = formatLocalInputValue(commitmentPresetDate('tomorrow_morning'));
+      }
+    }
+
+    function bindCommitmentControls() {
+      document.addEventListener('click', (event) => {
+        const presetBtn = event.target && event.target.closest ? event.target.closest('[data-commitment-preset]') : null;
+        if (!presetBtn) return;
+        const preset = presetBtn.dataset.commitmentPreset || 'tonight';
+        saveNextTrainingCommitment(commitmentPresetDate(preset), preset);
+      });
+      const saveBtn = document.getElementById('commitment-custom-save');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+          const input = document.getElementById('commitment-custom-input');
+          const date = input?.value ? new Date(input.value) : null;
+          const ok = saveNextTrainingCommitment(date, 'custom');
+          if (!ok && input) {
+            input.focus();
+            input.setCustomValidity('请选择至少 15 分钟后的训练时间');
+            input.reportValidity();
+            window.setTimeout(() => input.setCustomValidity(''), 1200);
+          }
+        });
+      }
+    }
+
+    function formatWeekday(dateKey) {
+      const date = new Date(`${dateKey}T00:00:00`);
+      const labels = ['日', '一', '二', '三', '四', '五', '六'];
+      if (Number.isNaN(date.getTime())) return '--';
+      return labels[date.getDay()];
+    }
+
+    function renderWeeklyReport() {
+      const section = document.getElementById('weekly-section');
+      if (!section) return;
+
+      if (!state.user) {
+        section.hidden = true;
+        return;
+      }
+
+      section.hidden = false;
+      const report = state.weeklyReport || {};
+      const totals = report.totals || {};
+      const days = Array.isArray(report.days) ? report.days : [];
+      const activeDays = Number(totals.activeDays || 0);
+      const minutes = Number(totals.estimatedMinutes || 0);
+      const practiceSessions = Number(totals.practiceSessions || 0);
+      const completionRate = Number(totals.completionRate || 0);
+      const activeDaysEl = document.getElementById('weekly-active-days');
+      const copyEl = document.getElementById('weekly-score-copy');
+      const statsEl = document.getElementById('weekly-stats');
+      const barsEl = document.getElementById('weekly-bars');
+
+      if (activeDaysEl) activeDaysEl.innerHTML = `${activeDays}<span>/7</span>`;
+      if (copyEl) {
+        copyEl.textContent = report.recommendation || '最近 7 天的训练报告会在这里汇总。';
+      }
+      if (statsEl) {
+        statsEl.innerHTML = `
+          <span class="pill good">${completionRate}% 活跃率</span>
+          <span class="pill">${minutes} 分钟</span>
+          <span class="pill">${practiceSessions} 次跟读</span>
+        `;
+      }
+      if (barsEl) {
+        const sourceDays = days.length ? days : Array.from({ length: 7 }, (_, index) => ({
+          date: '',
+          completedSteps: 0,
+          active: false,
+          estimatedMinutes: 0,
+          index,
+        }));
+        barsEl.innerHTML = sourceDays.map((day, index) => {
+          const steps = Math.max(0, Math.min(3, Number(day.completedSteps || 0)));
+          const height = Math.max(8, Math.round((steps / 3) * 100));
+          const label = day.date ? formatWeekday(day.date) : `D${index + 1}`;
+          return `
+            <div class="weekly-day${day.active ? '' : ' inactive'}" title="${escapeHtml(day.date || '')}">
+              <div class="weekly-bar"><span style="height:${height}%"></span></div>
+              <div class="weekly-label">${escapeHtml(label)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (!state.weeklyPanelTracked) {
+        state.weeklyPanelTracked = true;
+        postEvent('today_weekly_report_view', {
+          active_days: activeDays,
+          weekly_minutes: minutes,
+          practice_sessions: practiceSessions,
+        });
+      }
+    }
+
+    const recoImpressions = window.VideoRecommendationClient
+      ? window.VideoRecommendationClient.createImpressionTracker(postEvent)
+      : { track() {} };
+
+    function recoEventProps(video, position) {
+      return window.VideoRecommendationClient
+        ? window.VideoRecommendationClient.eventProps(video, 'today', position)
+        : { slot: 'today', video_resource_id: String(video?.id || ''), position };
+    }
+
+    function renderVideoFeedback(video) {
+      // 反馈需要登录态(含游客 token);纯游客不展示
+      if (!state.token) return '';
+      return `
+        <div class="video-feedback" data-video-id="${escapeHtml(video.id || '')}">
+          <span>这个难度</span>
+          <button type="button" data-reco-feedback="too_hard">太难</button>
+          <button type="button" data-reco-feedback="too_easy">太简单</button>
+        </div>
+      `;
+    }
+
+    function renderVideos() {
+      const wrap = document.getElementById('video-list');
+      if (!wrap) return;
+      const videos = state.plan?.plan?.videos?.videos || [];
+      if (!videos.length) {
+        wrap.innerHTML = `
+          <div class="empty">
+            还没有匹配的视频。你可以导入 YouTube / 本地视频，Linglish 会把字幕、词汇和跟读串起来。
+            <div style="margin-top:12px;"><a class="btn btn-secondary" href="./youtube-import.html" data-track="empty_import_content" data-section="recommendations">导入内容</a></div>
+          </div>
+        `;
+        return;
+      }
+      const shown = videos.slice(0, 4);
+      wrap.innerHTML = shown.map((video, index) => `
+        <div class="video-item">
+          <a class="video-card" href="${videoHref(video)}" data-track="recommended_video" data-section="recommendations" data-video-id="${escapeHtml(video.id || '')}" data-reco-position="${index}">
+            <div>
+              <div class="video-title">${escapeHtml(video.title || video.original_filename || `视频 ${video.id}`)}${video.watched ? '<span class="video-watched">练过</span>' : ''}</div>
+              <div class="video-meta">${escapeHtml(video.levelName || video.difficulty_level || '推荐')} · ${formatDuration(video.duration || video.duration_sec)} · ${escapeHtml(video.category || '真实内容')}</div>
+              <div class="video-reason">${escapeHtml(video.recommendationReason || '适合今天的训练节奏')}</div>
+            </div>
+            <span class="pill${video.watched ? ' done' : ''}">${video.watched ? '再练' : '开始'}</span>
+          </a>
+          ${renderVideoFeedback(video)}
+        </div>
+      `).join('');
+      shown.forEach((video, index) => recoImpressions.track(video, 'today', index));
+    }
+
+    async function sendRecoFeedback(button) {
+      const box = button.closest('.video-feedback');
+      const action = button.dataset.recoFeedback;
+      const payload = window.VideoRecommendationClient?.feedbackPayload(action);
+      if (!box || !payload || box.dataset.state === 'sent') return;
+      const videos = state.plan?.plan?.videos?.videos || [];
+      const video = videos.find((item) => String(item.id) === box.dataset.videoId) || { id: box.dataset.videoId };
+      box.querySelectorAll('button').forEach((btn) => { btn.disabled = true; });
+      postEvent('reco_feedback', { ...recoEventProps(video, videos.indexOf(video)), action });
+      try {
+        const res = await fetch(`${API_BASE}/api/learning/plan-feedback`, {
+          method: 'POST',
+          headers: jsonHeaders(),
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        box.dataset.state = 'sent';
+        box.textContent = '已记下，明天调整';
+      } catch (err) {
+        console.warn('[Today] Recommendation feedback failed:', err?.message || err);
+        box.querySelectorAll('button').forEach((btn) => { btn.disabled = false; });
+      }
+    }
+
+    function bindRecoInteractions() {
+      const wrap = document.getElementById('video-list');
+      if (!wrap) return;
+      wrap.addEventListener('click', (event) => {
+        const feedbackBtn = event.target.closest('[data-reco-feedback]');
+        if (feedbackBtn) {
+          sendRecoFeedback(feedbackBtn);
+          return;
+        }
+        const card = event.target.closest('.video-card[data-video-id]');
+        if (!card) return;
+        const videos = state.plan?.plan?.videos?.videos || [];
+        const position = Number(card.dataset.recoPosition) || 0;
+        const video = videos[position] || { id: card.dataset.videoId };
+        postEvent('reco_click', recoEventProps(video, position));
+      });
+    }
+
+    // 纯游客没有每日计划,用可匿名访问的推荐接口补上推荐列表
+    async function loadGuestRecommendations() {
+      if (!window.VideoRecommendationClient) return;
+      const videos = await window.VideoRecommendationClient.fetchRecommendedVideos({ apiBase: API_BASE, limit: 4 });
+      if (!videos.length || state.token) return;
+      state.plan = {
+        ...state.plan,
+        plan: { ...(state.plan?.plan || {}), videos: { count: videos.length, videos } },
+      };
+      renderVideos();
+    }
+
+    function renderWords() {
+      const wrap = document.getElementById('word-list');
+      if (!wrap) return;
+      const reviews = state.plan?.plan?.reviewWords?.words || [];
+      const newWords = state.plan?.plan?.newWords?.words || [];
+      const words = reviews.concat(newWords).slice(0, 8);
+      if (!words.length) {
+        wrap.innerHTML = '<div class="empty">暂无到期词汇。完成视频训练后，系统会自动沉淀新词和表达。</div>';
+        return;
+      }
+      wrap.innerHTML = words.map((word) => `
+        <div class="word-card">
+          <div class="word-title">${escapeHtml(word.word || '')}</div>
+          <div class="word-meta">${escapeHtml(word.phonetic || word.partOfSpeech || '')}</div>
+          <div class="word-meta">${escapeHtml(parseDefinition(word.definitions))}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderQuota() {
+      const wrap = document.getElementById('quota-list');
+      if (!wrap) return;
+      const entitlement = state.user?.entitlement;
+      if (!entitlement || isTemporaryGuestUser()) {
+        wrap.innerHTML = `<div class="empty">${state.token ? '注册后显示并保留 AI 打分、发音评测和单词解析额度。' : '登录后显示 AI 打分、发音评测和单词解析额度。'}</div>`;
+        const upgradeBand = document.getElementById('upgrade-band');
+        if (upgradeBand) upgradeBand.hidden = false;
+        setText('quota-subtitle', state.token ? '游客体验可先试练；注册后保留额度和反馈。' : '登录后显示今日额度。');
+        return;
+      }
+      const items = [
+        ['AI 口语打分', entitlement.daily_ai_scores],
+        ['发音评测', entitlement.daily_pronunciation_assessments],
+        ['单词深度解析', entitlement.daily_deep_word_generations],
+      ];
+      wrap.innerHTML = items.map(([label, limit]) => {
+        const isUnlimited = !Number.isFinite(Number(limit));
+        const display = isUnlimited ? '不限' : `${limit}/天`;
+        const percent = isUnlimited ? 100 : Math.min(100, Math.max(12, (Number(limit) / 200) * 100));
+        return `
+          <div class="quota-row">
+            <div class="quota-label"><span>${escapeHtml(label)}</span><span>${display}</span></div>
+            <div class="bar"><span style="width:${percent}%"></span></div>
+          </div>
+        `;
+      }).join('');
+
+      const tier = entitlement.effective_tier || 'free';
+      const upgradeBand = document.getElementById('upgrade-band');
+      if (upgradeBand) upgradeBand.hidden = tier !== 'free' ? true : false;
+      setText('quota-subtitle', tier === 'free' ? '免费额度适合体验；升级后可高频训练。' : `当前权益：${tier}`);
+    }
+
+    function buildFallbackPlan() {
+      const level = normalizeLevel(new URLSearchParams(location.search || '').get('level'));
+      const meta = LEVEL_META[level];
+      let dailyGoal = 15;
+      let interest = '';
+      try {
+        dailyGoal = Number(localStorage.getItem(ONBOARDING_DAILY_MINUTES_KEY)) || 15;
+        interest = localStorage.getItem(ONBOARDING_GOAL_KEY) || '';
+      } catch (_) {}
+      return {
+        currentLevel: { level, name: meta.name, description: meta.desc },
+        recommendation: interest
+          ? `围绕「${interest}」先完成一个轻量训练闭环：看一段真实视频、跟读 5 句、复习 3 个表达。`
+          : '先完成一个轻量训练闭环：看一段真实视频、跟读 5 句、复习 3 个表达。',
+        estimatedMinutes: Math.max(10, Math.min(dailyGoal, 30)),
+        summary: '今日轻量计划：1 个视频 + 5 句跟读 + 3 个复习',
+        profile: { dailyGoal, interests: interest ? [interest] : [] },
+        plan: {
+          newWords: { count: 3, words: [] },
+          reviewWords: { count: 3, words: [] },
+          videos: { count: 0, videos: [] },
+        },
+      };
+    }
+
+    async function loadAuthenticatedPlan() {
+      await syncPendingOnboardingProfile();
+      state.user = await getJson('/users/me');
+
+      const [planRes, progressRes, streakRes, weeklyRes] = await Promise.all([
+        getJson('/api/learning/daily-plan').catch((err) => {
+          console.warn('[Today] Failed to load daily plan:', err?.message || err);
+          trackPlanError(err);
+          return null;
+        }),
+        getJson('/api/learning/today-progress').catch(() => null),
+        getJson('/api/learning/today-streak').catch(() => null),
+        getJson('/api/learning/weekly-report').catch(() => null),
+      ]);
+      state.plan = planRes?.data || planRes || buildFallbackPlan();
+      state.progress = progressRes?.data || progressRes || null;
+      state.streak = streakRes?.data || streakRes || null;
+      state.weeklyReport = weeklyRes?.data || weeklyRes || null;
+      const videos = state.plan?.plan?.videos?.videos || [];
+      state.firstVideo = videos[0] || null;
+    }
+
+    function showGuestMode() {
+      state.user = null;
+      state.plan = buildFallbackPlan();
+      state.progress = null;
+      state.streak = null;
+      state.weeklyReport = null;
+      state.firstVideo = null;
+      const guestSection = document.getElementById('guest-section');
+      if (guestSection) guestSection.hidden = false;
+      renderAll();
+      trackPlanLoaded('guest');
+      loadGuestRecommendations();
+    }
+
+    function renderFirstLessonResume() {
+      const currentToken = getToken();
+      const currentUser = currentToken === state.token ? state.user : null;
+      window.LinglishFirstLessonGoal.renderResume(document.getElementById('first-lesson-resume'), {
+        storage: localStorage,
+        subject: window.LinglishFirstLessonProgress.resolveSubject({
+          userId: currentUser?.id || currentUser?.user_id, token: currentToken,
+          isGuest: isTemporaryGuestUser(currentUser), visitorId: window.LinglishVisitor.getId(),
+        }),
+        mobile: false, emit: postEvent,
+      });
+    }
+
+    window.addEventListener('pageshow', () => renderFirstLessonResume());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') renderFirstLessonResume();
+    });
+
+    function renderAll() {
+      renderTopbarAuthAction();
+      renderHero();
+      renderFirstLesson();
+      renderFirstLessonResume();
+      renderTasks();
+      renderReview();
+      renderStreak();
+      renderWeeklyReport();
+      renderVideos();
+      renderWords();
+      renderQuota();
+      renderProgress();
+      renderSavePlanBand();
+    }
+
+    async function init() {
+      bindTracking();
+      bindRecoInteractions();
+      bindFirstLessonStart();
+      bindCommitmentControls();
+      state.token = getToken();
+      renderTopbarAuthAction();
+      if (!state.token) {
+        showGuestMode();
+        return;
+      }
+
+      try {
+        await loadAuthenticatedPlan();
+        const registered = hasRegisteredAccount();
+        const guestSection = document.getElementById('guest-section');
+        if (guestSection) guestSection.hidden = registered;
+        renderAll();
+        trackPlanLoaded(registered ? 'personalized' : 'guest_token');
+      } catch (err) {
+        if (err.status === 401 || err.status === 403) {
+          try { if (window.AuthManager) window.AuthManager.clearToken(); } catch (_) {}
+          state.token = null;
+          showGuestMode();
+          return;
+        }
+        console.warn('[Today] Failed to load personalized plan:', err);
+        trackPlanError(err);
+        state.plan = buildFallbackPlan();
+        state.firstVideo = null;
+        renderAll();
+        setText('plan-summary', '个性化计划暂时不可用，已提供默认训练闭环。');
+        trackPlanLoaded('fallback_error');
+      }
+    }
+
+    init();
+  </script>
+  <script>
+    (function () {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (!('IntersectionObserver' in window)) return;
+      var targets = document.querySelectorAll('main > section, main .section');
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-visible');
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.08 });
+      targets.forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight) return; // 首屏不做入场,避免闪烁
+        el.classList.add('lx-reveal');
+        io.observe(el);
+      });
+    })();
+  </script>
+</body>
+</html>

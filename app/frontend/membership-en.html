@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linglish Membership - Billing and Subscription</title>
+  <meta name="description" content="Manage your Linglish membership and continue to the official pricing page for secure checkout.">
+  <link rel="canonical" href="https://example.com/membership-en.html">
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #64748b;
+      --paper: #f8fafc;
+      --surface: #ffffff;
+      --line: #d8e0ea;
+      --teal: #0f766e;
+      --teal-strong: #0b5f59;
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      display: grid;
+      place-items: center;
+      min-height: 100svh;
+      padding: 24px;
+    }
+
+    .panel {
+      width: min(720px, 100%);
+      padding: clamp(28px, 6vw, 48px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 18px 46px rgba(15, 23, 42, 0.12);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 26px;
+      font-weight: 850;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: var(--teal);
+      font-weight: 900;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      color: var(--teal-strong);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 26px;
+      height: 2px;
+      background: var(--teal);
+    }
+
+    h1 {
+      max-width: 620px;
+      margin: 0 0 18px;
+      font-size: clamp(36px, 7vw, 62px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    p {
+      max-width: 620px;
+      margin: 0 0 26px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-weight: 850;
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--teal);
+      box-shadow: 0 14px 30px rgba(15, 118, 110, 0.24);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      border-color: var(--line);
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="panel" aria-labelledby="title">
+      <a class="brand" href="./landing.html" aria-label="Linglish home">
+        <span class="brand-mark">L</span>
+        <span>Linglish</span>
+      </a>
+      <p class="eyebrow">Membership</p>
+      <h1 id="title">Secure billing now runs through the official pricing page.</h1>
+      <p>
+        The legacy local membership flow has been retired. Continue to pricing for secure checkout,
+        or open the subscription center to review the current account status.
+      </p>
+      <div class="actions">
+        <a class="btn btn-primary" href="./pricing.html#plans">View pricing</a>
+        <a class="btn btn-secondary" href="./membership.html">Open subscription center</a>
+        <a class="btn btn-secondary" href="./index-desktop.html">Back to learning</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

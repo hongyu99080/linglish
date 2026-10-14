@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+      // IMPORTANT: This must be the first script to catch extension errors
+      (function(){
+        try {
+          const patterns = [
+            /\"undefined\" is not valid JSON/i,
+            /\"null\" is not valid JSON/i,
+            /Unexpected token 'u'.*JSON/i,
+            /Unexpected token 'n'.*JSON/i,
+            /SyntaxError.*undefined.*JSON/i,
+            /SyntaxError.*null.*JSON/i,
+            /JSON\.parse/i,
+            /updateConfig/i,
+            /initConfig/i,
+            /metadata\.js/i,
+            /content\.js/i,
+          ];
+          const matchMsg = (msg) => {
+            try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+          };
+
+          // Check if error is from extension (check stack trace)
+          const isExtensionError = (error) => {
+            try {
+              if (!error) return false;
+              const stack = error.stack || error.toString();
+              // Check for common extension patterns
+              if (/chrome-extension:\/\//i.test(stack)) return true;
+              if (/moz-extension:\/\//i.test(stack)) return true;
+              if (/safari-extension:\/\//i.test(stack)) return true;
+              if (/webkit-masked-url:\/\//i.test(stack)) return true;
+              if (/metadata\.js/i.test(stack)) return true;
+              if (/content\.js/i.test(stack)) return true;
+              if (/updateConfig|initConfig/i.test(stack)) return true;
+              return false;
+            } catch (_) {
+              return false;
+            }
+          };
+
+          // Override console methods
+          const ce = console.error ? console.error.bind(console) : null;
+          const cw = console.warn ? console.warn.bind(console) : null;
+          if (ce) {
+            console.error = function(...args){
+              const head = args && args.length ? String(args[0]) : '';
+              if (matchMsg(head)) return;
+              // Check if it's an error object
+              if (args[0] instanceof Error && isExtensionError(args[0])) return;
+              return ce(...args);
+            };
+          }
+          if (cw) {
+            console.warn = function(...args){
+              const head = args && args.length ? String(args[0]) : '';
+              if (matchMsg(head)) return;
+              if (args[0] instanceof Error && isExtensionError(args[0])) return;
+              return cw(...args);
+            };
+          }
+
+          // Catch unhandled promise rejections
+          window.addEventListener('unhandledrejection', (ev) => {
+            try {
+              const reason = ev?.reason;
+              // Check message
+              const msg = reason?.message || reason?.toString?.() || reason;
+              if (matchMsg(String(msg||''))) {
+                ev.preventDefault();
+                return;
+              }
+              // Check if from extension
+              if (isExtensionError(reason)) {
+                ev.preventDefault();
+                return;
+              }
+            } catch(_) {}
+          });
+
+          // Catch error events
+          window.addEventListener('error', (ev) => {
+            try {
+              const msg = ev?.message || '';
+              if (matchMsg(String(msg))) {
+                ev.preventDefault();
+                return;
+              }
+              // Check if error is from extension
+              if (ev?.error && isExtensionError(ev.error)) {
+                ev.preventDefault();
+                return;
+              }
+              // Check filename for extension patterns
+              const filename = ev?.filename || '';
+              if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+                ev.preventDefault();
+                return;
+              }
+            } catch(_) {}
+          }, true);
+        } catch (_) {}
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+    <link rel="alternate icon" href="/favicon.ico">
+    <link rel="alternate icon" href="/linglish-favicon.png?v=1" type="image/png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <title>PDF Reader - LingQ Style | linglish</title>
+    <link rel="stylesheet" href="./styles.css" />
+  <script src="./auth-helpers.js"></script>
+  <link rel="stylesheet" href="./shared/dictionary.css?v=20251113" />
+  <script src="./shared/dictionary-render.js?v=1765726957"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      .pdf-reader-container {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* Left Sidebar - PDF List */
+      .pdf-sidebar {
+        width: 280px;
+        background: #f8f9fa;
+        border-right: 1px solid #dee2e6;
+        overflow-y: auto;
+        padding: 1rem;
+      }
+
+      .pdf-sidebar h3 {
+        margin-top: 0;
+        color: #333;
+      }
+
+      .pdf-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .pdf-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .pdf-item:hover {
+        border-color: #4a5ff7;
+        background: #f8f9ff;
+      }
+
+      .pdf-item.active {
+        border-color: #4a5ff7;
+        background: #e8eaff;
+      }
+
+      .pdf-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .pdf-item-title {
+        flex: 1;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .delete-pdf-btn {
+        padding: 0.25rem 0.5rem;
+        background: #f0f0f0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        color: #666;
+        opacity: 0;
+        transition: all 0.2s;
+      }
+
+      .pdf-item:hover .delete-pdf-btn {
+        opacity: 1;
+      }
+
+      .delete-pdf-btn:hover {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .delete-pdf-btn:active {
+        background: #ffcdd2;
+      }
+
+      .pdf-item-meta {
+        font-size: 0.85rem;
+        color: #666;
+      }
+
+      /* Main Viewer Area */
+      .viewer-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* Top Toolbar */
+      .viewer-toolbar {
+        background: #fff;
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .toolbar-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        background: #e9ecef;
+        transition: background 0.2s;
+      }
+
+      .toolbar-btn:hover {
+        background: #dee2e6;
+      }
+
+      .toolbar-btn.primary {
+        background: #4a5ff7;
+        color: white;
+      }
+
+      .toolbar-btn.primary:hover {
+        background: #3a4fd7;
+      }
+
+      .toolbar-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .page-info {
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      /* PDF Canvas Area */
+      .pdf-canvas-container {
+        flex: 1;
+        overflow: auto;
+        background: #525659;
+        padding: 2rem;
+        position: relative;
+      }
+
+      .pdf-canvas-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        position: relative;
+      }
+
+      #pdf-canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      /* Text Layer Overlay */
+      .text-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+        opacity: 0.2;
+        line-height: 1;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      .text-layer span {
+        position: absolute;
+        white-space: pre;
+        cursor: pointer;
+        transform-origin: 0% 0%;
+        color: transparent;
+        user-select: none;
+        pointer-events: auto;
+      }
+
+      .text-layer span:hover {
+        background: rgba(255, 255, 0, 0.3);
+      }
+
+      .text-layer span.highlighted {
+        background: rgba(255, 255, 0, 0.5);
+      }
+
+      .text-layer span.known {
+        background: none;
+        text-decoration: none;
+      }
+
+      .text-layer span.learning {
+        background: rgba(100, 149, 237, 0.3);
+      }
+
+      .text-layer span.new {
+        background: rgba(255, 255, 0, 0.3);
+      }
+
+      /* OCR word styles */
+      .text-layer span.ocr-word {
+        position: absolute;
+        cursor: pointer;
+        color: transparent;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .text-layer span.ocr-word:hover {
+        background: rgba(255, 255, 0, 0.4);
+      }
+
+      /* Right Sidebar - Dictionary */
+      .dictionary-sidebar {
+        width: 320px;
+        background: #f8f9fa;
+        border-left: 1px solid #dee2e6;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: none;
+      }
+
+      .dictionary-sidebar.show {
+        display: block;
+      }
+
+      .dictionary-sidebar h3 {
+        margin-top: 0;
+        color: #333;
+      }
+
+      .word-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 0.5rem;
+      }
+
+      .word-phonetic {
+        color: #666;
+        margin-bottom: 1rem;
+      }
+
+      .word-definition {
+        margin-bottom: 1rem;
+      }
+
+      .definition-item {
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 6px;
+      }
+
+      .definition-pos {
+        font-weight: 600;
+        color: #4a5ff7;
+        font-size: 0.9rem;
+      }
+
+      .definition-text {
+        margin-top: 0.25rem;
+        color: #333;
+      }
+
+      .word-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+
+      .word-action-btn {
+        flex: 1;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+      }
+
+      .btn-known {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .btn-learning {
+        background: #cce5ff;
+        color: #004085;
+      }
+
+      .btn-new {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .definition-example {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-left: 3px solid #007bff;
+        border-radius: 4px;
+        font-style: italic;
+        color: #495057;
+        font-size: 0.9rem;
+      }
+
+      .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #666;
+      }
+
+      .loading-overlay.hidden {
+        display: none;
+      }
+    </style>
+    <script src="./js/media-session.js"></script>
+  </head>
+  <body>
+    <div class="pdf-reader-container">
+      <!-- Left Sidebar: PDF List -->
+      <div class="pdf-sidebar">
+        <h3>📚 Your PDFs</h3>
+        <ul class="pdf-list" id="pdf-list">
+          <li style="padding: 1rem; color: #666;">Loading PDFs...</li>
+        </ul>
+      </div>
+
+      <!-- Main Viewer -->
+      <div class="viewer-area">
+        <!-- Toolbar -->
+        <div class="viewer-toolbar">
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="prev-page" disabled>
+              ← Previous
+            </button>
+            <span class="page-info" id="page-info">No PDF loaded</span>
+            <button class="toolbar-btn" id="next-page" disabled>
+              Next →
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-btn primary" id="read-page">
+              🔊 Read Page
+            </button>
+            <button class="toolbar-btn" id="stop-reading" disabled>
+              ⏹️ Stop
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <select id="zoom-select" class="toolbar-btn">
+              <option value="0.75">75%</option>
+              <option value="1" selected>100%</option>
+              <option value="1.25">125%</option>
+              <option value="1.5">150%</option>
+              <option value="2">200%</option>
+            </select>
+          </div>
+
+          <div style="margin-left: auto;">
+            <a href="./index.html" class="toolbar-btn">← Back to App</a>
+          </div>
+        </div>
+
+        <!-- PDF Canvas -->
+        <div class="pdf-canvas-container">
+          <div class="pdf-canvas-wrapper" id="canvas-wrapper">
+            <canvas id="pdf-canvas"></canvas>
+            <div class="text-layer" id="text-layer"></div>
+            <div class="loading-overlay" id="loading-overlay">
+              Loading PDF...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Sidebar: Dictionary -->
+      <div class="dictionary-sidebar" id="dictionary-sidebar">
+        <h3>📖 Dictionary</h3>
+        <div id="dictionary-content">
+          <p style="color: #666;">Click on a word to see its definition.</p>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+    const API_BASE = '';
+
+    async function ttsSpeak(text) {
+      if (!text) return;
+      function readToken() {
+        const keys = ['linglish_token','authToken'];
+        for (const k of keys) { try { const v = localStorage.getItem(k) || sessionStorage.getItem(k); if (v && v !== 'null' && v !== 'undefined') return v; } catch(_) {} }
+        return null;
+      }
+      // 使用高质量 Neural 语音
+      const neuralVoice = 'en-US-AriaNeural';
+      try {
+        const res = await fetch(`${API_BASE}/tts/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(readToken() ? { 'Authorization': `Bearer ${readToken()}` } : {}) },
+          body: JSON.stringify({ text, lang: 'en', provider: 'edge', voice: neuralVoice })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.audioUrl) { new Audio(data.audioUrl).play().catch(()=>{}); return; }
+        }
+      } catch (_) {}
+      try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = voiceLang.startsWith('zh') ? 'zh-CN' : 'en-US';
+        u.rate = 0.85;
+        u.pitch = 1.0;
+        u.volume = 0.8;
+        const voices = speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          const langPrefix = u.lang.split('-')[0];
+          const preferredVoice = voices.find(v =>
+            v.lang.startsWith(langPrefix) && (
+              v.name.includes('Natural') || v.name.includes('Neural') ||
+              v.name.includes('Premium') || v.name.includes('Samantha') ||
+              v.name.includes('Google') || v.name.includes('Microsoft')
+            )
+          ) || voices.find(v => v.lang === u.lang) || voices.find(v => v.lang.startsWith(langPrefix));
+          if (preferredVoice) u.voice = preferredVoice;
+        }
+        speechSynthesis.speak(u);
+      } catch(_) {}
+    }
+      let token = localStorage.getItem('linglish_token');
+
+      // ---- Analytics helpers ----
+      async function postEvent(name, properties = {}) {
+        if (!token) return;
+        try {
+          await fetch(`${API_BASE}/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ event_name: name, properties }),
+          });
+        } catch (_) {}
+      }
+      let vocabStudyStartedAt = null;
+      function vocabStudyStart() { if (!vocabStudyStartedAt) vocabStudyStartedAt = Date.now(); }
+      function vocabStudyStop() {
+        if (!vocabStudyStartedAt) return;
+        const secs = Math.round((Date.now() - vocabStudyStartedAt)/1000);
+        vocabStudyStartedAt = null;
+        if (secs > 0) postEvent('vocab_study', { seconds: secs });
+      }
+
+      // Debug: Check token status
+      console.log('[Auth] Token available:', Boolean(token));
+      console.log('[Auth] localStorage available:', typeof(Storage) !== 'undefined');
+
+      if (!token || token === 'null' || token === 'undefined') {
+        console.error('[Auth] No valid token found, redirecting to login');
+        alert('Please login first');
+        window.location.href = './index.html';
+        throw new Error('Authentication required'); // Prevent further execution
+      }
+
+      // PDF.js setup
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      async function buildProtectedDocumentUrl(documentPath) {
+        const mediaSession = window.LinglishMediaSession;
+        if (!token || !mediaSession) throw new Error('MEDIA_SESSION_UNAVAILABLE');
+        const mediaState = await mediaSession.ensure({ token });
+        return mediaSession.buildMediaUrl(documentPath, {
+          mode: mediaState.mode,
+          legacyToken: token,
+        });
+      }
+
+      window.LinglishMediaSession?.bindLifecycle({ getToken: () => token });
+
+      let pdfDoc = null;
+      let currentPage = 1;
+      let currentScale = 1;
+      let currentPdfPath = null;
+      let pdfFingerprint = null;
+      let isReading = false;
+      let ocrCache = new Map(); // Cache OCR results client-side
+
+      // Load PDF list
+      async function loadPdfList() {
+        const pdfList = document.getElementById('pdf-list');
+
+        try {
+          const response = await fetch(`${API_BASE}/articles`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to load PDFs');
+          }
+
+          const data = await response.json();
+          const pdfs = (data.items || data.articles || []).filter(article => article.source_type === 'pdf' && article.pdf_path);
+
+          if (pdfs.length === 0) {
+            pdfList.innerHTML = '<li style="padding: 1rem; color: #666;">No PDFs imported yet</li>';
+            return;
+          }
+
+          pdfList.innerHTML = pdfs.map(pdf => `
+            <li class="pdf-item" onclick="event.target.classList.contains('delete-pdf-btn') ? null : loadPdf('${pdf.pdf_path}', ${pdf.id})">
+              <div class="pdf-item-header">
+                <div class="pdf-item-title">${escapeHtml(pdf.title)}</div>
+                <button class="delete-pdf-btn" onclick="event.stopPropagation(); deletePdf(${pdf.id}, '${escapeHtml(pdf.title).replace(/'/g, "\\'")}');" title="删除">🗑️</button>
+              </div>
+              <div class="pdf-item-meta">${pdf.word_count || 0} words</div>
+            </li>
+          `).join('');
+
+        } catch (error) {
+          console.error('Error loading PDF list:', error);
+          pdfList.innerHTML = '<li style="padding: 1rem; color: #d32f2f;">Error loading PDFs</li>';
+        }
+      }
+
+      // Helper function to escape HTML
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Delete PDF
+      async function deletePdf(articleId, articleTitle) {
+        const confirmMsg = `确定要删除 PDF "${articleTitle}"吗？\n\n此操作无法撤销，将会删除：\n- PDF 文件\n- 文章内容\n- 相关的音频和学习记录`;
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/articles/${articleId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.message || 'Failed to delete PDF');
+          }
+
+          const result = await response.json();
+          console.log('[DELETE] PDF deleted successfully:', result);
+
+          // 如果删除的是当前打开的 PDF，清空显示区域
+          if (currentPdfPath && result.deletedArticle && result.deletedArticle.pdf_path === currentPdfPath) {
+            pdfDoc = null;
+            currentPdfPath = null;
+            currentPage = 1;
+            document.getElementById('pdf-canvas').getContext('2d').clearRect(0, 0, 10000, 10000);
+            document.getElementById('text-layer').innerHTML = '';
+            document.getElementById('page-info').textContent = 'No PDF loaded';
+            document.getElementById('prev-page').disabled = true;
+            document.getElementById('next-page').disabled = true;
+            document.getElementById('dictionary-sidebar').classList.remove('show');
+          }
+
+          // 重新加载 PDF 列表
+          await loadPdfList();
+
+          alert('PDF 已成功删除');
+        } catch (err) {
+          console.error('[DELETE] Failed to delete PDF:', err);
+          alert(`删除失败：${err.message}`);
+        }
+      }
+
+      // Load PDF
+      async function loadPdf(pdfPath) {
+        currentPdfPath = pdfPath;
+        document.getElementById('loading-overlay').classList.remove('hidden');
+
+        try {
+          const pdfUrl = await buildProtectedDocumentUrl(pdfPath);
+          console.log('Loading protected PDF');
+
+          const loadingTask = pdfjsLib.getDocument({
+            url: pdfUrl,
+            withCredentials: true
+          });
+
+          // Monitor loading progress
+          loadingTask.onProgress = function(progress) {
+            console.log('PDF loading progress:', progress.loaded, '/', progress.total);
+          };
+
+          pdfDoc = await loadingTask.promise;
+          console.log('PDF loaded successfully, pages:', pdfDoc.numPages);
+
+          // Generate PDF fingerprint from filename (simple approach)
+          pdfFingerprint = btoa(pdfPath).substring(0, 32);
+          console.log('PDF fingerprint:', pdfFingerprint);
+
+          document.getElementById('page-info').textContent = `Page 1 / ${pdfDoc.numPages}`;
+          document.getElementById('prev-page').disabled = true;
+          document.getElementById('next-page').disabled = false;
+
+          currentPage = 1;
+          renderPage(currentPage);
+
+        } catch (error) {
+          console.error('Error loading PDF:', error);
+          console.error('Error details:', error.message, error.name);
+          alert(`Failed to load PDF: ${error.message}`);
+          document.getElementById('loading-overlay').classList.add('hidden');
+        }
+      }
+
+      // Render page
+      async function renderPage(pageNum) {
+        document.getElementById('loading-overlay').classList.remove('hidden');
+
+        try {
+          const page = await pdfDoc.getPage(pageNum);
+          const viewport = page.getViewport({ scale: currentScale });
+
+          const canvas = document.getElementById('pdf-canvas');
+          const context = canvas.getContext('2d');
+
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+          };
+
+          await page.render(renderContext).promise;
+
+          // Extract text with positions
+          const textContent = await page.getTextContent();
+          renderTextLayer(textContent, viewport);
+
+          document.getElementById('loading-overlay').classList.add('hidden');
+
+        } catch (error) {
+          console.error('Error rendering page:', error);
+          document.getElementById('loading-overlay').classList.add('hidden');
+        }
+      }
+
+      // Render text layer for word selection
+      function renderTextLayer(textContent, viewport) {
+        const textLayer = document.getElementById('text-layer');
+        textLayer.innerHTML = '';
+
+        textContent.items.forEach(item => {
+          const tx = pdfjsLib.Util.transform(
+            viewport.transform,
+            item.transform
+          );
+
+          const span = document.createElement('span');
+          span.textContent = item.str;
+          span.style.left = tx[4] + 'px';
+          span.style.top = tx[5] + 'px';
+          span.style.fontSize = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]) + 'px';
+          span.style.fontFamily = item.fontName;
+
+          // Add click handler for word lookup
+          span.addEventListener('click', () => lookupWord(item.str));
+
+          textLayer.appendChild(span);
+        });
+      }
+
+      // Observe dictionary sidebar hide to stop vocab timer
+      try {
+        const sidebarEl = document.getElementById('dictionary-sidebar');
+        if (sidebarEl) {
+          const obs = new MutationObserver(() => {
+            if (!sidebarEl.classList.contains('show')) {
+              vocabStudyStop();
+            }
+          });
+          obs.observe(sidebarEl, { attributes: true, attributeFilter: ['class'] });
+        }
+        document.addEventListener('visibilitychange', () => { if (document.hidden) vocabStudyStop(); });
+      } catch (_) {}
+
+      // Word lookup
+      async function lookupWord(word) {
+        // Clean word
+        word = word
+          .replace(/[’]/g, "'")
+          .replace(/[^a-zA-Z']/g, '')
+          .replace(/^'+|'+$/g, '')
+          .toLowerCase();
+
+        if (!word || word.replace(/'/g, '').length < 2) return;
+
+        const sidebar = document.getElementById('dictionary-sidebar');
+        const dictContent = document.getElementById('dictionary-content');
+
+        sidebar.classList.add('show');
+        vocabStudyStart();
+
+        // Show loading state
+        dictContent.innerHTML = `
+          <div style="padding: 2rem; text-align: center; color: #666;">
+            Loading definition for "${word}"...
+          </div>
+        `;
+
+        try {
+          const response = await fetch(`${API_BASE}/dictionary/${word}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.status === 404) {
+            throw new Error('Word not found');
+          }
+
+          if (!response.ok) {
+            throw new Error('Dictionary lookup failed');
+          }
+
+          const { entry } = await response.json();
+
+          // Build phonetic string
+          let phoneticText = '';
+          if (entry.phonetic) {
+            phoneticText = entry.phonetic;
+          } else if (entry.phonetics && entry.phonetics.length > 0) {
+            phoneticText = entry.phonetics.find(p => p.text)?.text || '';
+          }
+
+          // Build definitions HTML
+          let definitionsHTML = '';
+          if (entry.meanings && entry.meanings.length > 0) {
+            entry.meanings.forEach(meaning => {
+              const pos = meaning.partOfSpeech || 'unknown';
+              meaning.definitions.slice(0, 3).forEach((def, index) => {
+                definitionsHTML += `
+                  <div class="definition-item">
+                    <div class="definition-pos">${pos}</div>
+                    <div class="definition-text">${def.definition}</div>
+                    ${def.example ? `<div class="definition-example">"${def.example}"</div>` : ''}
+                  </div>
+                `;
+              });
+            });
+          }
+
+          if (window.DictionaryRender) {
+            // Try fetch user vocab item to determine status badge
+            let statusText = '';
+            let statusClass = '';
+            try {
+              const readToken = () => { try { return localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken'); } catch(_) { return null; } };
+              const tk = readToken();
+              if (tk) {
+                const vr = await fetch(`${API_BASE}/vocab/item?lemma=${encodeURIComponent(word)}`, { headers: { Authorization: `Bearer ${tk}` } });
+                if (vr.ok) {
+                  const vj = await vr.json();
+                  const st = String(vj?.item?.state || '').toLowerCase();
+                  if (st) {
+                    statusClass = st==='known' ? 'mastered' : (st==='learning' ? 'learning' : 'new');
+                    statusText = st==='known' ? ((typeof i18n!=='undefined'&&i18n?.t)?(i18n.t('vocab.known')||'已掌握'):'已掌握') : (st==='learning' ? ((typeof i18n!=='undefined'&&i18n?.t)?(i18n.t('vocab.learning')||'学习中'):'学习中') : ((typeof i18n!=='undefined'&&i18n?.t)?(i18n.t('vocab.new')||'新词'):'新词'));
+                  }
+                }
+              }
+            } catch(_) {}
+            dictContent.innerHTML = DictionaryRender.build(word, { phonetic: phoneticText, meanings: entry?.meanings }, '', { statusText, statusClass });
+            // Auto-add to study on lookup
+            try { await markWord(word, 'learning'); } catch(_) {}
+            try {
+              const headerBtn = dictContent.querySelector('.dict-speak-btn');
+              if (headerBtn) headerBtn.addEventListener('click', () => ttsSpeak(word));
+              dictContent.querySelectorAll('.dict-def-speak').forEach(btn => {
+                btn.addEventListener('click', () => ttsSpeak(btn.getAttribute('data-text') || word));
+              });
+              // No add button; handled automatically above
+            } catch(_){}
+          } else {
+            dictContent.innerHTML = `
+              <div class="word-title">${word}</div>
+              ${phoneticText ? `<div class="word-phonetic">${phoneticText}</div>` : ''}
+              <div class="word-definition">${definitionsHTML}</div>`;
+          }
+        } catch (error) {
+          console.error('Dictionary lookup error:', error);
+          if (window.DictionaryRender) {
+            dictContent.innerHTML = DictionaryRender.build(word, null, '');
+            try { await markWord(word, 'learning'); } catch(_) {}
+            try {
+              const headerBtn = dictContent.querySelector('.dict-speak-btn');
+              if (headerBtn) headerBtn.addEventListener('click', () => ttsSpeak(word));
+              // No add button in shared renderer
+            } catch(_){}
+          } else {
+            dictContent.innerHTML = `<div class="word-title">${word}</div>`;
+          }
+        }
+      }
+
+      // Mark word status
+      async function markWord(word, status) {
+        try {
+          const token = (localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken')) || '';
+          const wordLower = String(word||'').toLowerCase();
+
+          // 如果是添加新词（learning状态），使用 add API
+          if (!status || status === 'learning') {
+            const payload = { word: wordLower };
+            const res = await fetch(`${API_BASE}/vocabulary/v2/add`, { method: 'POST', headers: { 'Content-Type':'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify(payload) });
+            const data = await res.json().catch(()=>({}));
+            if (!res.ok) throw new Error(data?.error || '添加失败');
+          } else {
+            // 如果是更新状态（known/unknown），使用 status API
+            const payload = { word: wordLower, status: status };
+            const res = await fetch(`${API_BASE}/vocabulary/v2/status`, { method: 'PUT', headers: { 'Content-Type':'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify(payload) });
+            const data = await res.json().catch(()=>({}));
+            if (!res.ok) throw new Error(data?.error || '更新失败');
+          }
+          try { const n = document.createElement('div'); const msg = (typeof i18n!=='undefined'&&i18n?.t)? (i18n.t('dict.added')||'已加入学习中'):'已加入学习中'; n.textContent = `${msg} "${wordLower}"`; n.style.cssText='position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:#16a34a;color:#fff;padding:8px 12px;border-radius:10px;z-index:2000;'; document.body.appendChild(n); setTimeout(()=>n.remove(),1200);} catch(_){ try{ alert('已加入学习中'); }catch(__){} }
+          try { localStorage.setItem('vocab_update', JSON.stringify({ ts: Date.now(), lemma: wordLower, state: status||'learning' })); } catch(_) {}
+        } catch (err) { try { alert(err.message||'添加失败'); } catch(_){} }
+      }
+
+      // Navigation
+      document.getElementById('prev-page').addEventListener('click', () => {
+        if (currentPage <= 1) return;
+        currentPage--;
+        renderPage(currentPage);
+        updatePageInfo();
+      });
+
+      document.getElementById('next-page').addEventListener('click', () => {
+        if (currentPage >= pdfDoc.numPages) return;
+        currentPage++;
+        renderPage(currentPage);
+        updatePageInfo();
+      });
+
+      function updatePageInfo() {
+        document.getElementById('page-info').textContent = `Page ${currentPage} / ${pdfDoc.numPages}`;
+        document.getElementById('prev-page').disabled = currentPage <= 1;
+        document.getElementById('next-page').disabled = currentPage >= pdfDoc.numPages;
+      }
+
+      // Zoom
+      document.getElementById('zoom-select').addEventListener('change', (e) => {
+        currentScale = parseFloat(e.target.value);
+        if (pdfDoc) renderPage(currentPage);
+      });
+
+      // TTS - Read page
+      document.getElementById('read-page').addEventListener('click', async () => {
+        console.log('Read Page button clicked');
+        try {
+          if (!pdfDoc) {
+            console.error('No PDF loaded');
+            alert('Please load a PDF first');
+            return;
+          }
+
+          console.log('Getting page:', currentPage);
+          const page = await pdfDoc.getPage(currentPage);
+          const textContent = await page.getTextContent();
+          let text = textContent.items.map(item => item.str).join(' ');
+
+          console.log('Extracted text length:', text.length);
+          console.log('Text preview:', text.substring(0, 100));
+
+          // If no text found, try OCR
+          if (!text || text.trim().length === 0) {
+            console.log('No text layer found, performing OCR...');
+            alert('这是扫描版 PDF,正在使用 OCR 识别文字,请稍候...');
+
+            text = await performOCR(page);
+
+            if (!text || text.trim().length === 0) {
+              alert('OCR 识别失败,此页面可能没有可识别的文字');
+              return;
+            }
+
+            console.log('OCR extracted text length:', text.length);
+            console.log('OCR text preview:', text.substring(0, 100));
+          }
+
+          readText(text);
+        } catch (error) {
+          console.error('Error reading page:', error);
+          alert('Error: ' + error.message);
+        }
+      });
+
+      // Perform OCR on a PDF page
+      async function performOCR(page) {
+        try {
+          // Check client-side cache first
+          const cacheKey = `${pdfFingerprint}-${currentPage}`;
+          console.log('performOCR - pdfFingerprint:', pdfFingerprint);
+          console.log('performOCR - currentPage:', currentPage);
+          console.log('performOCR - cacheKey:', cacheKey);
+
+          if (ocrCache.has(cacheKey)) {
+            console.log('OCR cache hit (client-side)');
+            const cached = ocrCache.get(cacheKey);
+            renderOcrTextLayer(cached.words, cached.ocrWidth, cached.ocrHeight);
+            return cached.text;
+          }
+
+          // Render page to canvas for OCR
+          const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport
+          }).promise;
+
+          // Convert canvas to blob
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+          // Send to server for OCR
+          const formData = new FormData();
+          formData.append('image', blob, 'page.png');
+          formData.append('pdfFingerprint', pdfFingerprint);
+          formData.append('pageNumber', currentPage.toString());
+
+          const response = await fetch(`${API_BASE}/ocr/extract`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+
+          if (!response.ok) {
+            throw new Error('OCR request failed');
+          }
+
+          const result = await response.json();
+
+          // Save OCR viewport dimensions for coordinate transformation
+          const ocrViewport = page.getViewport({ scale: 2.0 });
+
+          // Cache the result with viewport info
+          ocrCache.set(cacheKey, {
+            text: result.text || '',
+            words: result.words || [],
+            ocrWidth: ocrViewport.width,
+            ocrHeight: ocrViewport.height
+          });
+
+          console.log(`OCR ${result.cached ? 'from database' : 'performed'}, words:`, result.words?.length);
+
+          // Render OCR text layer with clickable words
+          if (result.words && result.words.length > 0) {
+            renderOcrTextLayer(result.words, ocrViewport.width, ocrViewport.height);
+          }
+
+          return result.text || '';
+        } catch (error) {
+          console.error('OCR error:', error);
+          throw error;
+        }
+      }
+
+      // Render OCR text layer with clickable words
+      function renderOcrTextLayer(words, ocrWidth, ocrHeight) {
+        const textLayer = document.getElementById('text-layer');
+        const canvas = document.getElementById('pdf-canvas');
+
+        const canvasRect = canvas.getBoundingClientRect();
+        const displayWidth = canvasRect.width || canvas.width;
+        const displayHeight = canvasRect.height || canvas.height;
+
+        // Clear existing text layer
+        textLayer.innerHTML = '';
+        textLayer.style.width = displayWidth + 'px';
+        textLayer.style.height = displayHeight + 'px';
+
+        // Calculate scale factor: OCR coordinates are relative to ocrWidth/ocrHeight
+        // We need to scale them to current canvas width/height
+        const scaleX = displayWidth / ocrWidth;
+        const scaleY = displayHeight / ocrHeight;
+
+        console.log('OCR dimensions:', ocrWidth, 'x', ocrHeight);
+        console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+        console.log('Canvas display dimensions:', displayWidth, 'x', displayHeight);
+        console.log('Scale factors: X =', scaleX.toFixed(3), 'Y =', scaleY.toFixed(3));
+
+        words.forEach((word, index) => {
+          const span = document.createElement('span');
+          span.textContent = word.text;
+          span.className = 'ocr-word';
+
+          // Transform OCR coordinates to display coordinates
+          const bbox = word.bbox;
+          if (!bbox || typeof bbox.x0 !== 'number' || typeof bbox.y0 !== 'number' ||
+              typeof bbox.x1 !== 'number' || typeof bbox.y1 !== 'number') {
+            return;
+          }
+
+          const rawWidthUnits = bbox.x1 - bbox.x0;
+          const rawHeightUnits = bbox.y1 - bbox.y0;
+
+          const paddingXUnits = rawWidthUnits > 0 ? rawWidthUnits * 0.15 : 4 / scaleX;
+          const paddingYUnits = rawHeightUnits > 0 ? rawHeightUnits * 0.25 : 4 / scaleY;
+
+          let left = (bbox.x0 - paddingXUnits) * scaleX;
+          let top = (bbox.y0 - paddingYUnits) * scaleY;
+          let width = (rawWidthUnits + paddingXUnits * 2) * scaleX;
+          let height = (rawHeightUnits + paddingYUnits * 2) * scaleY;
+
+          const MIN_SIZE = 12;
+          if (width < MIN_SIZE) {
+            left -= (MIN_SIZE - width) / 2;
+            width = MIN_SIZE;
+          }
+          if (height < MIN_SIZE) {
+            top -= (MIN_SIZE - height) / 2;
+            height = MIN_SIZE;
+          }
+
+          const maxLeft = displayWidth - width;
+          const maxTop = displayHeight - height;
+
+          left = Math.max(0, Math.min(left, maxLeft));
+          top = Math.max(0, Math.min(top, maxTop));
+
+          span.style.left = left + 'px';
+          span.style.top = top + 'px';
+          span.style.width = width + 'px';
+          span.style.height = height + 'px';
+          span.style.fontSize = height + 'px';
+
+          // Debug: log first few words
+          if (index < 5) {
+            console.log(`Word "${word.text}": bbox(${bbox.x0}, ${bbox.y0}, ${bbox.x1}, ${bbox.y1}) -> display(${left.toFixed(1)}, ${top.toFixed(1)}, ${width.toFixed(1)}, ${height.toFixed(1)})`);
+          }
+
+          // Add click handler
+          span.addEventListener('click', (e) => {
+            console.log('Clicked word:', word.text, 'at position:', left.toFixed(1), top.toFixed(1));
+            lookupWord(word.text);
+          });
+
+          textLayer.appendChild(span);
+        });
+
+        console.log('Rendered', words.length, 'OCR words to text layer');
+      }
+
+      async function readText(text) {
+        // Split into chunks
+        const chunks = text.match(/.{1,200}/g) || [];
+
+        isReading = true;
+        document.getElementById('read-page').disabled = true;
+        document.getElementById('stop-reading').disabled = false;
+
+        for (const chunk of chunks) {
+          if (!isReading) break;
+
+          try {
+            // Use selected voice across site
+            let selectedVoice = 'en-US-AriaNeural';
+            try { selectedVoice = localStorage.getItem('linglish_tts_voice') || selectedVoice; } catch(_) {}
+            const voiceLang = selectedVoice.startsWith('en-') ? 'en' : (selectedVoice.startsWith('zh-') ? 'zh-CN' : 'en');
+            const response = await fetch(`${API_BASE}/tts/generate`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ text: chunk, lang: voiceLang, provider: 'edge', voice: 'en-US-AriaNeural' })
+            });
+
+            const { audioUrl } = await response.json();
+            await playAudio(audioUrl);
+
+          } catch (error) {
+            console.error('TTS error:', error);
+            break;
+          }
+        }
+
+        isReading = false;
+        document.getElementById('read-page').disabled = false;
+        document.getElementById('stop-reading').disabled = true;
+      }
+
+      function playAudio(url) {
+        return new Promise((resolve, reject) => {
+          const audio = new Audio(url);
+          audio.onended = resolve;
+          audio.onerror = reject;
+          audio.play();
+        });
+      }
+
+      document.getElementById('stop-reading').addEventListener('click', () => {
+        isReading = false;
+      });
+
+      // Initialize
+      loadPdfList();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,143 @@
+{
+  "meeting": {
+    "word": "meeting",
+    "dbRecord": {
+      "id": 101,
+      "word": "meeting",
+      "word_lowercase": "meeting",
+      "phonetic": "mɛtɪŋ",
+      "definitions": {
+        "meanings": [
+          {
+            "partOfSpeech": "noun",
+            "definitions": [
+              { "definition": "A gathering of people for discussion.", "zh": "会议" }
+            ]
+          }
+        ]
+      },
+      "content_revision": 4,
+      "quality_status": "review",
+      "seo_indexable": false
+    },
+    "externalEntry": {
+      "word": "meeting",
+      "phonetic": "/ˈmiːtɪŋ/",
+      "phonetics": [{ "text": "/ˈmiːtɪŋ/" }],
+      "meanings": [
+        {
+          "partOfSpeech": "noun",
+          "definitions": [
+            { "definition": "An occasion when people come together to discuss or decide something." }
+          ]
+        }
+      ]
+    },
+    "expectedBarePhonetic": "ˈmiːtɪŋ",
+    "expectedApiPhonetic": "/ˈmiːtɪŋ/"
+  },
+  "functionWords": {
+    "the": {
+      "noisyDefinitions": [
+        "A rhythmic unit in classical verse.",
+        "Used before a noun to refer to a particular person or thing already known or being discussed."
+      ],
+      "expectedFirst": "Used before a noun to refer to a particular person or thing already known or being discussed."
+    },
+    "and": {
+      "noisyDefinitions": [
+        "Archaic: if; even if.",
+        "Used to connect words, phrases, or clauses."
+      ],
+      "expectedFirst": "Used to connect words, phrases, or clauses."
+    },
+    "have": {
+      "noisyDefinitions": [
+        "A person with extensive resources in a specialist domain.",
+        "To own, hold, or possess something."
+      ],
+      "expectedFirst": "To own, hold, or possess something."
+    }
+  },
+  "legacyDefinitions": {
+    "array": [
+      { "definition": "A planned gathering.", "zh": "会议" },
+      "An encounter between people."
+    ],
+    "enZh": {
+      "en": ["A planned gathering.", "An encounter between people."],
+      "zh": ["会议", "会面"]
+    },
+    "meanings": {
+      "meanings": [
+        {
+          "partOfSpeech": "noun",
+          "definitions": [
+            { "definition": "A planned gathering.", "zh": "会议" }
+          ]
+        }
+      ]
+    }
+  },
+  "validatorEquivalence": {
+    "phonetics": [
+      { "name": "standard stress", "value": "ˈwɔːtə(r)", "accept": true },
+      { "name": "syllabic combining mark", "value": "n̩", "accept": true },
+      { "name": "dental combining mark", "value": "d̪", "accept": true },
+      { "name": "tie bar above", "value": "t͡ʃ", "accept": true },
+      { "name": "tie bar below", "value": "t͜ʃ", "accept": true },
+      { "name": "orphan ordinary combining mark", "value": "́a", "accept": false },
+      { "name": "combining mark after separator", "value": "a ̩", "accept": false },
+      { "name": "combining grapheme joiner", "value": "a͏b", "accept": false },
+      { "name": "dangling tie bar above", "value": "a͡", "accept": false },
+      { "name": "leading tie bar below", "value": "͜ab", "accept": false },
+      { "name": "tie bar before non-base", "value": "a͡-", "accept": false },
+      { "name": "stress before punctuation", "value": "ˈ-a", "accept": false },
+      { "name": "zero width space", "value": "a​b", "accept": false },
+      { "name": "soft hyphen", "value": "a­b", "accept": false },
+      { "name": "U+0362 double rightwards arrow below", "value": "a͢b", "accept": false },
+      { "name": "U+0363 combining latin small a", "value": "aͣb", "accept": false },
+      { "name": "U+0364 combining latin small e", "value": "aͤb", "accept": false },
+      { "name": "U+0365 combining latin small i", "value": "aͥb", "accept": false },
+      { "name": "U+0366 combining latin small o", "value": "aͦb", "accept": false },
+      { "name": "U+0367 combining latin small u", "value": "aͧb", "accept": false },
+      { "name": "U+0368 combining latin small c", "value": "aͨb", "accept": false },
+      { "name": "U+0369 combining latin small d", "value": "aͩb", "accept": false },
+      { "name": "U+036A combining latin small h", "value": "aͪb", "accept": false },
+      { "name": "U+036B combining latin small m", "value": "aͫb", "accept": false },
+      { "name": "U+036C combining latin small r", "value": "aͬb", "accept": false },
+      { "name": "U+036D combining latin small t", "value": "aͭb", "accept": false },
+      { "name": "U+036E combining latin small v", "value": "aͮb", "accept": false },
+      { "name": "U+036F combining latin small x", "value": "aͯb", "accept": false }
+    ],
+    "definitions": [
+      { "name": "plain string", "value": "A learner definition.", "accept": true },
+      { "name": "direct definition object", "value": { "definition": "A learner definition." }, "accept": true },
+      { "name": "en string", "value": { "en": "A learner definition." }, "accept": true },
+      { "name": "en array", "value": { "en": ["A learner definition."] }, "accept": true },
+      { "name": "meanings container", "value": { "meanings": [{ "definitions": [{ "definition": "A learner definition." }] }] }, "accept": true },
+      { "name": "JSON null", "value": null, "accept": false },
+      { "name": "empty string", "value": "", "accept": false },
+      { "name": "NBSP-only string", "value": "   ", "accept": false },
+      { "name": "serialized JSON null", "value": "null", "accept": false },
+      { "name": "serialized empty array", "value": "[]", "accept": false },
+      { "name": "serialized empty object", "value": "{}", "accept": false },
+      { "name": "serialized empty en array", "value": "{\"en\":[]}", "accept": false },
+      { "name": "serialized valid en", "value": "{\"en\":\"A serialized learner definition.\"}", "accept": true },
+      { "name": "empty array", "value": [], "accept": false },
+      { "name": "empty object", "value": {}, "accept": false },
+      { "name": "empty en array", "value": { "en": [] }, "accept": false },
+      { "name": "empty en object", "value": { "en": {} }, "accept": false },
+      { "name": "null en", "value": { "en": null }, "accept": false },
+      { "name": "NBSP-only en", "value": { "en": [" "] }, "accept": false },
+      { "name": "nested en array", "value": { "en": [["Nested invalid definition."]] }, "accept": false },
+      { "name": "nested empty en containers", "value": { "en": [{ "en": [] }] }, "accept": false },
+      { "name": "empty definitions container", "value": { "definitions": [] }, "accept": false },
+      { "name": "nested invalid definitions container", "value": { "definitions": [{ "definitions": [{ "definition": "Too deeply nested." }] }] }, "accept": false },
+      { "name": "empty meanings container", "value": { "meanings": [] }, "accept": false },
+      { "name": "nested invalid meanings container", "value": { "meanings": [{ "definitions": [["Nested invalid definition."]] }] }, "accept": false },
+      { "name": "boolean", "value": true, "accept": false },
+      { "name": "number", "value": 1, "accept": false }
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+/* Vocabulary Page Styles */
+
+.vocabulary-content {
+  background: white;
+  min-height: calc(100vh - 140px);
+}
+
+.vocabulary-list {
+  padding: 0;
+}
+
+.vocab-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.vocab-level {
+  background: #ffd700;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.vocab-content {
+  flex: 1;
+}
+
+.vocab-word {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vocab-translation {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+/* Playlist Page Styles */
+.playlist-content {
+  background: white;
+  min-height: calc(100vh - 140px);
+}
+
+.playlist-items {
+  padding: 16px;
+}
+
+.empty-playlist {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--text-secondary);
+}

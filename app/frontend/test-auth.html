@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth Test - linglish</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #f5f5f7;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 { margin-top: 0; }
+    .status {
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .info { background: #d1ecf1; color: #0c5460; }
+    button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background: #4a5ff7;
+      color: white;
+      cursor: pointer;
+      margin: 0.5rem 0.5rem 0.5rem 0;
+      font-size: 1rem;
+    }
+    button:hover { background: #3a4fd7; }
+    pre {
+      background: #f4f4f4;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔍 Authentication Diagnostics</h1>
+
+    <div id="test-results">
+      <p>Running tests...</p>
+    </div>
+
+    <h2>Actions</h2>
+    <button onclick="runTests()">🔄 Refresh Tests</button>
+    <button onclick="clearStorage()">🗑️ Clear localStorage</button>
+    <button onclick="testLogin()">🔑 Test Login</button>
+    <button onclick="location.href='./index.html'">← Back to Home</button>
+
+  </div>
+
+  <script>
+    function runTests() {
+      const results = document.getElementById('test-results');
+      let html = '';
+
+      // Test 1: localStorage available
+      const storageAvailable = typeof(Storage) !== 'undefined';
+      html += `<div class="status ${storageAvailable ? 'success' : 'error'}">
+        ✓ localStorage Available: <strong>${storageAvailable}</strong>
+      </div>`;
+
+      // Test 2: Check token
+      const token = localStorage.getItem('linglish_token');
+      const tokenExists = token && token !== 'null' && token !== 'undefined';
+      html += `<div class="status ${tokenExists ? 'success' : 'error'}">
+        ${tokenExists ? '✓' : '✗'} Token Status: <strong>${tokenExists ? 'FOUND' : 'NOT FOUND'}</strong>
+      </div>`;
+
+      // Test 3: localStorage keys only (values may contain credentials)
+      html += `<h3>localStorage Keys:</h3>`;
+      if (localStorage.length === 0) {
+        html += `<div class="status error">localStorage is empty</div>`;
+      } else {
+        html += `<pre>`;
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          html += `${key}\n`;
+        }
+        html += `</pre>`;
+      }
+
+      // Test 4: Cookie settings
+      html += `<div class="status info">
+        Cookies Enabled: <strong>${navigator.cookieEnabled}</strong>
+      </div>`;
+
+      results.innerHTML = html;
+    }
+
+    function clearStorage() {
+      if (confirm('Clear all localStorage data?')) {
+        localStorage.clear();
+        alert('localStorage cleared!');
+        runTests();
+      }
+    }
+
+    async function testLogin() {
+      const email = prompt('Email:');
+      const password = prompt('Password:');
+
+      if (!email || !password) return;
+
+      try {
+        const response = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          localStorage.setItem('linglish_token', data.access_token);
+          alert('Login successful! Token saved.');
+          runTests();
+        } else {
+          alert('Login failed: ' + (data.message || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Login error: ' + err.message);
+        console.error(err);
+      }
+    }
+
+    // Run tests on load
+    runTests();
+  </script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+/**
+ * Practice Session Animations
+ * Transitions, keyframe animations, and motion effects
+ */
+
+/* Float Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 8px 32px rgba(245, 158, 11, 0.6);
+  }
+}
+
+/* Bounce Animation */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Fade In */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fade Out */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Slide In Up */
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Slide Out Down */
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+}
+
+/* Slide In Right */
+@keyframes slideInRight {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Slide In Left */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Scale In */
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Shake */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Spin */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Glow */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(14, 165, 233, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.6);
+  }
+}
+
+/* Apply Animations */
+.floating {
+  animation: float 2s ease-in-out infinite;
+}
+
+.pulsing {
+  animation: pulse 2s infinite;
+}
+
+.bouncing {
+  animation: bounce 1s infinite;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease-out;
+}
+
+.slide-in-up {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.slide-out-down {
+  animation: slideOutDown 0.3s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+.shaking {
+  animation: shake 0.5s;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.glowing {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Transition Utilities */
+.transition-all {
+  transition: all var(--transition-normal);
+}
+
+.transition-colors {
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+.transition-transform {
+  transition: transform var(--transition-normal);
+}
+
+.transition-opacity {
+  transition: opacity var(--transition-normal);
+}
+
+.transition-shadow {
+  transition: box-shadow var(--transition-normal);
+}
+
+/* Hover Effects */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+}
+
+.hover-brighten:hover {
+  filter: brightness(1.1);
+}
+
+/* Focus Effects */
+*:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .floating,
+  .pulsing,
+  .bouncing,
+  .shimmer,
+  .spinning,
+  .glowing {
+    animation: none;
+  }
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(14, 165, 233, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 0.8s linear infinite;
+}
+
+/* Progress Bar Animation */
+.progress-bar-animated {
+  background-size: 1rem 1rem;
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
+  animation: progress-bar-stripes 1s linear infinite;
+}
+
+@keyframes progress-bar-stripes {
+  0% {
+    background-position: 1rem 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* Success Animation */
+.success-check {
+  animation: scaleIn 0.3s ease-out, pulse 0.6s ease-out;
+}
+
+/* Error Animation */
+.error-shake {
+  animation: shake 0.5s;
+}
+
+/* Slide Transitions for Practice Lines */
+.line-item {
+  transition: transform var(--transition-normal),
+              box-shadow var(--transition-normal),
+              background-color var(--transition-normal),
+              border-color var(--transition-normal);
+}
+
+.line-item:hover {
+  transform: translateX(2px);
+}
+
+/* FAB Animation */
+.start-recording-fab {
+  animation: pulse 2s infinite;
+  transition: transform var(--transition-slow), box-shadow var(--transition-slow);
+}
+
+.start-recording-fab .fab-icon {
+  animation: bounce 1s infinite;
+}
+
+/* Status Icon Animation */
+.status-icon-inline {
+  animation: float 2s ease-in-out infinite;
+}
+
+/* Video Controls Fade */
+.video-controls-overlay {
+  transition: opacity var(--transition-slow);
+}
+
+.video-player-container:hover .video-controls-overlay {
+  opacity: 1;
+}
+
+/* Modal Backdrop */
+.rename-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.rename-card {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Button Press Effect */
+.control-btn:active,
+.audio-mode-btn:active,
+.toggle-btn:active {
+  transform: scale(0.95);
+}
+
+/* Page Load Animation */
+@keyframes pageLoad {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.practice-container {
+  animation: pageLoad 0.4s ease-out;
+}

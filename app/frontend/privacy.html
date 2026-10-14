@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>隐私政策 - Linglish</title>
+  <meta name="description" content="Linglish 隐私政策：说明账号、学习记录、音频、AI 反馈、支付和团队线索相关数据的收集、使用和保护方式。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.example.com/privacy.html">
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --paper: #f8fafc;
+      --surface: #ffffff;
+      --line: #d8e0ea;
+      --teal: #0f766e;
+      --blue: #2563eb;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+    }
+
+    a { color: inherit; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px clamp(18px, 5vw, 64px);
+      background: rgba(255, 255, 255, 0.92);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--ink);
+      font-weight: 850;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: var(--teal);
+      font-weight: 900;
+    }
+
+    .nav {
+      display: flex;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .nav a { text-decoration: none; }
+    .nav a:hover { color: var(--teal); }
+
+    main {
+      width: min(920px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: clamp(28px, 6vw, 64px) 0 72px;
+    }
+
+    .hero {
+      padding: clamp(24px, 5vw, 42px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: var(--teal);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(36px, 7vw, 58px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .summary {
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: #075985;
+      background: rgba(14, 165, 233, 0.1);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .content {
+      display: grid;
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    section {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    p { margin: 0 0 12px; color: #334155; }
+    p:last-child { margin-bottom: 0; }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #334155;
+    }
+
+    li + li { margin-top: 8px; }
+
+    .notice {
+      border-color: rgba(15, 118, 110, 0.22);
+      background: #f0fdfa;
+    }
+
+    .footer {
+      padding: 24px clamp(18px, 5vw, 64px);
+      color: #94a3b8;
+      background: #0b1220;
+      font-size: 14px;
+    }
+
+    .footer-inner {
+      display: flex;
+      width: min(920px, 100%);
+      margin: 0 auto;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .footer a { color: #cbd5e1; text-decoration: none; }
+    .footer a:hover { color: #ffffff; }
+
+    @media (max-width: 640px) {
+      .topbar { align-items: flex-start; flex-direction: column; gap: 10px; }
+      section { padding: 18px; }
+      .nav { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Linglish 首页">
+      <span class="brand-mark">L</span>
+      <span>Linglish</span>
+    </a>
+    <nav class="nav" aria-label="法律页面导航">
+      <a href="./terms.html">用户协议</a>
+      <a href="./pricing.html#plans">会员方案</a>
+      <a href="mailto:hello@example.com">联系支持</a>
+    </nav>
+  </header>
+
+  <main>
+    <article class="hero">
+      <p class="kicker">Privacy Policy</p>
+      <h1>隐私政策</h1>
+      <p class="summary">我们只收集提供沉浸式英语训练所需的数据，并用它来生成训练计划、保存学习记录、提供 AI 反馈、处理订阅和改进产品体验。</p>
+      <div class="meta">
+        <span class="pill">生效日期：2026-06-11</span>
+        <span class="pill">适用于 example.com</span>
+      </div>
+    </article>
+
+    <div class="content">
+      <section class="notice">
+        <h2>简明说明</h2>
+        <p>Linglish 是英语学习产品，不是广告网络。我们不会出售你的个人信息。涉及音频、发音反馈、学习记录和支付状态的数据，只用于提供和改进学习服务、账号安全、客户支持和必要的运营分析。</p>
+      </section>
+
+      <section>
+        <h2>我们收集的信息</h2>
+        <ul>
+          <li>账号信息：邮箱、手机号、用户名、登录状态、访客标识和基础设备信息。</li>
+          <li>学习信息：测评等级、每日目标、兴趣方向、训练记录、视频观看、词汇复习、跟读完成情况、连续训练天数和学习报告。</li>
+          <li>音频与 AI 反馈：当你使用跟读、口语评分或 AI 教练功能时，系统可能处理录音、转写文本、评分结果、纠错建议和相关元数据。</li>
+          <li>付费与团队咨询：订阅状态、套餐、支付回调状态、团队试用表单、学校/机构名称、联系人和咨询需求。支付卡号等敏感支付信息由支付服务商处理，我们不直接保存完整卡号。</li>
+          <li>运营分析：页面访问、按钮点击、注册/登录漏斗、错误状态、来源参数和匿名 visitor_id，用于判断产品是否顺畅。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>我们如何使用信息</h2>
+        <ul>
+          <li>生成和保存你的 Today 训练计划、测评结果、词汇等级和复习队列。</li>
+          <li>提供 AI 口语反馈、发音评分、转写、复盘和学习报告。</li>
+          <li>同步会员权益、处理订阅状态、团队咨询和客户支持请求。</li>
+          <li>维护账号安全，排查异常登录、滥用、错误和服务稳定性问题。</li>
+          <li>做聚合统计和漏斗分析，优化新用户引导、定价页、训练留存和产品质量。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>AI 与第三方服务</h2>
+        <p>部分功能可能调用 AI、语音识别、支付、邮件、托管、日志或分析服务。我们会尽量只发送完成该功能所需的最小信息，并要求第三方按照其服务条款和安全要求处理数据。</p>
+        <p>请不要在练习内容、团队咨询或反馈中提交身份证号、银行卡号、医疗信息、商业机密等不适合用于学习服务的数据。</p>
+      </section>
+
+      <section>
+        <h2>数据保存与删除</h2>
+        <p>账号、学习记录和订阅状态会在账号有效期间保存，以便你跨设备继续训练。匿名访问和行为事件会用于统计分析。你可以通过 <a href="mailto:hello@example.com">hello@example.com</a> 请求导出、更正或删除账号相关数据。</p>
+      </section>
+
+      <section>
+        <h2>未成年人</h2>
+        <p>如果你未满当地法律规定的成年年龄，请在监护人同意下使用 Linglish。学校、机构或家长为学习者开通账号时，应确保其有权提供相关信息并负责学习者的使用管理。</p>
+      </section>
+
+      <section>
+        <h2>信息安全</h2>
+        <p>我们采用访问控制、认证令牌、服务端权限校验、必要的日志和数据最小化原则保护信息。但任何互联网服务都无法保证绝对安全。发现异常账号活动时，请及时联系我们。</p>
+      </section>
+
+      <section>
+        <h2>政策更新与联系</h2>
+        <p>我们可能随产品功能、法律要求或运营方式调整本政策。重大变化会通过页面更新或产品内提示说明。隐私相关问题请联系 <a href="mailto:hello@example.com">hello@example.com</a>。</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Linglish - AI英语教练</span>
+      <span><a href="./terms.html">用户协议</a> · <a href="/">返回首页</a></span>
+    </div>
+  </footer>
+</body>
+</html>

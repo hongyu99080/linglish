@@ -1,0 +1,340 @@
+openapi: 3.0.3
+info:
+  title: Intuitive English Platform API
+  version: "1.0.0"
+  description: Core APIs for auth, content, training loop, AI scoring, and vocab.
+servers:
+  - url: https://api.example.com/v1
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        requestId: { type: string }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        username: { type: string }
+        level: { type: string }
+    Article:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        level: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        audio_url: { type: string }
+    MediaAsset:
+      type: object
+      properties:
+        id: { type: integer }
+        article_id: { type: integer }
+        kind: { type: string, enum: [audio, image, subtitle] }
+        url: { type: string }
+        duration_sec: { type: integer }
+    AudioSegment:
+      type: object
+      properties:
+        id: { type: integer }
+        media_id: { type: integer }
+        start_ms: { type: integer }
+        end_ms: { type: integer }
+        text: { type: string }
+    TrainingSession:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        type: { type: string, enum: [shadowing, dictogloss, "432", picture_label] }
+        media_id: { type: integer }
+        segment_id: { type: integer, nullable: true }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time, nullable: true }
+        duration_sec: { type: integer, nullable: true }
+        output_blob: { type: string, nullable: true }
+    AiScore:
+      type: object
+      properties:
+        session_id: { type: integer }
+        metrics:
+          type: object
+          additionalProperties: true
+          example: { stress_hit: 0.82, timing_var: 0.15, wpm: 140 }
+        grade: { type: string, enum: [A, B, C] }
+        cost_cents: { type: integer }
+
+paths:
+  /auth/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+                username: { type: string }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "400": { description: Bad Request, content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } } }
+
+  /auth/login:
+    post:
+      summary: Login and return JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  refresh_token: { type: string }
+        "401": { description: Unauthorized, content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } } }
+
+  /users/me:
+    get:
+      summary: Get current user
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+        "401": { description: Unauthorized }
+
+  /articles:
+    get:
+      summary: List articles
+      parameters:
+        - in: query
+          name: level
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: tag
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Article" }
+                  total: { type: integer }
+
+  /articles/{id}:
+    get:
+      summary: Get article detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Article" } } } }
+        "404": { description: Not Found }
+
+  /articles/{id}/media:
+    get:
+      summary: Get article media list
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/MediaAsset" } 
+
+  /media/{media_id}/segments:
+    get:
+      summary: List audio segments
+      parameters:
+        - in: path
+          name: media_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/AudioSegment" }
+
+  /training/sessions:
+    post:
+      summary: Start a training session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type: { type: string, enum: [shadowing, dictogloss, "432", picture_label] }
+                media_id: { type: integer }
+                segment_id: { type: integer }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/TrainingSession" } } } }
+
+    get:
+      summary: List my training sessions
+      parameters:
+        - in: query
+          name: type
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/TrainingSession" }
+
+  /training/sessions/{id}:
+    patch:
+      summary: Stop/update a training session
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                end_at: { type: string, format: date-time }
+                duration_sec: { type: integer }
+                output_blob: { type: string }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/TrainingSession" } } } }
+        "404": { description: Not Found }
+
+  /ai/score:
+    post:
+      summary: Trigger AI scoring for a training session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_id]
+              properties:
+                session_id: { type: integer }
+      responses:
+        "202": { description: Accepted }
+
+  /ai/score/{session_id}:
+    get:
+      summary: Get AI scoring result by session id
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/AiScore" } } } }
+        "404": { description: Not Found }
+
+  /vocab/reviews:
+    get:
+      summary: Get due review cards
+      parameters:
+        - in: query
+          name: due_before
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  word_ids:
+                    type: array
+                    items: { type: integer }
+
+  /vocab/reviews/{word_id}/grade:
+    post:
+      summary: Grade a review item
+      parameters:
+        - in: path
+          name: word_id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [correct]
+              properties:
+                correct: { type: boolean }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not Found }
+

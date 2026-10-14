@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+
+  <!-- 主页 - 最高优先级 -->
+  <url>
+    <loc>https://example.com/</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://example.com/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://example.com/?lang=en" />
+  </url>
+
+  <url>
+    <loc>https://example.com/index-desktop.html</loc>
+    <lastmod>2025-11-14</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://example.com/index-desktop.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://example.com/index-desktop.html?lang=en" />
+  </url>
+
+  <url>
+    <loc>https://example.com/landing.html</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/today.html</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 核心功能页面 - 高优先级 -->
+  <url>
+    <loc>https://example.com/router.html</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 视频阅读器 -->
+  <url>
+    <loc>https://example.com/reader.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/video-reader.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/video-reader-desktop.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/video-vocabulary-desktop.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- PDF阅读器 -->
+  <url>
+    <loc>https://example.com/pdf-reader.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 移动端应用页面 -->
+  <url>
+    <loc>https://example.com/mobile-today.html</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-explore.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-library.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-auth.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-arena.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-treasure.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-power.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-stats.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-playlist.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/mobile-more.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- 练习页面 -->
+  <url>
+    <loc>https://example.com/practice-session.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 会员页面 - 中优先级 -->
+  <url>
+    <loc>https://example.com/membership.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://example.com/membership.html" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://example.com/membership-en.html" />
+  </url>
+
+  <url>
+    <loc>https://example.com/membership-en.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://example.com/membership-en.html" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://example.com/membership.html" />
+  </url>
+
+  <url>
+    <loc>https://example.com/pricing.html</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/privacy.html</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/terms.html</loc>
+    <lastmod>2026-06-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- Beta信息页面 -->
+  <url>
+    <loc>https://example.com/beta-info.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/beta-info-desktop.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/beta-info-en.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/beta-info-desktop-en.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/beta-info-vip.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/beta-info-desktop-vip.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/beta-info-en-vip.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://example.com/beta-info-desktop-en-vip.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- 反馈页面 -->
+  <url>
+    <loc>https://example.com/feedback.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- 视频上传 -->
+  <url>
+    <loc>https://example.com/video-upload.html</loc>
+    <lastmod>2025-11-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+</urlset>

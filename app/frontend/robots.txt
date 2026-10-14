@@ -1,0 +1,33 @@
+# robots.txt for example.com
+# Allow all search engines to index the site
+
+User-agent: *
+Allow: /
+
+# Priority pages for search engine crawling
+Allow: /index.html
+Allow: /landing.html
+Allow: /pricing.html
+Allow: /today.html
+Allow: /mobile-today.html
+Allow: /privacy.html
+Allow: /terms.html
+Allow: /router.html
+Allow: /membership.html
+Allow: /membership-en.html
+
+# Disallow admin and internal pages
+Disallow: /admin*
+Disallow: /admin-*.html
+Disallow: /desktop-auth.html
+Disallow: /mobile-auth.html
+Disallow: /reset-password.html
+Disallow: /verify-email.html
+Disallow: /test-*.html
+Disallow: /clean-invalid-words.html
+Disallow: /quick-fix.html
+Disallow: /clear-cache.html
+
+# Sitemap location
+Sitemap: https://example.com/sitemap.xml
+Sitemap: https://www.example.com/sitemap.xml

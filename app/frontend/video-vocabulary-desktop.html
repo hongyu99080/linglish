@@ -1,0 +1,4481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="alternate icon" href="/linglish-favicon.png?v=1" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function () {
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function (...args) {
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            // Check if it's an error object
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function (...args) {
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev?.reason;
+            // Check message
+            const msg = reason?.message || reason?.toString?.() || reason;
+            if (matchMsg(String(msg || ''))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if from extension
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch (_) { }
+        });
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = ev?.message || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if error is from extension
+            if (ev?.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              return;
+            }
+            // Check filename for extension patterns
+            const filename = ev?.filename || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch (_) { }
+        }, true);
+      } catch (_) { }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>词汇表（桌面版） - linglish</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./i18n.js"></script>
+  <script src="./js/auth-manager.js"></script>
+  <script src="./guest-check.js"></script>
+  <script src="./auth-helpers.js"></script>
+  <script src="./feedback.js"></script>
+  <script src="./shared/dictionary-render.js?v=1765726958"></script>
+  <script src="./shared/dictionary-lookup.js?v=1734782400"></script>
+  <script src="./shared/dictionary-util.js"></script>
+  <style>
+    :root {
+      /* Premium Color Palette */
+      --primary-50: #eff6ff;
+      --primary-100: #dbeafe;
+      --primary-500: #3b82f6;
+      --primary-600: #2563eb;
+      --violet-500: #2dd4bf;
+      --violet-600: #0d9488;
+
+      --gradient-primary: linear-gradient(135deg, #0ea5e9 0%, #2dd4bf 100%);
+      --gradient-subtle: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+
+      --surface-0: #ffffff;
+      --surface-50: #f8fafc;
+      --surface-100: #f1f5f9;
+
+      --text-900: #0f172a;
+      --text-600: #475569;
+      --text-400: #94a3b8;
+
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f3f4f6;
+      background-image:
+        radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-900);
+      min-height: 100vh;
+    }
+
+    /* Modern Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Top Navigation */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      font-size: 1.5rem;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .level-pill {
+      position: relative;
+    }
+
+    .level-dropdown {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      background: white;
+      border: 1px solid var(--surface-100);
+      border-radius: 14px;
+      padding: 0.5rem;
+      min-width: 260px;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      z-index: 60;
+    }
+
+    .level-dropdown .opt {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .level-dropdown .opt:hover {
+      background: var(--surface-50);
+    }
+
+    .level-dropdown .opt.active {
+      background: rgba(14, 165, 233, 0.10);
+      border: 1px solid rgba(14, 165, 233, 0.22);
+    }
+
+    .level-opt-icon {
+      font-size: 18px;
+      line-height: 1;
+      margin-top: 1px;
+    }
+
+    .level-opt-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .level-opt-title {
+      font-weight: 800;
+      color: var(--text-900);
+      font-size: 0.92rem;
+    }
+
+    .level-opt-desc {
+      margin-top: 3px;
+      color: var(--text-600);
+      font-size: 0.78rem;
+      line-height: 1.25;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-600);
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface-100);
+      color: var(--text-900);
+    }
+
+    .btn-primary {
+      background: var(--gradient-primary);
+      color: white;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3);
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px -1px rgba(14, 165, 233, 0.4);
+    }
+
+    /* Layout */
+    .layout {
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Dashboard Strip */
+    .dashboard-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 1.25rem;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-600);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--text-900);
+      letter-spacing: -0.02em;
+    }
+
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    /* Main Panel */
+    .content-panel {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 24px;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(8px);
+      overflow: hidden;
+      min-height: 500px;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--surface-100);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      background: white;
+    }
+
+    .toolbar-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .toolbar-filters {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-600);
+      margin-right: 0.25rem;
+    }
+
+    .chip-group {
+      display: inline-flex;
+      gap: 0.4rem;
+      padding: 0.35rem;
+      background: var(--surface-100);
+      border-radius: 14px;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .chip {
+      border: none;
+      background: transparent;
+      padding: 0.4rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-600);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .chip:hover {
+      color: var(--text-900);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .chip.active {
+      background: white;
+      color: var(--primary-600);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chip .chip-count {
+      margin-left: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 900;
+      padding: 0.12rem 0.5rem;
+      border-radius: 9999px;
+      background: rgba(148, 163, 184, 0.22);
+      color: var(--text-600);
+    }
+
+    .chip.active .chip-count {
+      background: rgba(14, 165, 233, 0.12);
+      color: var(--primary-600);
+    }
+
+    .tab-group {
+      background: var(--surface-100);
+      padding: 0.25rem;
+      border-radius: 12px;
+      display: inline-flex;
+      gap: 0.25rem;
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-600);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: white;
+      color: var(--primary-600);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--text-900);
+    }
+
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      border-radius: 14px;
+      border: 2px solid var(--surface-100);
+      background: var(--surface-50);
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      color: var(--text-900);
+    }
+
+    .search-input:focus {
+      background: white;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.8rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-400);
+      pointer-events: none;
+    }
+
+    /* Word List */
+    .word-list {
+      padding: 0 0 2rem 0;
+    }
+
+    .word-row {
+      display: flex;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--surface-100);
+      transition: background 0.15s;
+    }
+
+    .word-row:last-child {
+      border-bottom: none;
+    }
+
+    .word-row:hover {
+      background: var(--surface-50);
+    }
+
+    .word-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .word-main {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+
+    .word-lemma {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-900);
+    }
+
+    .word-ipa {
+      font-family: 'Charis SIL', serif;
+      color: var(--text-400);
+      font-size: 0.95rem;
+    }
+
+    .word-def {
+      color: var(--text-600);
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .word-status {
+      margin-right: 1.5rem;
+    }
+
+    .status-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .status-new {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .status-learning {
+      background: #e0e7ff;
+      color: #0f5e52;
+    }
+
+    .status-known {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .difficulty-badge {
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      background: var(--surface-50);
+      color: var(--text-600);
+    }
+
+    .diff-beginner {
+      background: #ecfeff;
+      color: #c2410c;
+      border-color: rgba(6, 182, 212, 0.25);
+    }
+
+    .diff-intermediate {
+      background: #eef2ff;
+      color: #0f5e52;
+      border-color: rgba(14, 165, 233, 0.25);
+    }
+
+    .diff-advanced {
+      background: #fff1f2;
+      color: #be123c;
+      border-color: rgba(244, 63, 94, 0.25);
+    }
+
+    .diff-unknown {
+      background: #f1f5f9;
+      color: #475569;
+      border-color: rgba(148, 163, 184, 0.35);
+    }
+
+    .word-actions {
+      display: flex;
+      gap: 0.5rem;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .word-row:hover .word-actions {
+      opacity: 1;
+    }
+
+    .action-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--surface-100);
+      background: white;
+      color: var(--text-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: var(--surface-50);
+      color: var(--primary-600);
+      border-color: var(--primary-100);
+      transform: translateY(-1px);
+    }
+
+    .action-btn.danger:hover {
+      color: #ef4444;
+      background: #fef2f2;
+      border-color: #fee2e2;
+    }
+
+    /* Empty State */
+    .empty-state {
+      padding: 4rem 1rem;
+      text-align: center;
+      color: var(--text-600);
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 600px;
+      max-height: 85vh;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--surface-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Dictionary Modal Specific */
+    #vocab-modal .modal-close:hover {
+      background: rgba(255,255,255,0.35) !important;
+    }
+
+    #modal-dict-card .dict-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    #modal-dict-card .dict-speak-btn {
+      transition: transform 0.15s, opacity 0.15s;
+    }
+
+    #modal-dict-card .dict-speak-btn:hover {
+      transform: scale(1.15);
+      opacity: 1 !important;
+    }
+
+    #modal-dict-card .dict-def-speak:hover {
+      background: #e2e8f0 !important;
+    }
+
+    .modal-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+    }
+
+    .modal-word {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--text-900);
+    }
+
+    .modal-ipa {
+      font-family: 'Charis SIL', serif;
+      color: var(--text-600);
+      font-size: 1.1rem;
+    }
+
+    /* Lang Toggle */
+    .modal-lang-toggle {
+      display: flex;
+      background: var(--surface-100);
+      padding: 3px;
+      border-radius: 10px;
+      margin-left: auto;
+      margin-right: 1rem;
+    }
+
+    .modal-lang-btn {
+      padding: 4px 10px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-500);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-lang-btn.active {
+      background: white;
+      color: var(--primary-600);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--text-400);
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: var(--surface-100);
+      color: var(--text-900);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-section {
+      margin-bottom: 2rem;
+    }
+
+    .modal-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .modal-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-400);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    .detail-translation {
+      font-size: 1.25rem;
+      color: var(--text-900);
+      line-height: 1.5;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    /* Context Items */
+    .detail-context-item {
+      background: var(--surface-50);
+      padding: 1rem;
+      border-radius: 12px;
+      border-left: 4px solid var(--primary-500);
+      margin-bottom: 0.75rem;
+    }
+
+    .context-title {
+      font-size: 0.85rem;
+      color: var(--text-600);
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+    }
+
+    .context-sentence {
+      font-size: 1rem;
+      color: var(--text-900);
+      line-height: 1.5;
+    }
+
+    .context-sentence mark {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 0 4px;
+      border-radius: 4px;
+    }
+
+    .detail-context-empty {
+      color: var(--text-400);
+      font-style: italic;
+    }
+
+    /* Dict Styles Override (Lite) */
+    .dict-entry {
+      margin-top: 1rem;
+    }
+
+    .dict-pos-block {
+      margin-bottom: 1rem;
+    }
+
+    .dict-pos-header {
+      display: inline-block;
+      background: var(--surface-100);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: var(--text-600);
+      margin-bottom: 0.5rem;
+    }
+
+    .dict-def-item {
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+
+    .dict-en-def {
+      color: var(--text-900);
+    }
+
+    .dict-zh-def {
+      color: var(--text-600);
+      margin-top: 2px;
+      font-size: 0.95rem;
+    }
+
+    .dict-translate-btn {
+      font-size: 0.8rem;
+      color: var(--primary-600);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 2px;
+    }
+
+    .dict-translate-btn:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-strip {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .toolbar-top {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+      }
+
+      .search-wrapper {
+        max-width: none;
+      }
+    }
+
+    /* ========== PC Review Overlay Styles (复用移动端设计) ========== */
+    .review-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .review-overlay[hidden] {
+      display: none;
+    }
+
+    .review-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+    }
+
+    .review-container {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      z-index: 1;
+      display: flex;
+      flex-direction: row;
+      gap: 24px;
+      align-items: stretch;
+      margin: auto;
+    }
+
+    .review-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 520px;
+    }
+
+    .review-right {
+      width: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+      margin-bottom: 4px;
+    }
+
+    .review-progress-text {
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .review-close-btn {
+      background: white;
+      border: none;
+      color: #0f172a;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+
+    .review-close-btn:hover {
+      background: #f1f5f9;
+      transform: scale(1.05);
+    }
+
+    /* Card Header - Word + translation above card */
+    .review-card-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 8px;
+    }
+
+    .review-card-header .header-word {
+      display: none;
+    }
+
+    .header-word {
+      font-size: 26px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: 0.2px;
+    }
+
+    .header-translation {
+      font-size: 15px;
+      color: #475569;
+    }
+
+    /* Flashcard 3D Flip */
+    .flashcard-wrapper {
+      perspective: 1000px;
+    }
+
+    .flashcard {
+      position: relative;
+      width: 100%;
+      height: clamp(360px, calc(100vh - 160px), 680px);
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+      cursor: pointer;
+    }
+
+    .flashcard.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .flashcard-front,
+    .flashcard-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      background: white;
+      border-radius: 24px;
+      padding: 0;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      overflow: hidden;
+    }
+
+    .flashcard-back {
+      transform: rotateY(180deg);
+    }
+
+    .card-top-section {
+      position: relative;
+      padding: 24px 24px 18px;
+      text-align: center;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+      border-radius: 24px 24px 0 0;
+      flex-shrink: 0;
+    }
+
+    .card-word {
+      font-size: 38px;
+      font-weight: 800;
+      color: white;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      margin-bottom: 8px;
+    }
+
+    .card-translation-top {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 12px;
+    }
+
+    .card-translation-hint {
+      font-size: 20px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .card-phonetic {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 15px;
+      font-style: italic;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 6px 16px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Bottom section */
+    .card-bottom-section {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: white;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .flashcard-back .card-bottom-section {
+      justify-content: flex-start;
+    }
+
+    .card-bottom-section > * {
+      flex-shrink: 0;
+    }
+
+    .card-hint {
+      color: #94a3b8;
+      font-size: 14px;
+      padding: 10px 20px;
+      background: #f1f5f9;
+      border-radius: 20px;
+    }
+
+    .card-speak-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+
+    .card-speak-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(14, 165, 233, 0.4);
+    }
+
+    .card-speak-btn:active {
+      transform: scale(0.95);
+    }
+
+    .card-top-section .card-speak-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: none;
+    }
+
+    .card-top-section .card-speak-btn:hover {
+      background: rgba(255, 255, 255, 0.32);
+      box-shadow: none;
+    }
+
+    .card-definitions {
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 16px;
+      color: #475569;
+      font-size: 15px;
+      line-height: 1.7;
+      border: 1px solid #e2e8f0;
+    }
+
+    .card-actions {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .card-translate-btn {
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #0284c7;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 14px rgba(79, 70, 229, 0.12);
+    }
+
+    .card-translate-btn[data-state="shown"] {
+      background: #eef2ff;
+      color: #0f5e52;
+      border-color: #c7d2fe;
+    }
+
+    .card-translate-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .card-examples {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px dashed #e2e8f0;
+      background: #fff;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .card-examples .example-item {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 10px;
+    }
+
+    .card-examples .example-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .card-examples .example-meta {
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .card-examples .example-en {
+      color: #0f172a;
+    }
+
+    .card-examples .example-zh {
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* Language Toggle - moved inside card */
+    .review-lang-toggle {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .card-lang-toggle {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .review-lang-btn,
+    .card-lang-btn {
+      padding: 6px 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .review-lang-btn.active,
+    .card-lang-btn.active {
+      background: white;
+      color: #0ea5e9;
+      border-color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .review-lang-btn:hover:not(.active),
+    .card-lang-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Review Quality Buttons */
+    .review-quality-buttons {
+      background: white;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+      animation: slideIn 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .review-mode-toggle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin: 1rem 0 0.6rem;
+    }
+
+    .mode-btn {
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #475569;
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn.active {
+      background: #0284c7;
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
+    }
+
+    .review-mode-panel {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 0.9rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    .review-mode-panel.active {
+      display: block;
+    }
+
+    .mode-title {
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 0.6rem;
+      font-size: 0.9rem;
+    }
+
+    .mode-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.6rem;
+    }
+
+    .mode-action-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 0.45rem 0.7rem;
+      background: #0284c7;
+      color: #fff;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .mode-action-btn.secondary {
+      background: #e2e8f0;
+      color: #1f2937;
+    }
+
+    .mode-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .mode-option {
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      border-radius: 10px;
+      padding: 0.6rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .mode-option.correct {
+      border-color: #16a34a;
+      background: rgba(22, 163, 74, 0.12);
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .mode-option.wrong {
+      border-color: #dc2626;
+      background: rgba(220, 38, 38, 0.12);
+      color: #991b1b;
+      font-weight: 600;
+    }
+
+    .mode-input {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 0.6rem 0.7rem;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      background: #fff;
+    }
+
+    .mode-feedback {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    .review-context {
+      margin-top: 0.8rem;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      color: #1e293b;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .review-context mark {
+      background: #fde68a;
+      color: #92400e;
+      padding: 0 4px;
+      border-radius: 4px;
+    }
+
+    .review-pronounce {
+      margin-top: 0.8rem;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.04);
+      border: 1px solid #e2e8f0;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .memory-curve {
+      margin-top: 0.35rem;
+      height: 48px;
+      width: 100%;
+    }
+
+    .goal-card {
+      display: grid;
+      gap: 0.4rem;
+      min-width: 180px;
+    }
+
+    .goal-progress {
+      height: 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .goal-progress span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7, #22c55e);
+      width: 0%;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .quality-hint {
+      color: #1e293b;
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .quality-buttons-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quality-btn {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .quality-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .quality-btn:active {
+      transform: scale(0.98);
+    }
+
+    .quality-label {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .quality-interval {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .quality-again {
+      border-color: #fecaca;
+      background: #fef2f2;
+    }
+    .quality-again .quality-label {
+      color: #dc2626;
+    }
+
+    .quality-again:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    .quality-hard {
+      border-color: #fed7aa;
+      background: #fffbeb;
+    }
+    .quality-hard .quality-label {
+      color: #d97706;
+    }
+
+    .quality-hard:hover {
+      background: #fef3c7;
+      border-color: #fdba74;
+    }
+
+    .quality-good {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+    .quality-good .quality-label {
+      color: #2563eb;
+    }
+
+    .quality-good:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    .quality-easy {
+      border-color: #a7f3d0;
+      background: #f0fdf4;
+    }
+    .quality-easy .quality-label {
+      color: #059669;
+    }
+
+    .quality-easy:hover {
+      background: #dcfce7;
+      border-color: #6ee7b7;
+    }
+
+    /* Start Review Button in toolbar */
+    .btn-review {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-review:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-review .badge {
+      background: white;
+      color: #059669;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Skeleton Loading */
+    @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .skeleton-container {
+      padding: 0;
+    }
+
+    .skeleton-row {
+      display: flex;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--surface-100);
+    }
+
+    .skeleton-row:last-child {
+      border-bottom: none;
+    }
+
+    .skeleton-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .skeleton-line {
+      height: 16px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-line.word {
+      width: 120px;
+      height: 20px;
+    }
+
+    .skeleton-line.def {
+      width: 200px;
+      height: 14px;
+    }
+
+    .skeleton-line.badge {
+      width: 60px;
+      height: 22px;
+      border-radius: 11px;
+    }
+
+    .skeleton-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .skeleton-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-container.hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo" data-i18n="vocab.title">Linglish Vocabulary</div>
+    </div>
+    <div class="nav-actions">
+      <!-- Language Selector -->
+      <div class="lang-selector" style="position: relative;">
+        <button class="btn-ghost" id="lang-btn-vocab">
+          <span>🌐</span> <span id="current-lang-vocab">中文</span>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown-vocab"
+          style="position: absolute; top: calc(100% + 0.5rem); right: 0; background: white; border: 1px solid var(--surface-100); border-radius: 12px; padding: 0.5rem; min-width: 140px; display: none; box-shadow: var(--shadow-lg);">
+          <div class="lang-option active" data-lang="zh"
+            style="padding: 0.6rem; border-radius: 8px; cursor: pointer; display:flex; gap:0.5rem; align-items:center;">
+            <span>🇨🇳</span> <span>中文</span>
+          </div>
+          <div class="lang-option" data-lang="en"
+            style="padding: 0.6rem; border-radius: 8px; cursor: pointer; display:flex; gap:0.5rem; align-items:center;">
+            <span>🇺🇸</span> <span>English</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Learning Level -->
+      <div class="level-pill">
+        <button class="btn-ghost" id="user-level-btn" type="button" title="学习等级">
+          <span>🎯</span>
+          <span id="user-level-text">初级</span>
+        </button>
+        <div class="level-dropdown" id="user-level-dropdown" aria-label="learning level">
+          <div class="opt" data-level="beginner">
+            <div class="level-opt-icon">🌱</div>
+            <div class="level-opt-main">
+              <div class="level-opt-title">初级</div>
+              <div class="level-opt-desc">核心 1–3000 词，适合日常交流与基础输入。</div>
+            </div>
+          </div>
+          <div class="opt" data-level="intermediate">
+            <div class="level-opt-icon">🌿</div>
+            <div class="level-opt-main">
+              <div class="level-opt-title">中级</div>
+              <div class="level-opt-desc">3001–8000 词，适合扩展表达与更丰富的真实内容。</div>
+            </div>
+          </div>
+          <div class="opt" data-level="advanced">
+            <div class="level-opt-icon">🌳</div>
+            <div class="level-opt-main">
+              <div class="level-opt-title">高级</div>
+              <div class="level-opt-desc">8001+ 词，适合高阶阅读、写作与更复杂话题。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a href="./index-desktop.html" class="btn-ghost" title="Back Home">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+        </svg>
+        <span data-i18n="common.back">Exit</span>
+      </a>
+
+      <a href="./video-reader-desktop.html#vocabulary" class="btn-primary">
+        <span>🎬</span>
+        <span data-i18n="nav.videos">Study Videos</span>
+      </a>
+    </div>
+  </div>
+
+  <main class="layout">
+    <!-- Dashboard Stats Strip -->
+    <div id="stats-container" class="dashboard-strip">
+      <!-- Injected by JS -->
+    </div>
+
+    <!-- Main Content Panel -->
+    <div class="content-panel">
+      <div class="toolbar">
+        <div class="toolbar-top">
+          <!-- Tab Switcher -->
+          <div class="tab-group">
+            <button class="tab-btn active" id="tab-my-words" data-i18n="vocab.my_words">📚 My Words</button>
+            <button class="tab-btn" id="tab-full-library" data-i18n="vocab.full_library">🌐 Full Library</button>
+          </div>
+
+          <!-- Search -->
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="search" id="q" class="search-input" placeholder="Search words, definitions..."
+              data-i18n="vocab.search">
+          </div>
+
+          <button class="btn-ghost" id="reload" title="Refresh List" style="padding: 0.5rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 1 1-3-6.7" />
+              <path d="M21 3v7h-7" />
+            </svg>
+          </button>
+
+          <!-- 开始复习按钮 -->
+          <button class="btn-review" id="start-review-btn" title="开始复习">
+            <span>▶️</span>
+            <span>开始复习</span>
+            <span class="badge" id="review-due-count">0</span>
+          </button>
+        </div>
+
+        <div class="toolbar-filters">
+          <span class="filter-label" data-i18n="vocab.difficulty">难度</span>
+          <div class="chip-group" id="difficulty-filter" role="group" aria-label="difficulty filter">
+            <button class="chip" type="button" data-level="all">
+              <span class="chip-label" data-i18n="vocab.difficulty_all">全部</span>
+              <span class="chip-count" data-count-for="all">0</span>
+            </button>
+            <button class="chip" type="button" data-level="beginner">
+              <span class="chip-label" data-i18n="vocab.difficulty_beginner">初级</span>
+              <span class="chip-count" data-count-for="beginner">0</span>
+            </button>
+            <button class="chip" type="button" data-level="intermediate">
+              <span class="chip-label" data-i18n="vocab.difficulty_intermediate">中级</span>
+              <span class="chip-count" data-count-for="intermediate">0</span>
+            </button>
+            <button class="chip" type="button" data-level="advanced">
+              <span class="chip-label" data-i18n="vocab.difficulty_advanced">高级</span>
+              <span class="chip-count" data-count-for="advanced">0</span>
+            </button>
+            <button class="chip" type="button" data-level="unknown">
+              <span class="chip-label" data-i18n="vocab.difficulty_unknown">未知</span>
+              <span class="chip-count" data-count-for="unknown">0</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="skeleton-container" id="skeleton-loading">
+        <div class="skeleton-row">
+          <div class="skeleton-info">
+            <div class="skeleton-line word"></div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div class="skeleton-line badge"></div>
+              <div class="skeleton-line def"></div>
+            </div>
+          </div>
+          <div class="skeleton-actions">
+            <div class="skeleton-btn"></div>
+            <div class="skeleton-btn"></div>
+          </div>
+        </div>
+        <div class="skeleton-row">
+          <div class="skeleton-info">
+            <div class="skeleton-line word" style="width:100px"></div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div class="skeleton-line badge"></div>
+              <div class="skeleton-line def" style="width:180px"></div>
+            </div>
+          </div>
+          <div class="skeleton-actions">
+            <div class="skeleton-btn"></div>
+            <div class="skeleton-btn"></div>
+          </div>
+        </div>
+        <div class="skeleton-row">
+          <div class="skeleton-info">
+            <div class="skeleton-line word" style="width:140px"></div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div class="skeleton-line badge"></div>
+              <div class="skeleton-line def" style="width:220px"></div>
+            </div>
+          </div>
+          <div class="skeleton-actions">
+            <div class="skeleton-btn"></div>
+            <div class="skeleton-btn"></div>
+          </div>
+        </div>
+        <div class="skeleton-row">
+          <div class="skeleton-info">
+            <div class="skeleton-line word" style="width:90px"></div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div class="skeleton-line badge"></div>
+              <div class="skeleton-line def" style="width:160px"></div>
+            </div>
+          </div>
+          <div class="skeleton-actions">
+            <div class="skeleton-btn"></div>
+            <div class="skeleton-btn"></div>
+          </div>
+        </div>
+        <div class="skeleton-row">
+          <div class="skeleton-info">
+            <div class="skeleton-line word" style="width:110px"></div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div class="skeleton-line badge"></div>
+              <div class="skeleton-line def" style="width:190px"></div>
+            </div>
+          </div>
+          <div class="skeleton-actions">
+            <div class="skeleton-btn"></div>
+            <div class="skeleton-btn"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="word-list" id="list">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="empty-state" id="empty" style="display:none;">
+        <div class="empty-icon">📝</div>
+        <h3 data-i18n="vocab.no_words">No words found</h3>
+        <p style="margin-top:0.5rem; font-size:0.9rem;">Go watch some videos and add new words!</p>
+      </div>
+    </div>
+  </main>
+
+  <div class="voice-selector" style="display:none;">
+    <button class="pill" id="voice-btn"><span id="current-voice">晓晓</span></button>
+    <div class="voice-dropdown" id="voice-dropdown">
+      <div class="voice-option active" data-voice="zh-CN-XiaoxiaoNeural" data-name="晓晓"></div>
+      <div class="voice-option" data-voice="en-US-AriaNeural" data-name="Aria"></div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="vocab-modal" class="modal-overlay">
+    <div class="modal-content" style="max-width:520px;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);overflow:hidden;">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;">
+        <h2 style="margin:0;font-size:1rem;font-weight:600;display:flex;align-items:center;gap:.5rem;">
+          <span style="font-size:1.2rem;">📖</span> 词典
+        </h2>
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div class="dict-lang-toggle" id="modal-lang-toggle" style="display:inline-flex;border-radius:999px;overflow:hidden;background:rgba(255,255,255,0.2);">
+            <button type="button" data-lang="en" style="border:none;background:transparent;padding:.25rem .65rem;font-weight:700;color:rgba(255,255,255,0.7);cursor:pointer;transition:all .2s;">EN</button>
+            <button type="button" data-lang="zh" class="active" style="border:none;background:rgba(255,255,255,0.95);padding:.25rem .65rem;font-weight:700;color:#0ea5e9;cursor:pointer;border-radius:999px;transition:all .2s;">中</button>
+          </div>
+          <button class="modal-close" id="modal-close" style="border:none;background:rgba(255,255,255,0.2);color:white;font-size:.85rem;cursor:pointer;padding:.4rem .8rem;border-radius:6px;transition:all .2s;">关闭</button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:1.5rem;max-height:70vh;overflow-y:auto;background:#fafbfc;">
+        <div id="modal-dict-card"></div>
+      </div>
+    </div>
+  </div>
+  <button class="pill" id="voice-btn"><span id="current-voice">晓晓</span></button>
+  <div class="voice-dropdown" id="voice-dropdown">
+    <div class="voice-option active" data-voice="zh-CN-XiaoxiaoNeural" data-name="晓晓"></div>
+    <div class="voice-option" data-voice="en-US-AriaNeural" data-name="Aria"></div>
+  </div>
+  </div>
+
+  <!-- toast container -->
+  <div class="toast-container" id="toast-container"
+    style="display:none; position:fixed; bottom:2rem; right:2rem; z-index:100;"></div>
+
+  <!-- PC Review Overlay (复用移动端卡片设计) -->
+  <div id="review-overlay" class="review-overlay" hidden>
+    <div class="review-backdrop"></div>
+    <div class="review-container">
+      <!-- Left Side: Card Content -->
+      <div class="review-left">
+        <!-- Review Header with Progress -->
+        <div class="review-header">
+          <span class="review-progress-text" id="review-progress-text">1 / 5</span>
+          <button type="button" class="review-close-btn" id="review-close" aria-label="关闭">✕</button>
+        </div>
+
+        <!-- Card Header (Word + Translation above card) -->
+        <div class="review-card-header">
+          <div class="header-word" id="review-header-word"></div>
+          <div class="header-translation" id="review-header-translation"></div>
+          <!-- Language Toggle -->
+          <div class="review-lang-toggle">
+            <button class="review-lang-btn active" data-lang="zh" id="review-lang-zh">🇨🇳 中文</button>
+            <button class="review-lang-btn" data-lang="en" id="review-lang-en">🇺🇸 EN</button>
+          </div>
+        </div>
+
+        <!-- Flashcard Container -->
+        <div class="flashcard-wrapper" id="flashcard-wrapper">
+          <div class="flashcard" id="flashcard">
+            <!-- Front Side (Question - word with translation in Chinese mode) -->
+            <div class="flashcard-front">
+              <div class="card-top-section">
+                <div class="card-word" id="review-word-front"></div>
+                <div class="card-translation-top" id="review-translation-front" style="display:none;"></div>
+                <div class="card-phonetic" id="review-phonetic-front"></div>
+              </div>
+              <div class="card-bottom-section">
+                <div class="card-hint">点击卡片查看释义</div>
+              </div>
+            </div>
+
+            <!-- Back Side (Answer - with definitions) -->
+            <div class="flashcard-back">
+              <div class="card-top-section">
+                <div class="card-word" id="review-word-back"></div>
+                <div class="card-translation-top" id="review-translation-back"></div>
+                <div class="card-phonetic" id="review-phonetic"></div>
+                <button class="card-speak-btn" id="review-speak-back" aria-label="播放发音">🔊</button>
+              </div>
+              <div class="card-bottom-section">
+                <div class="card-actions">
+                  <button class="card-translate-btn" id="review-translate-toggle" type="button">查看翻译</button>
+                </div>
+                <div class="card-definitions" id="review-definitions"></div>
+                <div class="card-examples" id="review-examples"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-mode-toggle" id="review-mode-toggle">
+          <button class="mode-btn active" data-mode="flashcard">翻卡</button>
+          <button class="mode-btn" data-mode="listening">听音选词</button>
+          <button class="mode-btn" data-mode="spelling">拼写</button>
+          <button class="mode-btn" data-mode="cloze">填空</button>
+        </div>
+
+        <div class="review-mode-panel" id="mode-listening" data-mode="listening">
+          <div class="mode-title">听音选词</div>
+          <div class="mode-actions">
+            <button class="mode-action-btn" id="listen-play-btn">播放单词</button>
+          </div>
+          <div class="mode-options" id="listen-options"></div>
+          <div class="mode-feedback" id="listen-feedback"></div>
+        </div>
+
+        <div class="review-mode-panel" id="mode-spelling" data-mode="spelling">
+          <div class="mode-title">拼写测试</div>
+          <div class="mode-actions">
+            <button class="mode-action-btn" id="spelling-play-btn">播放发音</button>
+          </div>
+          <input class="mode-input" id="spelling-input" placeholder="请输入拼写...">
+          <button class="mode-action-btn secondary" id="spelling-check-btn">提交</button>
+          <div class="mode-feedback" id="spelling-feedback"></div>
+        </div>
+
+        <div class="review-mode-panel" id="mode-cloze" data-mode="cloze">
+          <div class="mode-title">语境填空</div>
+          <div class="mode-feedback" id="cloze-sentence"></div>
+          <input class="mode-input" id="cloze-input" placeholder="填入单词...">
+          <button class="mode-action-btn secondary" id="cloze-check-btn">提交</button>
+          <div class="mode-feedback" id="cloze-feedback"></div>
+        </div>
+
+        <div class="review-context" id="review-context" hidden></div>
+        <div class="review-pronounce" id="review-pronounce">
+          <div style="font-weight:600;">🎙️ 发音跟读</div>
+          <div class="mode-actions">
+            <button class="mode-action-btn" id="pronounce-play-btn">播放示范</button>
+            <button class="mode-action-btn secondary" id="pronounce-record-btn">开始录音</button>
+            <button class="mode-action-btn secondary" id="pronounce-playback-btn" disabled>回放录音</button>
+          </div>
+          <div class="mode-feedback" id="pronounce-feedback">跟着读一遍，录音只保存在本地。</div>
+        </div>
+      </div>
+
+      <!-- Right Side: Review Quality Buttons -->
+      <div class="review-right">
+        <div class="review-quality-buttons" id="review-quality-buttons" style="display: none;">
+          <div class="quality-hint">你对这个单词的掌握程度?</div>
+          <div class="quality-buttons-grid">
+            <button class="quality-btn quality-again" data-quality="again">
+              <span class="quality-label">完全不会</span>
+              <span class="quality-interval">&lt; 1分钟</span>
+            </button>
+            <button class="quality-btn quality-hard" data-quality="hard">
+              <span class="quality-label">有印象</span>
+              <span class="quality-interval" id="interval-hard">5分钟</span>
+            </button>
+            <button class="quality-btn quality-good" data-quality="good">
+              <span class="quality-label">认识</span>
+              <span class="quality-interval" id="interval-good">1天</span>
+            </button>
+            <button class="quality-btn quality-easy" data-quality="easy">
+              <span class="quality-label">完全掌握</span>
+              <span class="quality-interval" id="interval-easy">4天</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Version: 2024.12.16.009 - Optimized with lazy loading for IPA and reduced limits
+    console.log('[Vocab-Desktop] Version: 2024.12.16.009');
+
+    // Debug helper: enable via localStorage.setItem('linglish_debug','1')
+    function debugLog() {
+      try { if (localStorage.getItem('linglish_debug') === '1') console.log('[Vocab-Desktop]', ...arguments); } catch (_) { }
+    }
+    function showToast(message, type = 'info') {
+      if (window.Feedback) { Feedback.showToast(type, message); return; }
+      try {
+        const box = document.getElementById('toast-container');
+        box.style.display = 'block';
+        const el = document.createElement('div');
+        el.className = `toast show toast-${type === 'warn' ? 'error' : 'success'}`;
+        el.style.padding = '10px 14px';
+        el.style.borderRadius = '10px';
+        el.style.marginBottom = '10px';
+        el.style.boxShadow = '0 10px 24px rgba(0,0,0,.2)';
+        el.style.fontSize = '14px';
+        el.style.opacity = '0.95';
+        el.style.color = '#fff';
+        el.style.background = type === 'success' ? '#059669' : (type === 'warn' ? '#dc2626' : '#1f2937');
+
+        el.textContent = message;
+        box.appendChild(el);
+        setTimeout(() => { el.style.opacity = '0.0'; el.style.transition = 'opacity .3s'; }, 1800);
+        setTimeout(() => { el.remove(); if (box.children.length === 0) box.style.display = 'none'; }, 2300);
+      } catch (_) { try { alert(message); } catch (__) { } }
+    }
+    const API_BASE = (() => {
+      const { protocol, hostname, port } = window.location;
+      if (protocol === 'file:') return 'http://localhost:8000';
+      if (hostname === 'localhost' || hostname === '127.0.0.1') { const p = port || '8000'; return `${protocol}//${hostname}:${p}`; }
+      return '';
+    })();
+
+    // Use AuthManager for robust token retrieval
+    const getToken = () => {
+      if (window.AuthManager) {
+        return window.AuthManager.getToken();
+      }
+      return localStorage.getItem('linglish_token') ||
+        sessionStorage.getItem('linglish_token') ||
+        localStorage.getItem('authToken') ||
+        sessionStorage.getItem('authToken');
+    };
+
+    const token = getToken();
+    if (!token) {
+      showToast('请先登录', 'warn');
+      setTimeout(() => { window.location.href = './desktop-auth.html'; }, 1400);
+    }
+
+    const headers = () => {
+      const currentToken = getToken();
+      return {
+        'Authorization': `Bearer ${currentToken}`,
+        'Content-Type': 'application/json'
+      };
+    };
+
+    const vocabPageParams = new URLSearchParams(location.search || '');
+    const vocabFromToday = vocabPageParams.get('from') === 'today';
+    let vocabStudyStartedAt = vocabFromToday ? Date.now() : null;
+
+    function postVocabEvent(eventName, properties = {}) {
+      const currentToken = getToken();
+      if (!currentToken || !eventName) return Promise.resolve();
+      return fetch(`${API_BASE}/events`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          event_name: eventName,
+          properties: {
+            page: 'video-vocabulary-desktop',
+            from: vocabPageParams.get('from') || null,
+            video_resource_id: vocabPageParams.get('video_resource_id') || vocabPageParams.get('videoId') || null,
+            ...properties
+          }
+        }),
+        keepalive: true
+      }).catch(() => null);
+    }
+
+    function flushVocabStudy(options = {}) {
+      if (!vocabFromToday || !vocabStudyStartedAt) return;
+      const seconds = Math.max(0, Math.round((Date.now() - vocabStudyStartedAt) / 1000));
+      const continueSession = options.continueSession === true;
+      vocabStudyStartedAt = continueSession ? Date.now() : null;
+      if (seconds < 5) return;
+      postVocabEvent('vocab_study', { seconds });
+    }
+
+    if (vocabFromToday) {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          flushVocabStudy();
+        } else if (!vocabStudyStartedAt) {
+          vocabStudyStartedAt = Date.now();
+        }
+      });
+      window.addEventListener('pagehide', () => flushVocabStudy());
+      window.addEventListener('beforeunload', () => flushVocabStudy());
+      window.setInterval(() => flushVocabStudy({ continueSession: true }), 30000);
+    }
+
+    const listEl = document.getElementById('list');
+    const statsEl = document.getElementById('stats-container');
+    const emptyEl = document.getElementById('empty');
+    const skeletonEl = document.getElementById('skeleton-loading');
+    const qEl = document.getElementById('q');
+    const reloadBtn = document.getElementById('reload');
+    const tabMyWords = document.getElementById('tab-my-words');
+    const tabFullLibrary = document.getElementById('tab-full-library');
+    const difficultyFilterEl = document.getElementById('difficulty-filter');
+    const difficultyCountEls = (function () {
+      const root = document.getElementById('difficulty-filter');
+      if (!root) return {};
+      const map = {};
+      root.querySelectorAll('[data-count-for]').forEach(el => {
+        const k = el.getAttribute('data-count-for');
+        if (k) map[k] = el;
+      });
+      return map;
+    })();
+
+    const state = { items: [], stats: null, currentTab: 'my', difficultyFilter: 'all' }; // 'my' or 'full'
+
+    function normalizeDifficultyLevel(raw) {
+      const v = String(raw || '').trim().toLowerCase();
+      if (!v) return null;
+      if (v === 'beginner' || v === 'intermediate' || v === 'advanced') return v;
+      if (v === 'easy') return 'beginner';
+      if (v === 'medium') return 'intermediate';
+      if (v === 'hard') return 'advanced';
+      if (v === 'a1' || v === 'a2') return 'beginner';
+      if (v === 'b1' || v === 'b2') return 'intermediate';
+      if (v === 'c1' || v === 'c2') return 'advanced';
+      return null;
+    }
+    function computeLevelFromRank(rank) {
+      const r = Number(rank);
+      if (!Number.isFinite(r) || r <= 0) return null;
+      if (r <= 3000) return 'beginner';
+      if (r <= 8000) return 'intermediate';
+      return 'advanced';
+    }
+    function getItemDifficulty(it) {
+      if (!it) return null;
+      const direct = normalizeDifficultyLevel(it.difficultyLevel || it.difficulty_level || it.computed_level);
+      if (direct) return direct;
+      return computeLevelFromRank(it.frequencyRank || it.frequency_rank);
+    }
+    function getDifficultyBadgeText(it) {
+      const raw = String(it?.difficultyLevel || it?.difficulty_level || it?.computed_level || '').trim();
+      const rawUpper = raw.toUpperCase();
+      if (/^(A1|A2|B1|B2|C1|C2)$/.test(rawUpper)) return rawUpper;
+      const t = (key) => typeof i18n !== 'undefined' ? i18n.t(key) : key;
+      const level = getItemDifficulty(it);
+      if (level === 'beginner') return t('vocab.difficulty_beginner');
+      if (level === 'intermediate') return t('vocab.difficulty_intermediate');
+      if (level === 'advanced') return t('vocab.difficulty_advanced');
+      return t('vocab.difficulty_unknown');
+    }
+
+    function syncDifficultyFilterUI() {
+      if (!difficultyFilterEl) return;
+      const current = String(state.difficultyFilter || 'all');
+      difficultyFilterEl.querySelectorAll('.chip').forEach(btn => {
+        const v = btn.dataset.level || 'all';
+        const active = v === current;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    }
+    function initDifficultyFilter() {
+      try {
+        // Prefer the global active level (used across pages) to avoid UI mismatch:
+        // top-right “学习等级” vs the “难度” chips.
+        const active = localStorage.getItem('linglish_active_level');
+        const saved = localStorage.getItem('vocab_difficulty_filter');
+        if (active) state.difficultyFilter = active;
+        else if (saved) state.difficultyFilter = saved;
+      } catch (_) { }
+      if (!difficultyFilterEl) return;
+      difficultyFilterEl.addEventListener('click', (e) => {
+        const btn = e.target && e.target.closest ? e.target.closest('.chip') : null;
+        if (!btn) return;
+        const v = btn.dataset.level || 'all';
+        state.difficultyFilter = v;
+        try { localStorage.setItem('vocab_difficulty_filter', v); } catch (_) { }
+        syncDifficultyFilterUI();
+
+        // Keep the top-right “学习等级” consistent with the chosen difficulty.
+        // Selecting a specific level is treated as changing the user's learning level (global).
+        if (v === 'beginner' || v === 'intermediate' || v === 'advanced') {
+          renderUserLevelUI(v);
+          try { localStorage.setItem('linglish_active_level', v); } catch (_) { }
+          saveUserLevelToProfile(v).then((ok) => {
+            if (!ok) showToast('等级保存失败，请稍后重试', 'warn');
+          }).catch(() => { });
+        }
+
+        if (state.currentTab === 'full') {
+          const q = (qEl.value || '').trim();
+          loadVocab(q).catch(() => { });
+        } else {
+          renderList();
+        }
+      });
+      syncDifficultyFilterUI();
+    }
+
+    // Learning level (profile) helpers
+    const LEVEL_META = {
+      beginner: { label: '初级', icon: '🌱' },
+      intermediate: { label: '中级', icon: '🌿' },
+      advanced: { label: '高级', icon: '🌳' },
+    };
+    function normalizeLearningLevel(raw) {
+      const v = String(raw || '').trim().toLowerCase();
+      if (v === 'beginner' || v === 'intermediate' || v === 'advanced') return v;
+      return null;
+    }
+    async function loadUserLevelFromProfile() {
+      try {
+        const tk = window.AuthManager?.getToken();
+        if (!tk) return null;
+        const r = await fetch('/auth/profile', { headers: { 'Authorization': `Bearer ${tk}` } });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return null;
+        const lv = normalizeLearningLevel(j?.user?.current_vocabulary_level || j?.user?.level);
+        return lv;
+      } catch (_) {
+        return null;
+      }
+    }
+    async function saveUserLevelToProfile(level) {
+      try {
+        const tk = window.AuthManager?.getToken();
+        if (!tk) return false;
+        const r = await fetch('/auth/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tk}` },
+          body: JSON.stringify({ level })
+        });
+        return r.ok;
+      } catch (_) {
+        return false;
+      }
+    }
+    function renderUserLevelUI(level) {
+      const btnText = document.getElementById('user-level-text');
+      const meta = LEVEL_META[level] || LEVEL_META.beginner;
+      if (btnText) btnText.textContent = `${meta.icon} ${meta.label}`;
+      const dd = document.getElementById('user-level-dropdown');
+      dd?.querySelectorAll('.opt')?.forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.level === level);
+      });
+    }
+    function bindUserLevelUI() {
+      const btn = document.getElementById('user-level-btn');
+      const dd = document.getElementById('user-level-dropdown');
+      if (!btn || !dd) return;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+      });
+      document.addEventListener('click', () => { dd.style.display = 'none'; });
+      dd.addEventListener('click', (e) => { e.stopPropagation(); });
+      dd.querySelectorAll('.opt').forEach(opt => {
+        opt.addEventListener('click', async () => {
+          const lv = normalizeLearningLevel(opt.dataset.level);
+          if (!lv) return;
+          const ok = await saveUserLevelToProfile(lv);
+          if (!ok) { showToast('等级保存失败，请稍后重试', 'warn'); return; }
+          renderUserLevelUI(lv);
+          try { localStorage.setItem('linglish_active_level', lv); } catch (_) { }
+          // Sync difficulty filter to the user's level for a level-aligned learning flow
+          state.difficultyFilter = lv;
+          try { localStorage.setItem('vocab_difficulty_filter', lv); } catch (_) { }
+          syncDifficultyFilterUI();
+          const q = state.currentTab === 'full' ? (qEl.value || '').trim() : '';
+          await Promise.all([loadVocab(q), loadStats(), loadDifficultyCounts()]);
+          dd.style.display = 'none';
+          showToast(`已切换学习等级：${LEVEL_META[lv]?.label || lv}`, 'success');
+        });
+      });
+    }
+
+    function setDifficultyCounts(counts) {
+      const safe = counts || {};
+      const total = Number(safe.total || safe.all || 0) || 0;
+      const next = {
+        all: total,
+        beginner: Number(safe.beginner || 0) || 0,
+        intermediate: Number(safe.intermediate || 0) || 0,
+        advanced: Number(safe.advanced || 0) || 0,
+        unknown: Number(safe.unknown || 0) || 0,
+      };
+      Object.entries(next).forEach(([k, v]) => {
+        const el = difficultyCountEls[k];
+        if (el) el.textContent = String(v);
+      });
+    }
+
+    async function loadDifficultyCounts() {
+      try {
+        let endpoint = '';
+        if (state.currentTab === 'full') {
+          const params = new URLSearchParams();
+          const q = (qEl.value || '').trim();
+          if (q) params.set('search', q);
+          endpoint = `${API_BASE}/vocab/full-library/difficulty-stats${params.toString() ? `?${params.toString()}` : ''}`;
+        } else {
+          endpoint = `${API_BASE}/vocab/difficulty-stats`;
+        }
+        const res = await fetch(endpoint, { headers: headers() });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return;
+        setDifficultyCounts(data);
+      } catch (_) { }
+    }
+
+    // Local override logic
+    function getUserKey() {
+      try { return localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail') || 'anon'; } catch (_) { return 'anon'; }
+    }
+    function ovKey() { return `vocab_known_override_${getUserKey()}`; }
+    function loadOverrides() {
+      try { const raw = localStorage.getItem(ovKey()); if (!raw || raw === 'undefined' || raw === 'null') return new Set(); const arr = JSON.parse(raw); return new Set(Array.isArray(arr) ? arr : []); } catch (_) { return new Set(); }
+    }
+    function saveOverrides(set) { try { localStorage.setItem(ovKey(), JSON.stringify(Array.from(set))); } catch (_) { } }
+    const knownOverrides = loadOverrides();
+
+    // Daily goal + memory curve (local)
+    function getTodayKey() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+    function dailyGoalKey() { return `vocab_daily_goal_${getUserKey()}`; }
+    function dailyDoneKey() { return `vocab_daily_done_${getUserKey()}_${getTodayKey()}`; }
+    function reviewHistoryKey() { return `vocab_review_history_${getUserKey()}`; }
+
+    function loadDailyGoal() {
+      try {
+        const raw = localStorage.getItem(dailyGoalKey());
+        const val = Number(raw);
+        return Number.isFinite(val) && val > 0 ? val : 20;
+      } catch (_) {
+        return 20;
+      }
+    }
+    function saveDailyGoal(value) {
+      try { localStorage.setItem(dailyGoalKey(), String(value)); } catch (_) { }
+    }
+    function loadDailyDone() {
+      try {
+        const raw = localStorage.getItem(dailyDoneKey());
+        const val = Number(raw);
+        return Number.isFinite(val) && val >= 0 ? val : 0;
+      } catch (_) { return 0; }
+    }
+    function saveDailyDone(value) {
+      try { localStorage.setItem(dailyDoneKey(), String(value)); } catch (_) { }
+    }
+    function loadReviewHistory() {
+      try {
+        const raw = localStorage.getItem(reviewHistoryKey());
+        if (!raw || raw === 'null' || raw === 'undefined') return {};
+        return JSON.parse(raw) || {};
+      } catch (_) { return {}; }
+    }
+    function saveReviewHistory(history) {
+      try { localStorage.setItem(reviewHistoryKey(), JSON.stringify(history)); } catch (_) { }
+    }
+    function recordReviewHistory(count) {
+      const key = getTodayKey();
+      const history = loadReviewHistory();
+      history[key] = (Number(history[key]) || 0) + count;
+      saveReviewHistory(history);
+    }
+    function renderMemoryCurve(canvas, history) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const keys = Object.keys(history).sort().slice(-7);
+      const values = keys.map(k => Number(history[k]) || 0);
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(0, 0, width, height);
+      if (!values.length) {
+        ctx.strokeStyle = '#cbd5f5';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(6, height - 8);
+        ctx.lineTo(width - 6, height - 8);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('暂无复习记录', width / 2, height / 2);
+        return;
+      }
+      const max = Math.max(1, ...values);
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      values.forEach((v, i) => {
+        const x = (width / (values.length - 1 || 1)) * i;
+        const y = height - (v / max) * (height - 8) - 4;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillStyle = '#0284c7';
+      values.forEach((v, i) => {
+        const x = (width / (values.length - 1 || 1)) * i;
+        const y = height - (v / max) * (height - 8) - 4;
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    async function loadVocab(searchQuery = '') {
+      try {
+        // Limit to 500 to prevent server overload (500 error reported)
+        let endpoint;
+        if (state.currentTab === 'full') {
+          const params = new URLSearchParams({ limit: '500' });
+          if (searchQuery) params.set('search', searchQuery);
+          if (state.difficultyFilter && state.difficultyFilter !== 'all') {
+            params.set('difficulty', state.difficultyFilter);
+          }
+          endpoint = `${API_BASE}/vocab/full-library?${params.toString()}`;
+        } else {
+          endpoint = `${API_BASE}/vocab?limit=500`;
+        }
+
+        const res = await fetch(endpoint, { headers: headers() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || '加载失败');
+
+        const raw = Array.isArray(data.items) ? data.items : [];
+
+        if (state.currentTab === 'full' && data.totalCount && !searchQuery && String(state.difficultyFilter || 'all') === 'all') {
+          state.fullLibraryTotalCount = data.totalCount;
+        }
+
+        state.items = raw.map(it => {
+          let translation = '';
+          if (it.definitions) {
+            if (typeof it.definitions === 'object') {
+              const zhTranslation = it.definitions.zh || '';
+              const enDefinition = it.definitions.en || '';
+
+              if (zhTranslation && zhTranslation !== '[待翻译]') {
+                translation = zhTranslation;
+              } else if (enDefinition) {
+                translation = `[EN] ${enDefinition}`;
+              } else {
+                translation = zhTranslation || '';
+              }
+            } else if (typeof it.definitions === 'string') {
+              translation = it.definitions;
+            }
+          }
+
+          if (state.currentTab === 'my') {
+            const s = String(it.state || '').toLowerCase();
+            let ui = 'new';
+            if (s === 'mastered' || s === 'known') ui = 'known';
+            else if (s === 'learning' || s === 'reviewing') ui = 'learning';
+            else if (s === 'encountered') ui = 'new';
+            return {
+              ...it,
+              lemma: it.lemma,
+              translation,
+              definitions: it.definitions,
+              state: ui,
+              inMyVocabulary: true
+            };
+          } else {
+            return {
+              ...it,
+              lemma: it.lemma || it.word,
+              translation,
+              definitions: it.definitions,
+              inMyVocabulary: it.inMyVocabulary || false,
+              state: 'new'
+            };
+          }
+        });
+
+        debugLog('loadVocab items:', state.items.length, 'tab:', state.currentTab);
+        renderList();
+      } catch (error) {
+        debugLog('loadVocab error:', error);
+        throw error;
+      }
+    }
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API_BASE}/vocab/stats-summary`, { headers: headers() });
+        if (!res.ok) { statsEl.innerHTML = ''; return; }
+        const data = await res.json();
+        state.stats = data || {};
+        // Keep review badge in sync (avoid extra fetches from ReviewManager)
+        try {
+          const dueCount = state.stats?.due || 0;
+          const badge = document.getElementById('review-due-count');
+          if (badge) {
+            badge.textContent = dueCount;
+            badge.style.display = dueCount > 0 ? 'inline-block' : 'none';
+          }
+        } catch (_) { }
+        renderStats();
+      } catch (_) { statsEl.innerHTML = ''; }
+    }
+
+    function renderStats() {
+      const s = state.stats || {};
+      statsEl.innerHTML = '';
+      const t = (key) => typeof i18n !== 'undefined' ? i18n.t(key) : key;
+      const icons = { '总词数': '📚', '学习中': '✏️', '已掌握': '🎓', '新词': '✨', '已添加': '✅', '未添加': '📥' };
+      const colors = {
+        '总词数': { bg: '#eff6ff', txt: '#2563eb' },
+        '学习中': { bg: '#e0e7ff', txt: '#0f5e52' },
+        '已掌握': { bg: '#dcfce7', txt: '#15803d' },
+        '新词': { bg: '#fef3c7', txt: '#d97706' },
+        '已添加': { bg: '#dcfce7', txt: '#15803d' },
+        '未添加': { bg: '#f3f4f6', txt: '#6b7280' }
+      };
+
+      let items = [];
+      if (state.currentTab === 'my') {
+        items = [
+          { k: '总词数', v: s.total ?? state.items.length },
+          { k: '学习中', v: (s.learning || 0) + (s.reviewing || 0) },
+          { k: '已掌握', v: s.mastered || 0 },
+          { k: '新词', v: s.encountered || 0 },
+        ];
+      } else {
+        const totalCount = state.fullLibraryTotalCount || state.items.length;
+        const addedCount = s.total || 0;
+        const notAddedCount = totalCount - addedCount;
+        items = [
+          { k: '总词数', v: totalCount },
+          { k: '已添加', v: addedCount },
+          { k: '未添加', v: notAddedCount },
+        ];
+      }
+
+      items.forEach(it => {
+        const theme = colors[it.k] || { bg: '#f3f4f6', txt: '#6b7280' };
+        const el = document.createElement('div');
+        el.className = 'stat-card';
+        el.innerHTML = `
+           <div class="stat-icon" style="background:${theme.bg}; color:${theme.txt}">
+             ${icons[it.k] || '📊'}
+           </div>
+           <div class="stat-label">${it.k}</div>
+           <div class="stat-value">${it.v}</div>
+        `;
+        statsEl.appendChild(el);
+      });
+
+      if (state.currentTab === 'my') {
+        const goal = loadDailyGoal();
+        const done = loadDailyDone();
+        const progress = Math.min(100, Math.round((done / Math.max(goal, 1)) * 100));
+        const goalCard = document.createElement('div');
+        goalCard.className = 'stat-card goal-card';
+        goalCard.innerHTML = `
+          <div class="stat-label">🎯 每日复习目标</div>
+          <div class="stat-value">${done} / ${goal}</div>
+          <div class="goal-progress"><span style="width:${progress}%"></span></div>
+          <button class="btn-ghost" id="set-daily-goal" style="margin-top:4px; font-size:0.8rem;">设置目标</button>
+        `;
+        statsEl.appendChild(goalCard);
+
+        const curveCard = document.createElement('div');
+        curveCard.className = 'stat-card';
+        curveCard.innerHTML = `
+          <div class="stat-label">📈 记忆曲线</div>
+          <canvas class="memory-curve" id="memory-curve-canvas" width="180" height="48"></canvas>
+        `;
+        statsEl.appendChild(curveCard);
+
+        const setGoalBtn = goalCard.querySelector('#set-daily-goal');
+        if (setGoalBtn) {
+          setGoalBtn.addEventListener('click', () => {
+            const next = prompt('设置每日复习目标数量', String(goal));
+            const num = Number(next);
+            if (!Number.isFinite(num) || num <= 0) return;
+            saveDailyGoal(Math.round(num));
+            renderStats();
+          });
+        }
+        const curveCanvas = curveCard.querySelector('#memory-curve-canvas');
+        renderMemoryCurve(curveCanvas, loadReviewHistory());
+      }
+    }
+
+    function filtered() {
+      const q = (qEl.value || '').trim().toLowerCase();
+      let items = state.items;
+
+      // Difficulty filter (client-side)
+      const df = String(state.difficultyFilter || 'all');
+      if (df !== 'all') {
+        items = items.filter(it => {
+          const lv = getItemDifficulty(it);
+          if (df === 'unknown') return !lv;
+          return lv === df;
+        });
+      }
+
+      if (!q) return items;
+
+      // Filter items that match the search query
+      const matches = items.filter(it =>
+        (it.lemma || '').toLowerCase().includes(q) ||
+        (it.definitions?.zh || '').toLowerCase().includes(q)
+      );
+
+      // Sort by relevance: exact match first, then starts with, then contains
+      matches.sort((a, b) => {
+        const aLemma = (a.lemma || '').toLowerCase();
+        const bLemma = (b.lemma || '').toLowerCase();
+
+        // Priority: 0 = exact match, 1 = starts with, 2 = contains
+        const aPriority = aLemma === q ? 0 : aLemma.startsWith(q) ? 1 : 2;
+        const bPriority = bLemma === q ? 0 : bLemma.startsWith(q) ? 1 : 2;
+
+        if (aPriority !== bPriority) return aPriority - bPriority;
+
+        // Within same priority, shorter words first
+        if (aLemma.length !== bLemma.length) return aLemma.length - bLemma.length;
+
+        // Then alphabetical
+        return aLemma.localeCompare(bLemma);
+      });
+
+      return matches;
+    }
+
+    // Lazy load IPA using IntersectionObserver
+    const ipaObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const target = entry.target;
+          const word = target.dataset.word;
+          if (word) {
+            loadIpa(word).then(ipa => {
+              if (ipa) target.textContent = `/${ipa}/`;
+            }).catch(() => { });
+            ipaObserver.unobserve(target);
+          }
+        }
+      });
+    }, { rootMargin: '100px' });
+
+    function renderList() {
+      // Hide skeleton loading
+      if (skeletonEl) skeletonEl.classList.add('hidden');
+
+      const items = filtered(); listEl.innerHTML = '';
+      if (!items.length) { emptyEl.style.display = 'block'; return; }
+      emptyEl.style.display = 'none';
+      const t = (key) => typeof i18n !== 'undefined' ? i18n.t(key) : key;
+      const frag = document.createDocumentFragment();
+
+      const statusMap = {
+        'known': { cls: 'status-known', text: '已掌握' },
+        'learning': { cls: 'status-learning', text: '学习中' },
+        'new': { cls: 'status-new', text: '新词' }
+      };
+
+      items.forEach(it => {
+        const row = document.createElement('div');
+        row.className = 'word-row';
+
+        const uiState = it.state || 'new';
+        const st = statusMap[uiState] || statusMap['new'];
+
+        const badge = state.currentTab === 'my'
+          ? `<span class="status-badge ${st.cls}">${st.text}</span>`
+          : '';
+
+        const diffLevel = getItemDifficulty(it) || 'unknown';
+        const diffText = getDifficultyBadgeText(it);
+        const diffTitle = (it && (it.difficultyLevel || it.computed_level || it.frequencyRank)) ? String(it.difficultyLevel || it.computed_level || it.frequencyRank) : '';
+        const diffBadge = `<span class="difficulty-badge diff-${diffLevel}"${diffTitle ? ` title="${diffTitle.replace(/\"/g, '&quot;')}"` : ''}>${diffText}</span>`;
+
+        // Actions
+        let actionsHTML = '';
+        if (state.currentTab === 'my') {
+          // Add View button for My Words
+          actionsHTML = `
+              <button class="action-btn view-btn" data-act="view" title="View Details">👁️</button>
+              <button class="action-btn" data-act="learn" title="${t('vocab.learning')}">✏️</button>
+              <button class="action-btn" data-act="known" title="${t('vocab.known')}">✅</button>
+              <button class="action-btn" data-act="edit" title="${t('vocab.edit_translation')}">📝</button>
+              <button class="action-btn danger" data-act="del" title="${t('common.delete')}">🗑️</button>
+            `;
+        } else {
+          // Add View & Add buttons for Full Library
+          if (it.inMyVocabulary) {
+            actionsHTML = `
+              <button class="action-btn view-btn" data-act="view" title="View Details">👁️</button>
+              <button class="action-btn" disabled style="width:auto; padding:0 1rem; opacity:0.5; font-size:0.8rem;">✓ 已添加</button>
+            `;
+          } else {
+            actionsHTML = `
+              <button class="action-btn view-btn" data-act="view" title="View Details">👁️</button>
+              <button class="action-btn btn-primary" data-act="add-to-my" style="width:auto; padding:0 1rem; color:white; background:var(--primary-600);">+ 添加</button>
+            `;
+          }
+        }
+
+        row.innerHTML = `
+            <div class="word-info">
+               <div class="word-main">
+                 <span class="word-lemma">${it.lemma}</span>
+                 <span class="word-ipa" data-word="${CSS.escape(it.lemma)}"></span>
+                 <button class="action-btn" style="width:28px; height:28px; font-size:14px; border:none; background:transparent;" data-act="speak" title="Speak">🔊</button>
+               </div>
+               <div style="display:flex; align-items:center; gap:0.5rem; margin-top:4px;">
+                  ${badge}
+                  ${diffBadge}
+                  <div class="word-def">${it.definitions?.zh || ''}</div>
+               </div>
+            </div>
+            <div class="word-actions">
+              ${actionsHTML}
+            </div>`;
+
+        // Bind events
+        // View (Common)
+        row.querySelector('[data-act="view"]')?.addEventListener('click', (e) => { e.stopPropagation(); openVocabDetail(it.lemma); });
+
+        if (state.currentTab === 'my') {
+          row.querySelector('[data-act="learn"]')?.addEventListener('click', () => markState(it.lemma, 'learning'));
+          row.querySelector('[data-act="known"]')?.addEventListener('click', () => markState(it.lemma, 'known'));
+          row.querySelector('[data-act="edit"]')?.addEventListener('click', () => editTranslation(it.lemma, it.definitions?.zh || ''));
+          row.querySelector('[data-act="del"]')?.addEventListener('click', () => delVocab(it.lemma));
+        } else {
+          row.querySelector('[data-act="add-to-my"]')?.addEventListener('click', () => addToMyVocabulary(it.lemma));
+        }
+
+        // Speak
+        row.querySelector('[data-act="speak"]')?.addEventListener('click', (e) => { e.stopPropagation(); speakWord(it.lemma); });
+
+        // Lazy loads IPA
+        const ipaEl = row.querySelector('.word-ipa');
+        if (ipaEl) ipaObserver.observe(ipaEl);
+
+        frag.appendChild(row);
+      });
+      listEl.appendChild(frag);
+    } // end renderList
+
+    // --- Detail Modal Logic ---
+    let currentDetailLemma = null;
+    let currentDetailLang = 'zh'; // 'zh' or 'en'
+    let stopDetailPolling = null;
+
+    async function openVocabDetail(lemma) {
+      const modal = document.getElementById('vocab-modal');
+      if (!modal) return;
+
+      try { if (stopDetailPolling) stopDetailPolling(); } catch (_) { }
+      stopDetailPolling = null;
+      currentDetailLemma = lemma;
+      // Restore saved language preference
+      try {
+        const savedLang = localStorage.getItem('dict_lang_mode');
+        if (savedLang === 'en' || savedLang === 'zh') {
+          currentDetailLang = savedLang;
+        } else {
+          currentDetailLang = 'zh';
+        }
+      } catch (_) {
+        currentDetailLang = 'zh';
+      }
+
+      // Update toggle button visual state
+      const toggleEl = document.getElementById('modal-lang-toggle');
+      if (toggleEl) {
+        toggleEl.querySelectorAll('button').forEach(b => {
+          if (b.dataset.lang === currentDetailLang) {
+            b.classList.add('active');
+            b.style.background = 'rgba(255,255,255,0.95)';
+            b.style.color = '#0ea5e9';
+            b.style.borderRadius = '999px';
+          } else {
+            b.classList.remove('active');
+            b.style.background = 'transparent';
+            b.style.color = 'rgba(255,255,255,0.7)';
+            b.style.borderRadius = '0';
+          }
+        });
+      }
+
+      // Show loading state
+      document.getElementById('modal-dict-card').innerHTML = '<div style="color:var(--text-400);padding:2rem;text-align:center;">Loading dictionary...</div>';
+      modal.classList.add('active');
+
+      // Render dictionary card (includes word, phonetic, translation, definitions)
+      renderDictionaryCard(lemma);
+    }
+
+    async function renderDictionaryCard(lemma) {
+      const dictEl = document.getElementById('modal-dict-card');
+      if (!window.DictionaryLookup || !window.DictionaryRender) {
+        dictEl.innerHTML = '<div class="detail-context-empty">Dictionary module not loaded.</div>';
+        return;
+      }
+
+      function attachDictionarySpeakHandlers(container) {
+        if (!container) return;
+
+        const btns = container.querySelectorAll('.dict-speak-btn, .dict-def-speak');
+        btns.forEach(btn => {
+          if (btn.dataset.speakHandlerAttached) return;
+          btn.dataset.speakHandlerAttached = 'true';
+
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const audioUrl = (btn.dataset.audio || '').trim();
+            const text = (btn.dataset.word || btn.dataset.text || '').trim();
+
+            if (audioUrl) {
+              const seq = claimSpeechSession();
+              playAudioUrl(audioUrl, seq);
+              return;
+            }
+
+            if (text) speakWord(text);
+          });
+        });
+      }
+
+      try {
+        const { entry, wordTranslation } = await window.DictionaryLookup.lookupWord(lemma);
+        if (!entry) {
+          dictEl.innerHTML = '<div class="detail-context-empty">No dictionary entry found.</div>';
+          return;
+        }
+
+        // Render dictionary card
+        dictEl.innerHTML = window.DictionaryRender.build(lemma, entry, wordTranslation || '', {
+          langMode: currentDetailLang
+        });
+
+        // Attach speak button handlers
+        attachDictionarySpeakHandlers(dictEl);
+
+        const isRealChineseTranslation = (zhText, enText) => {
+          if (!zhText || zhText === '[待翻译]') return false;
+          const zh = String(zhText || '').trim();
+          if (!zh) return false;
+          if (/翻译中/.test(zh)) return false;
+          if (!/[\u4e00-\u9fa5]/.test(zh)) return false;
+          if (enText && zh.toLowerCase() === String(enText).trim().toLowerCase()) return false;
+          return true;
+        };
+
+        // Check if there are untranslated definitions
+        let hasUntranslated = false;
+        if (entry.meanings) {
+          for (const meaning of entry.meanings) {
+            if (!meaning.definitions) continue;
+            for (const def of meaning.definitions) {
+              if (!isRealChineseTranslation(def.zh, def.definition)) {
+                hasUntranslated = true;
+                break;
+              }
+              if (def.example && !isRealChineseTranslation(def.exampleZh, def.example)) {
+                hasUntranslated = true;
+                break;
+              }
+            }
+            if (hasUntranslated) break;
+          }
+        }
+
+        // Poll for translations if needed, then attach translate button handlers
+        try { if (stopDetailPolling) stopDetailPolling(); } catch (_) { }
+        stopDetailPolling = null;
+        if (hasUntranslated) {
+          console.log(`[Vocab-Desktop] Starting polling for translations: ${lemma}`);
+          stopDetailPolling = window.DictionaryLookup.pollForTranslations(lemma, (updatedEntry, updatedZh) => {
+            console.log(`[Vocab-Desktop] Received translation update for: ${lemma}`);
+            const scroller = document.querySelector('#vocab-modal .modal-body') || dictEl;
+            const prevScrollTop = scroller ? scroller.scrollTop : 0;
+            dictEl.innerHTML = window.DictionaryRender.build(lemma, updatedEntry, updatedZh || wordTranslation || '', {
+              langMode: currentDetailLang
+            });
+            window.DictionaryLookup.attachTranslateButtonHandlers(dictEl, lemma);
+            attachDictionarySpeakHandlers(dictEl);
+            if (scroller) requestAnimationFrame(() => { try { scroller.scrollTop = prevScrollTop; } catch (_) { } });
+          }, { maxAttempts: 10, interval: 2000, initialEntry: entry, initialZh: (wordTranslation || '') });
+        }
+
+        // Attach translate button handlers (with stopPolling if available)
+        window.DictionaryLookup.attachTranslateButtonHandlers(dictEl, lemma);
+      } catch (err) {
+        console.error('[Vocab-Desktop] Dictionary lookup failed:', err);
+        dictEl.innerHTML = '<div class="detail-context-empty">Failed to load dictionary.</div>';
+      }
+    }
+
+    // Close Modal Event
+    const closeBtn = document.getElementById('modal-close');
+    if (closeBtn) closeBtn.onclick = () => {
+      try { if (stopDetailPolling) stopDetailPolling(); } catch (_) { }
+      stopDetailPolling = null;
+      document.getElementById('vocab-modal').classList.remove('active');
+    };
+    // Close on backdrop click
+    const vModal = document.getElementById('vocab-modal');
+    if (vModal) vModal.onclick = (e) => {
+      if (e.target.id === 'vocab-modal') {
+        try { if (stopDetailPolling) stopDetailPolling(); } catch (_) { }
+        stopDetailPolling = null;
+        e.target.classList.remove('active');
+      }
+    };
+
+    // Language Toggle Event Handler
+    const langToggle = document.getElementById('modal-lang-toggle');
+    if (langToggle) {
+      langToggle.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.lang;
+          if (mode && mode !== currentDetailLang) {
+            currentDetailLang = mode;
+            try { localStorage.setItem('dict_lang_mode', mode); } catch (_) { }
+            // Update toggle button styles
+            langToggle.querySelectorAll('button').forEach(b => {
+              if (b.dataset.lang === mode) {
+                b.classList.add('active');
+                b.style.background = 'rgba(255,255,255,0.95)';
+                b.style.color = '#0ea5e9';
+                b.style.borderRadius = '999px';
+              } else {
+                b.classList.remove('active');
+                b.style.background = 'transparent';
+                b.style.color = 'rgba(255,255,255,0.7)';
+                b.style.borderRadius = '0';
+              }
+            });
+            // Re-render dictionary card
+            if (currentDetailLemma) {
+              renderDictionaryCard(currentDetailLemma);
+            }
+          }
+        });
+      });
+    }
+
+    // Debounced search for full library (server-side search)
+    let searchDebounceTimer = null;
+    qEl.addEventListener('input', () => {
+      if (state.currentTab === 'full') {
+        // Server-side search with debounce
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          const q = (qEl.value || '').trim();
+          Promise.all([loadVocab(q), loadDifficultyCounts()]).catch(e => console.error('Search error:', e));
+        }, 300);
+      } else {
+        // Client-side filter for my vocabulary
+        renderList();
+      }
+    });
+    reloadBtn.addEventListener('click', () => {
+      const q = state.currentTab === 'full' ? (qEl.value || '').trim() : '';
+      Promise.all([loadVocab(q), loadStats(), loadDifficultyCounts()]).catch(e => alert(e.message || '加载失败'));
+    });
+
+    // Switch Tabs
+    async function switchTab(tab) {
+      state.currentTab = tab;
+      if (tab === 'my') {
+        tabMyWords.classList.add('active');
+        tabFullLibrary.classList.remove('active');
+      } else {
+        tabMyWords.classList.remove('active');
+        tabFullLibrary.classList.add('active');
+      }
+      try {
+        await Promise.all([loadVocab(), loadStats(), loadDifficultyCounts()]);
+      } catch (e) {
+        alert(e.message || '加载失败');
+      }
+    }
+
+    tabMyWords.addEventListener('click', () => switchTab('my'));
+    tabFullLibrary.addEventListener('click', () => switchTab('full'));
+
+    // Actions
+    async function addToMyVocabulary(word) {
+      try {
+        const res = await fetch(`${API_BASE}/vocab/mark`, {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ lemma: word, state: 'learning' })
+        });
+        if (!res.ok) throw new Error((await res.json())?.message || '添加失败');
+        showToast(`"${word}" 已添加到我的词汇`, 'success');
+        if (window.Feedback) Feedback.playSfx('success');
+        const item = state.items.find(it => it.lemma === word);
+        if (item) { item.inMyVocabulary = true; renderList(); }
+        await loadStats();
+      } catch (error) { showToast(error.message || '添加失败', 'warn'); }
+    }
+
+    async function markState(lemma, stateName) {
+      const norm = String(lemma || '').trim();
+      if (!norm) return;
+      const idx = state.items.findIndex(it => String(it.lemma) === norm);
+      const prev = idx >= 0 ? state.items[idx].state : null;
+      if (idx >= 0) {
+        state.items[idx].state = stateName;
+        renderList(); renderStats();
+      }
+      try {
+        const res = await fetch(`${API_BASE}/vocabulary/v2/status`, {
+          method: 'PUT', headers: headers(),
+          body: JSON.stringify({ word: norm, status: stateName })
+        });
+        if (!res.ok) throw new Error((await res.json())?.error || '标记失败');
+
+        if (stateName === 'known') { knownOverrides.add(norm); saveOverrides(knownOverrides); }
+        else if (knownOverrides.has(norm)) { knownOverrides.delete(norm); saveOverrides(knownOverrides); }
+
+        await loadStats().catch(() => { });
+        try {
+          showToast(`“${norm}” 已设为 ${stateName === 'known' ? '已掌握' : (stateName === 'learning' ? '学习中' : '新词')}`, 'success');
+          if (window.Feedback) Feedback.playSfx('success');
+        } catch (_) { }
+      } catch (e) {
+        if (idx >= 0) { state.items[idx].state = prev; renderList(); renderStats(); }
+        showToast(e.message || '标记失败', 'warn');
+      }
+    }
+
+    async function editTranslation(lemma, current) {
+      const next = window.prompt('设置翻译', current || ''); if (next == null) return;
+      try {
+        const res = await fetch(`${API_BASE}/vocab/translation`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ lemma, translation: String(next || '').trim() }) });
+        if (!res.ok) throw new Error((await res.json())?.message || '保存失败');
+        await loadVocab();
+      } catch (e) { alert(e.message || '保存失败'); }
+    }
+
+    async function delVocab(lemma) {
+      if (!window.confirm(`删除词汇：${lemma}？`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/vocab/${encodeURIComponent(lemma)}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error(await res.text());
+        await Promise.all([loadVocab(), loadStats()]);
+      } catch (e) { alert(e.message || '删除失败'); }
+    }
+
+    // ===== IPA & TTS Logic (Keep as is) =====
+    const ipaCache = new Map();
+    const ipaInFlight = new Map();
+    const audioCache = new Map();
+    let currentTtsAudio = null;
+    let speakSeq = 0;
+    const IPA_MAX_CONCURRENCY = 4;
+    const IPA_REQ_GAP_MS = 150;
+    let ipaActive = 0;
+    const ipaQueue = [];
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    function runNextIpa() {
+      if (ipaActive >= IPA_MAX_CONCURRENCY) return;
+      const job = ipaQueue.shift();
+      if (!job) return;
+      ipaActive++;
+      job().finally(() => {
+        ipaActive--;
+        setTimeout(runNextIpa, IPA_REQ_GAP_MS);
+      });
+    }
+
+    async function loadIpa(word) {
+      const key = String(word || '').toLowerCase();
+      if (!key) return '';
+      if (ipaCache.has(key)) return ipaCache.get(key);
+      if (ipaInFlight.has(key)) return ipaInFlight.get(key);
+      const task = new Promise((resolve) => {
+        ipaQueue.push(async () => {
+          try {
+            let attempt = 0, ipa = '';
+            while (attempt < 3) {
+              attempt++;
+              let res;
+              try { res = await fetch(`${API_BASE}/dictionary/${encodeURIComponent(key)}`, { headers: headers() }); } catch (_) { res = null; }
+              if (res && res.status === 429) { await sleep(400 * attempt); continue; }
+              if (res && res.status === 404) break;
+              if (!res || !res.ok) break;
+              const data = await res.json().catch(() => ({}));
+              const entry = data?.entry || {};
+              ipa = entry.phonetic || '';
+              if ((!ipa || ipa.trim() === '') && Array.isArray(entry.phonetics)) {
+                const p = entry.phonetics.find(p => p && (p.text || p.phonetic));
+                ipa = p?.text || p?.phonetic || '';
+              }
+              break;
+            }
+            ipa = (ipa || '').replace(/^\/+|\/+$/g, '').trim();
+            ipaCache.set(key, ipa);
+            resolve(ipa);
+          } catch (_) { ipaCache.set(key, ''); resolve(''); } finally { ipaInFlight.delete(key); }
+        });
+        runNextIpa();
+      });
+      ipaInFlight.set(key, task);
+      return task;
+    }
+
+    // TTS Voice Logic
+    function getSelectedVoice() { try { return localStorage.getItem('linglish_tts_voice') || 'en-US-AriaNeural'; } catch (_) { return 'en-US-AriaNeural'; } }
+    function getVoiceLang(voice) {
+      if (voice.startsWith('en-')) return 'en';
+      if (voice.startsWith('zh-')) return 'zh-CN';
+      const prefix = voice.split('-')[0];
+      return prefix === 'en' ? 'en' : 'zh-CN';
+    }
+
+    function stopTtsPlayback() {
+      try {
+        if (currentTtsAudio) {
+          currentTtsAudio.pause();
+          currentTtsAudio.currentTime = 0;
+        }
+      } catch (_) { }
+      currentTtsAudio = null;
+      try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (_) { }
+    }
+
+    function claimSpeechSession() {
+      speakSeq++;
+      stopTtsPlayback();
+      return speakSeq;
+    }
+
+    function playAudioUrl(url, seq) {
+      if (!url) return;
+      if (seq !== speakSeq) return;
+      try {
+        const a = new Audio(url);
+        currentTtsAudio = a;
+        a.addEventListener('ended', () => { if (currentTtsAudio === a) currentTtsAudio = null; });
+        a.addEventListener('error', () => { if (currentTtsAudio === a) currentTtsAudio = null; });
+        a.play().catch(() => { });
+      } catch (_) { }
+    }
+
+    async function speakWord(word) {
+      const rawText = String(word || '').trim();
+      const key = rawText.toLowerCase();
+      if (!key) return;
+      const seq = claimSpeechSession();
+      const neuralVoice = 'en-US-AriaNeural';
+      const cacheKey = `${key}_${neuralVoice}`;
+      try {
+        let audioUrl = audioCache.get(cacheKey);
+        if (!audioUrl) {
+          const res = await fetch(`${API_BASE}/tts/generate`, {
+            method: 'POST', headers: headers(),
+            body: JSON.stringify({ text: key, lang: 'en', slow: false, provider: 'edge', voice: neuralVoice })
+          });
+          const data = await res.json();
+          if (!res.ok || !data?.audioUrl) throw new Error('tts failed');
+          audioUrl = data.audioUrl;
+          audioCache.set(cacheKey, audioUrl);
+        }
+        playAudioUrl(audioUrl, seq);
+      } catch (e) {
+        try {
+          if (seq !== speakSeq) return;
+          const utt = new SpeechSynthesisUtterance(rawText);
+          utt.lang = voiceLang;
+          utt.rate = 0.85;      // 稍慢一点，更清晰
+          utt.pitch = 1.0;      // 正常音调，避免尖锐
+          utt.volume = 0.8;     // 稍微降低音量，避免刺耳
+
+          // 尝试选择更好的语音
+          const voices = speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            const langPrefix = voiceLang.split('-')[0];
+            const preferredVoice = voices.find(v =>
+              v.lang.startsWith(langPrefix) && (
+                v.name.includes('Natural') ||
+                v.name.includes('Neural') ||
+                v.name.includes('Premium') ||
+                v.name.includes('Samantha') ||
+                v.name.includes('Google') ||
+                v.name.includes('Microsoft')
+              )
+            ) || voices.find(v => v.lang === voiceLang) || voices.find(v => v.lang.startsWith(langPrefix));
+            if (preferredVoice) utt.voice = preferredVoice;
+          }
+
+          speechSynthesis.speak(utt);
+        } catch (_) { }
+      }
+    }
+
+    // Init Voice Selector (simplified)
+    (function initVoiceSelector() {
+      // logic to handle voice selection if user accesses it (hidden by default)
+    })();
+
+    (async function init() {
+      initDifficultyFilter();
+      // Default difficulty filter to user's learning level on first use (if no saved preference)
+      try {
+        // URL override has the highest priority for this session (e.g. from homepage “推荐内容”入口)
+        // It should affect both the difficulty chips and the top-right level pill display.
+        let urlLevelOverride = null;
+        // If homepage passes ?level=..., treat it as the active learning level for this session.
+        try {
+          const p = new URLSearchParams(location.search || '');
+          const qlv = (p.get('level') || '').trim().toLowerCase();
+          if (qlv === 'beginner' || qlv === 'intermediate' || qlv === 'advanced') {
+            urlLevelOverride = qlv;
+            state.difficultyFilter = qlv;
+            try { localStorage.setItem('vocab_difficulty_filter', qlv); } catch (_) { }
+            try { localStorage.setItem('linglish_active_level', qlv); } catch (_) { }
+            syncDifficultyFilterUI();
+          }
+        } catch (_) { }
+
+        const lv = await loadUserLevelFromProfile();
+        bindUserLevelUI();
+
+        // Display priority: URL override > active(localStorage) > profile level > beginner
+        const active = (() => {
+          try { return localStorage.getItem('linglish_active_level'); } catch (_) { return null; }
+        })();
+        const uiLevel =
+          urlLevelOverride ||
+          ((active === 'beginner' || active === 'intermediate' || active === 'advanced') ? active : null) ||
+          lv ||
+          'beginner';
+
+        renderUserLevelUI(uiLevel);
+        state.difficultyFilter = uiLevel;
+        try { localStorage.setItem('vocab_difficulty_filter', uiLevel); } catch (_) { }
+        try { localStorage.setItem('linglish_active_level', uiLevel); } catch (_) { }
+        syncDifficultyFilterUI();
+      } catch (_) { }
+
+      try { await Promise.all([loadVocab(), loadStats(), loadDifficultyCounts()]); } catch (e) { console.error(e); }
+    })();
+
+    // i18n
+    if (typeof i18n !== 'undefined') {
+      i18n.init();
+      // ... existing i18n logic ... (simplified for brevity as it was long in original, but needed for proper functionality)
+      // Re-implementing basic i18n needed for the layout:
+      const currentLangEl = document.getElementById('current-lang-vocab');
+      const langDropdown = document.getElementById('lang-dropdown-vocab');
+      const langBtn = document.getElementById('lang-btn-vocab');
+
+      if (langBtn) {
+        langBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          langDropdown.style.display = langDropdown.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', () => { langDropdown.style.display = 'none'; });
+      }
+      document.querySelectorAll('.lang-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          const lang = opt.dataset.lang;
+          if (lang) {
+            i18n.setLang(lang);
+            if (currentLangEl) currentLangEl.textContent = lang === 'zh' ? '中文' : 'English';
+            renderList(); renderStats();
+          }
+        });
+      });
+    }
+
+    function debounce(fn, wait) {
+      let timer = null;
+      return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), wait);
+      };
+    }
+
+    // ========== PC Review Manager (复用移动端卡片设计) ==========
+    const ReviewManager = {
+      overlay: null,
+      flashcard: null,
+      wordFrontEl: null,
+      wordBackEl: null,
+      phoneticEl: null,
+      phoneticFrontEl: null,
+      translationBackEl: null,
+      translationFrontEl: null,
+      headerWordEl: null,
+      headerTranslationEl: null,
+      definitionsEl: null,
+      examplesEl: null,
+      translateToggleBtn: null,
+      progressTextEl: null,
+      qualityButtonsEl: null,
+      speakBackBtn: null,
+      closeBtn: null,
+      flashcardWrapEl: null,
+      modeButtons: [],
+      modePanels: {},
+      listenOptionsEl: null,
+      listenFeedbackEl: null,
+      listenPlayBtn: null,
+      spellingInputEl: null,
+      spellingFeedbackEl: null,
+      spellingPlayBtn: null,
+      spellingCheckBtn: null,
+      clozeSentenceEl: null,
+      clozeInputEl: null,
+      clozeFeedbackEl: null,
+      clozeCheckBtn: null,
+      contextEl: null,
+      pronouncePlayBtn: null,
+      pronounceRecordBtn: null,
+      pronouncePlaybackBtn: null,
+      pronounceFeedbackEl: null,
+      practiceRecorder: null,
+      practiceRecording: null,
+      mode: 'flashcard',
+
+      reviewQueue: [],
+      currentIndex: 0,
+      currentReview: null,
+      isFlipped: false,
+      dictLang: 'zh',
+      translationRevealed: false,
+      reviewSubmitting: false,
+      submitReviewDebounced: null,
+      listRenderPending: false,
+      contextCache: new Map(),
+
+      init() {
+        this.overlay = document.getElementById('review-overlay');
+        this.flashcard = document.getElementById('flashcard');
+        this.wordFrontEl = document.getElementById('review-word-front');
+        this.wordBackEl = document.getElementById('review-word-back');
+        this.phoneticEl = document.getElementById('review-phonetic');
+        this.phoneticFrontEl = document.getElementById('review-phonetic-front');
+        this.translationBackEl = document.getElementById('review-translation-back');
+        this.translationFrontEl = document.getElementById('review-translation-front');
+        this.headerWordEl = document.getElementById('review-header-word');
+        this.headerTranslationEl = document.getElementById('review-header-translation');
+        this.definitionsEl = document.getElementById('review-definitions');
+        this.examplesEl = document.getElementById('review-examples');
+        this.translateToggleBtn = document.getElementById('review-translate-toggle');
+        this.progressTextEl = document.getElementById('review-progress-text');
+        this.qualityButtonsEl = document.getElementById('review-quality-buttons');
+        this.speakBackBtn = document.getElementById('review-speak-back');
+        this.closeBtn = document.getElementById('review-close');
+        this.flashcardWrapEl = document.getElementById('flashcard-wrapper');
+        this.modeButtons = Array.from(document.querySelectorAll('#review-mode-toggle .mode-btn'));
+        this.modePanels = {
+          listening: document.getElementById('mode-listening'),
+          spelling: document.getElementById('mode-spelling'),
+          cloze: document.getElementById('mode-cloze')
+        };
+        this.listenOptionsEl = document.getElementById('listen-options');
+        this.listenFeedbackEl = document.getElementById('listen-feedback');
+        this.listenPlayBtn = document.getElementById('listen-play-btn');
+        this.spellingInputEl = document.getElementById('spelling-input');
+        this.spellingFeedbackEl = document.getElementById('spelling-feedback');
+        this.spellingPlayBtn = document.getElementById('spelling-play-btn');
+        this.spellingCheckBtn = document.getElementById('spelling-check-btn');
+        this.clozeSentenceEl = document.getElementById('cloze-sentence');
+        this.clozeInputEl = document.getElementById('cloze-input');
+        this.clozeFeedbackEl = document.getElementById('cloze-feedback');
+        this.clozeCheckBtn = document.getElementById('cloze-check-btn');
+        this.contextEl = document.getElementById('review-context');
+        this.pronouncePlayBtn = document.getElementById('pronounce-play-btn');
+        this.pronounceRecordBtn = document.getElementById('pronounce-record-btn');
+        this.pronouncePlaybackBtn = document.getElementById('pronounce-playback-btn');
+        this.pronounceFeedbackEl = document.getElementById('pronounce-feedback');
+
+        // Load language preference (default to 'zh' like mobile)
+        try {
+          this.dictLang = localStorage.getItem('dict_lang_mode') || 'zh';
+        } catch (_) {
+          this.dictLang = 'zh';
+        }
+
+        try {
+          const savedMode = localStorage.getItem('vocab_review_mode');
+          if (savedMode) this.mode = savedMode;
+        } catch (_) { }
+        this.bindEvents();
+        this.updateLangButtons();
+        this.setMode(this.mode);
+        this.updateTranslationToggle();
+        this.loadDueCount();
+        this.submitReviewDebounced = debounce((quality) => this.submitReview(quality), 150);
+      },
+
+      bindEvents() {
+        // Start review button
+        const startBtn = document.getElementById('start-review-btn');
+        if (startBtn) {
+          startBtn.addEventListener('click', () => this.start());
+        }
+
+        // Close button
+        if (this.closeBtn) {
+          this.closeBtn.addEventListener('click', () => this.close());
+        }
+
+        // Backdrop click to close
+        const backdrop = this.overlay?.querySelector('.review-backdrop');
+        if (backdrop) {
+          backdrop.addEventListener('click', () => this.close());
+        }
+
+        // Flashcard click to flip
+        if (this.flashcard) {
+          this.flashcard.addEventListener('click', () => {
+            if (!this.isFlipped && this.currentReview) {
+              this.flipCard();
+            }
+          });
+        }
+
+        // Speak button
+        if (this.speakBackBtn) {
+          this.speakBackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.currentReview) {
+              speakWord(this.currentReview.lemma);
+            }
+          });
+        }
+
+        if (this.translateToggleBtn) {
+          this.translateToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.setTranslationReveal(!this.translationRevealed);
+          });
+        }
+
+        // Quality buttons
+        document.querySelectorAll('.quality-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const quality = btn.getAttribute('data-quality');
+            this.submitReviewDebounced(quality);
+          });
+        });
+
+        // Language toggle buttons (header)
+        const langZh = document.getElementById('review-lang-zh');
+        const langEn = document.getElementById('review-lang-en');
+        if (langZh) {
+          langZh.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.setDictLang('zh');
+          });
+        }
+        if (langEn) {
+          langEn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.setDictLang('en');
+          });
+        }
+
+        this.modeButtons.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const mode = btn.dataset.mode;
+            this.setMode(mode);
+          });
+        });
+
+        if (this.listenPlayBtn) {
+          this.listenPlayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.currentReview) speakWord(this.currentReview.lemma);
+          });
+        }
+        if (this.listenOptionsEl) {
+          this.listenOptionsEl.addEventListener('click', (e) => {
+            const option = e.target.closest('.mode-option');
+            if (!option || option.dataset.disabled === 'true') return;
+            this.handleListenAnswer(option.dataset.value || '');
+          });
+        }
+        if (this.spellingPlayBtn) {
+          this.spellingPlayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.currentReview) speakWord(this.currentReview.lemma);
+          });
+        }
+        if (this.spellingCheckBtn) {
+          this.spellingCheckBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleSpellingAnswer();
+          });
+        }
+        if (this.clozeCheckBtn) {
+          this.clozeCheckBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleClozeAnswer();
+          });
+        }
+        if (this.pronouncePlayBtn) {
+          this.pronouncePlayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.currentReview) speakWord(this.currentReview.lemma);
+          });
+        }
+        if (this.pronounceRecordBtn) {
+          this.pronounceRecordBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.togglePronounceRecording();
+          });
+        }
+        if (this.pronouncePlaybackBtn) {
+          this.pronouncePlaybackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.playPronounceRecording();
+          });
+        }
+
+      },
+
+      formatTime(seconds) {
+        const sec = Number(seconds);
+        if (!Number.isFinite(sec)) return '';
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+      },
+
+      async loadContextsForReview() {
+        if (!this.currentReview?.lemma) return;
+        const lemma = this.currentReview.lemma;
+        if (Array.isArray(this.currentReview.contexts) && this.currentReview.contexts.length) {
+          this.updateContextPanel();
+          if (this.currentReview.entry) this.renderExamples(this.currentReview.entry);
+          return;
+        }
+        if (this.contextCache.has(lemma)) {
+          this.currentReview.contexts = this.contextCache.get(lemma) || [];
+          this.updateContextPanel();
+          if (this.currentReview.entry) this.renderExamples(this.currentReview.entry);
+          return;
+        }
+        try {
+          const res = await fetch(`${API_BASE}/vocab/item?lemma=${encodeURIComponent(lemma)}`, { headers: headers() });
+          if (!res.ok) throw new Error('failed');
+          const data = await res.json();
+          const contexts = Array.isArray(data?.contexts) ? data.contexts : [];
+          this.contextCache.set(lemma, contexts);
+          this.currentReview.contexts = contexts;
+          this.updateContextPanel();
+          if (this.currentReview.entry) this.renderExamples(this.currentReview.entry);
+        } catch (_) {
+          this.contextCache.set(lemma, []);
+        }
+      },
+
+      setDictLang(lang) {
+        this.dictLang = lang;
+        try {
+          localStorage.setItem('dict_lang_mode', lang);
+        } catch (_) {}
+        this.updateLangButtons();
+
+        if (lang === 'zh') {
+          this.translationRevealed = true;
+          this.updateTranslationToggle();
+        } else {
+          this.translationRevealed = false;
+          this.updateTranslationToggle();
+        }
+
+        // Refresh current card definitions
+        if (this.currentReview) {
+          this.loadDefinitions(this.currentReview.lemma);
+        }
+      },
+
+      setTranslationReveal(show) {
+        this.translationRevealed = !!show;
+        if (this.translationRevealed) {
+          this.dictLang = 'zh';
+        }
+        this.updateTranslationToggle();
+        if (this.currentReview) {
+          this.renderTranslationVisibility();
+        }
+      },
+
+      updateTranslationToggle() {
+        if (!this.translateToggleBtn) return;
+        this.translateToggleBtn.textContent = this.translationRevealed ? '隐藏翻译' : '查看翻译';
+        this.translateToggleBtn.dataset.state = this.translationRevealed ? 'shown' : 'hidden';
+      },
+
+      renderTranslationVisibility() {
+        if (!this.currentReview) return;
+        const showZh = this.translationRevealed;
+        const zh = this.currentReview.wordTranslation || this.currentReview.definitions?.zh || '';
+        if (this.headerTranslationEl) {
+          this.headerTranslationEl.textContent = showZh ? zh : '';
+          this.headerTranslationEl.style.display = (showZh && zh) ? 'block' : 'none';
+        }
+        if (this.translationBackEl) {
+          this.translationBackEl.textContent = showZh ? zh : '';
+          this.translationBackEl.style.display = (showZh && zh) ? 'block' : 'none';
+        }
+        if (this.translationFrontEl) {
+          this.translationFrontEl.textContent = (showZh && zh) ? zh : '';
+          this.translationFrontEl.style.display = (showZh && zh) ? 'block' : 'none';
+        }
+        if (this.currentReview.entry) {
+          this.renderDefinitions(this.currentReview.entry);
+          this.renderExamples(this.currentReview.entry);
+        }
+        this.updateContextPanel();
+      },
+
+      escapeHtml(value) {
+        return String(value || '').replace(/[&<>\"']/g, (m) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        })[m]);
+      },
+
+      updateLangButtons() {
+        // Header buttons (legacy, now hidden)
+        const langZh = document.getElementById('review-lang-zh');
+        const langEn = document.getElementById('review-lang-en');
+        if (langZh && langEn) {
+          langZh.classList.toggle('active', this.dictLang === 'zh');
+          langEn.classList.toggle('active', this.dictLang === 'en');
+        }
+      },
+
+      setMode(mode) {
+        const next = mode || 'flashcard';
+        this.mode = next;
+        try { localStorage.setItem('vocab_review_mode', next); } catch (_) { }
+        this.modeButtons.forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.mode === next);
+        });
+        this.renderMode();
+      },
+
+      renderMode() {
+        const mode = this.mode;
+        if (this.flashcardWrapEl) {
+          this.flashcardWrapEl.style.display = mode === 'flashcard' ? '' : 'none';
+        }
+        Object.entries(this.modePanels).forEach(([key, panel]) => {
+          if (!panel) return;
+          panel.classList.toggle('active', key === mode);
+        });
+        if (mode !== 'flashcard') {
+          this.hideQualityButtons();
+        }
+        if (mode === 'listening') {
+          this.renderListeningOptions();
+        }
+        if (mode === 'spelling') {
+          if (this.spellingInputEl) this.spellingInputEl.value = '';
+          if (this.spellingFeedbackEl) this.spellingFeedbackEl.textContent = '';
+        }
+        if (mode === 'cloze') {
+          if (this.clozeInputEl) this.clozeInputEl.value = '';
+          if (this.clozeFeedbackEl) this.clozeFeedbackEl.textContent = '';
+          this.renderClozeSentence();
+        }
+        this.updateContextPanel();
+      },
+
+      hideQualityButtons() {
+        if (this.qualityButtonsEl) {
+          this.qualityButtonsEl.style.display = 'none';
+        }
+      },
+
+      showQualityButtons() {
+        if (this.qualityButtonsEl) {
+          this.qualityButtonsEl.style.display = 'block';
+        }
+      },
+
+      renderListeningOptions() {
+        if (!this.listenOptionsEl || !this.currentReview) return;
+        const correct = this.currentReview.lemma;
+        const pool = this.reviewQueue.map(item => item.lemma).filter(Boolean);
+        const choices = new Set([correct]);
+        while (choices.size < 4 && pool.length) {
+          const pick = pool[Math.floor(Math.random() * pool.length)];
+          if (pick) choices.add(pick);
+        }
+        const optionList = Array.from(choices).sort(() => Math.random() - 0.5);
+        this.listenOptionsEl.innerHTML = optionList.map(word => `
+          <button class="mode-option" data-value="${word}">${word}</button>
+        `).join('');
+        if (this.listenFeedbackEl) this.listenFeedbackEl.textContent = '听完后选择正确单词。';
+        setTimeout(() => {
+          if (this.currentReview) speakWord(this.currentReview.lemma);
+        }, 150);
+      },
+
+      handleListenAnswer(value) {
+        if (!this.currentReview || !this.listenOptionsEl) return;
+        const correct = this.currentReview.lemma;
+        const options = this.listenOptionsEl.querySelectorAll('.mode-option');
+        options.forEach(opt => {
+          opt.dataset.disabled = 'true';
+          const word = opt.dataset.value;
+          if (word === correct) opt.classList.add('correct');
+          if (word === value && word !== correct) opt.classList.add('wrong');
+        });
+        if (this.listenFeedbackEl) {
+          this.listenFeedbackEl.textContent = value === correct ? '答对了！' : `正确答案：${correct}`;
+        }
+        this.showQualityButtons();
+      },
+
+      handleSpellingAnswer() {
+        if (!this.currentReview || !this.spellingInputEl) return;
+        const input = this.spellingInputEl.value.trim().toLowerCase();
+        const correct = String(this.currentReview.lemma || '').toLowerCase();
+        if (this.spellingFeedbackEl) {
+          this.spellingFeedbackEl.textContent = input === correct ? '拼写正确！' : `正确拼写：${this.currentReview.lemma}`;
+        }
+        this.showQualityButtons();
+      },
+
+      handleClozeAnswer() {
+        if (!this.currentReview || !this.clozeInputEl) return;
+        const input = this.clozeInputEl.value.trim().toLowerCase();
+        const correct = String(this.currentReview.lemma || '').toLowerCase();
+        if (this.clozeFeedbackEl) {
+          this.clozeFeedbackEl.textContent = input === correct ? '填空正确！' : `正确答案：${this.currentReview.lemma}`;
+        }
+        this.showQualityButtons();
+      },
+
+      updateContextPanel() {
+        if (!this.contextEl || !this.currentReview) return;
+        if (this.mode === 'flashcard') {
+          this.contextEl.hidden = true;
+          return;
+        }
+        const word = this.currentReview.lemma || '';
+        const contexts = Array.isArray(this.currentReview.contexts) ? this.currentReview.contexts : [];
+        const ctx = contexts[0];
+        const ctxSentence = ctx?.sentence || ctx?.text || '';
+        const ctxZh = ctx?.sentence_zh || ctx?.sentenceZh || '';
+        const ctxStart = ctx?.start_sec ?? ctx?.start ?? ctx?.startTime ?? null;
+        const ctxVideoId = ctx?.video_resource_id ?? ctx?.videoId ?? ctx?.video_id ?? ctx?.video_resource ?? null;
+        const example = ctxSentence || this.currentReview.example || '';
+        const exampleZh = ctxZh || this.currentReview.exampleZh || '';
+
+        if (!example) {
+          this.contextEl.hidden = true;
+          return;
+        }
+
+        const safe = example.replace(new RegExp(word, 'ig'), (m) => `<mark>${m}</mark>`);
+        const timeLabel = Number.isFinite(Number(ctxStart)) ? this.formatTime(Number(ctxStart)) : '';
+        const jumpLink = (ctxVideoId && Number.isFinite(Number(ctxStart)))
+          ? `<a href="./video-reader-desktop.html?videoId=${encodeURIComponent(ctxVideoId)}&startSec=${encodeURIComponent(Number(ctxStart))}" style="margin-left:0.5rem;color:#2563eb;text-decoration:none;">跳回视频</a>`
+          : '';
+        const showZh = this.translationRevealed;
+        this.contextEl.innerHTML = `
+          <div style="font-weight:600; margin-bottom:0.3rem;">📌 语境例句 ${timeLabel ? `<span style="color:#2dd4bf;">${timeLabel}</span>` : ''} ${jumpLink}</div>
+          <div>${safe}</div>
+          ${(showZh && exampleZh) ? `<div style="color:#64748b; margin-top:0.35rem;">${exampleZh}</div>` : ''}
+        `;
+        this.contextEl.hidden = false;
+      },
+
+      renderClozeSentence() {
+        if (!this.clozeSentenceEl || !this.currentReview) return;
+        const word = this.currentReview.lemma || '';
+        const contexts = Array.isArray(this.currentReview.contexts) ? this.currentReview.contexts : [];
+        const ctx = contexts[0];
+        const example = (ctx?.sentence || ctx?.text || '') || this.currentReview.example || '';
+        let sentence = '';
+        if (example) {
+          sentence = example.replace(new RegExp(word, 'ig'), '____');
+        } else {
+          const def = this.currentReview.definitions?.zh || this.currentReview.definitions?.en || '';
+          sentence = def ? `根据释义填写：${def.replace(word, '____')}` : '请填入正确单词：____';
+        }
+        this.clozeSentenceEl.textContent = sentence;
+      },
+
+      async togglePronounceRecording() {
+        if (this.practiceRecorder && this.practiceRecorder.state === 'recording') {
+          this.practiceRecorder.stop();
+          return;
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const recorder = new MediaRecorder(stream);
+          const chunks = [];
+          recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+          recorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            this.practiceRecording = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+            if (this.pronouncePlaybackBtn) this.pronouncePlaybackBtn.disabled = false;
+            if (this.pronounceFeedbackEl) this.pronounceFeedbackEl.textContent = '录音完成，点击回放检查。';
+            this.practiceRecorder = null;
+          };
+          this.practiceRecorder = recorder;
+          recorder.start();
+          if (this.pronounceFeedbackEl) this.pronounceFeedbackEl.textContent = '录音中...再点一次结束。';
+        } catch (err) {
+          if (this.pronounceFeedbackEl) this.pronounceFeedbackEl.textContent = '无法录音，请检查麦克风权限。';
+        }
+      },
+
+      playPronounceRecording() {
+        if (!this.practiceRecording) return;
+        const audio = new Audio(URL.createObjectURL(this.practiceRecording));
+        audio.onended = () => URL.revokeObjectURL(audio.src);
+        audio.play().catch(() => { });
+      },
+
+      async loadDueCount() {
+        try {
+          const res = await fetch(`${API_BASE}/vocab/stats-summary`, { headers: headers() });
+          if (res.ok) {
+            const data = await res.json();
+            const dueCount = data.due || 0;
+            const badge = document.getElementById('review-due-count');
+            if (badge) {
+              badge.textContent = dueCount;
+              badge.style.display = dueCount > 0 ? 'inline-block' : 'none';
+            }
+          }
+        } catch (e) {
+          console.error('[ReviewManager] loadDueCount error:', e);
+        }
+      },
+
+      async start() {
+        try {
+          showToast('加载复习队列...', 'info');
+
+          const res = await fetch(`${API_BASE}/vocab/review-queue?limit=10`, {
+            headers: headers()
+          });
+
+          if (!res.ok) throw new Error('Failed to fetch review queue');
+
+          const data = await res.json();
+          const rawItems = Array.isArray(data.items) ? data.items : [];
+
+          this.reviewQueue = rawItems
+            .map(item => ({
+              ...item,
+              lemma: item.lemma || item.word,
+              definitions: item.definitions || {},
+              phonetic: item.phonetic || item.ipa || '',
+              state: item.state || 'learning',
+              contexts: Array.isArray(item.contexts) ? item.contexts : (item.context_sentence || item.source_sentence || item.best_sentence_text ? [{
+                sentence: item.context_sentence || item.source_sentence || item.best_sentence_text || '',
+                start_sec: item.context_start_sec ?? item.start_sec ?? item.best_sentence_start_sec ?? null,
+                end_sec: item.context_end_sec ?? item.end_sec ?? item.best_sentence_end_sec ?? null,
+                video_resource_id: item.video_resource_id ?? item.video_id ?? item.best_sentence_video_id ?? null
+              }] : [])
+            }))
+            .filter(item => item.lemma && item.lemma.trim().length > 0);
+
+          if (this.reviewQueue.length === 0) {
+            showToast('暂无待复习词汇', 'info');
+            return;
+          }
+
+          this.currentIndex = 0;
+          this.showOverlay();
+          await this.showNext();
+
+        } catch (err) {
+          console.error('[ReviewManager] Start failed:', err);
+          showToast('加载复习队列失败', 'warn');
+        }
+      },
+
+      showOverlay() {
+        if (this.overlay) {
+          this.overlay.hidden = false;
+          this.overlay.style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+        }
+      },
+
+      hideOverlay() {
+        if (this.overlay) {
+          this.overlay.hidden = true;
+          this.overlay.style.display = 'none';
+          document.body.style.overflow = '';
+        }
+      },
+
+      async showNext() {
+        if (this.currentIndex >= this.reviewQueue.length) {
+          this.finish();
+          return;
+        }
+
+        this.currentReview = this.reviewQueue[this.currentIndex];
+        this.isFlipped = false;
+        this.currentReview.example = '';
+        this.currentReview.exampleZh = '';
+        this.currentReview.contexts = [];
+        this.currentReview.entry = null;
+        this.currentReview.wordTranslation = '';
+        this.translationRevealed = false;
+        this.updateTranslationToggle();
+        this.updateContextPanel();
+
+        // Reset card state
+        if (this.flashcard) {
+          this.flashcard.classList.remove('flipped');
+        }
+        if (this.qualityButtonsEl) {
+          this.qualityButtonsEl.style.display = 'none';
+        }
+
+        // Update progress
+        this.updateProgress();
+
+        // Render front
+        this.renderFront();
+
+        // Pre-load back side data
+        await this.loadDefinitions(this.currentReview.lemma);
+        await this.loadContextsForReview();
+        this.renderMode();
+      },
+
+      renderFront() {
+        const word = this.currentReview.lemma || '';
+
+        // Card front - only show word (no translation, let user think first)
+        if (this.wordFrontEl) {
+          this.wordFrontEl.textContent = word;
+        }
+        if (this.headerWordEl) {
+          this.headerWordEl.textContent = word;
+        }
+        if (this.headerTranslationEl) {
+          this.headerTranslationEl.textContent = '';
+          this.headerTranslationEl.style.display = 'none';
+        }
+        if (this.translationFrontEl) {
+          this.translationFrontEl.textContent = '';
+          this.translationFrontEl.style.display = 'none';
+        }
+        if (this.translationBackEl) {
+          this.translationBackEl.textContent = '';
+          this.translationBackEl.style.display = 'none';
+        }
+      },
+
+      async loadDefinitions(word) {
+        try {
+          // Update back side word
+          if (this.wordBackEl) {
+            this.wordBackEl.textContent = word;
+          }
+
+          // Update translation (both front and back sides)
+          const zh = this.currentReview?.wordTranslation || this.currentReview?.definitions?.zh || '';
+          const showZh = this.translationRevealed;
+          if (this.headerTranslationEl) {
+            if (showZh && zh) {
+              this.headerTranslationEl.textContent = zh;
+              this.headerTranslationEl.style.display = 'block';
+            } else {
+              this.headerTranslationEl.textContent = '';
+              this.headerTranslationEl.style.display = 'none';
+            }
+          }
+          if (this.translationBackEl) {
+            if (showZh && zh) {
+              this.translationBackEl.textContent = zh;
+              this.translationBackEl.style.display = 'block';
+            } else {
+              this.translationBackEl.style.display = 'none';
+            }
+          }
+          // Update front side translation (show in Chinese mode)
+          if (this.translationFrontEl) {
+            if (showZh && zh) {
+              this.translationFrontEl.textContent = zh;
+              this.translationFrontEl.style.display = 'block';
+            } else {
+              this.translationFrontEl.style.display = 'none';
+            }
+          }
+
+          // Fetch dictionary data
+          const res = await fetch(`${API_BASE}/dictionary/${encodeURIComponent(word)}`, {
+            headers: headers()
+          });
+
+          if (!res.ok) {
+            if (this.definitionsEl) {
+              this.definitionsEl.innerHTML = '<div style="color:#94a3b8;">暂无详细释义</div>';
+            }
+            return;
+          }
+
+          const data = await res.json();
+          const entry = data.entry;
+          this.currentReview.wordTranslation = data?.zh || this.currentReview.wordTranslation || '';
+          this.currentReview.entry = entry;
+
+          // Extract context example for review mode
+          let example = '';
+          let exampleZh = '';
+          if (entry?.meanings) {
+            for (const meaning of entry.meanings) {
+              const defs = Array.isArray(meaning.definitions) ? meaning.definitions : [];
+              for (const def of defs) {
+                if (def.example) {
+                  example = def.example;
+                  exampleZh = def.exampleZh || '';
+                  break;
+                }
+              }
+              if (example) break;
+            }
+          }
+          if (!this.currentReview.example) {
+            this.currentReview.example = example;
+            this.currentReview.exampleZh = exampleZh;
+          }
+
+          // Update phonetic
+          let phonetic = entry?.phonetic || this.currentReview.phonetic || '';
+          if (!phonetic && Array.isArray(entry?.phonetics)) {
+            const p = entry.phonetics.find(p => p?.text || p?.phonetic);
+            phonetic = p?.text || p?.phonetic || '';
+          }
+          const phoneticText = phonetic ? `/${phonetic}/` : '';
+
+          if (this.phoneticEl) {
+            this.phoneticEl.textContent = phoneticText;
+          }
+          if (this.phoneticFrontEl) {
+            this.phoneticFrontEl.textContent = phoneticText;
+          }
+
+          if (this.translationRevealed) {
+            this.renderTranslationVisibility();
+          } else {
+            this.renderDefinitions(entry);
+            this.renderExamples(entry);
+            this.updateContextPanel();
+          }
+
+        } catch (err) {
+          console.error('[ReviewManager] loadDefinitions error:', err);
+          if (this.definitionsEl) {
+            this.definitionsEl.innerHTML = '<div style="color:#94a3b8;">加载释义失败</div>';
+          }
+        }
+      },
+
+      renderDefinitions(entry) {
+        if (!this.definitionsEl) return;
+        const defs = this.collectDefinitions(entry);
+        const html = this.buildDefinitionsHtml(defs, this.translationRevealed);
+        this.definitionsEl.innerHTML = html || '<div style="color:#94a3b8;">暂无详细释义</div>';
+      },
+
+      renderExamples(entry) {
+        if (!this.examplesEl) return;
+        const showZh = this.translationRevealed;
+        const defs = this.collectDefinitions(entry);
+        const examples = [];
+        const ctx = Array.isArray(this.currentReview?.contexts) ? this.currentReview.contexts[0] : null;
+        const ctxSentence = ctx?.sentence || ctx?.text || '';
+        const ctxZh = ctx?.sentence_zh || ctx?.sentenceZh || '';
+        const ctxStart = ctx?.start_sec ?? ctx?.start ?? ctx?.startTime ?? null;
+        const ctxVideoId = ctx?.video_resource_id ?? ctx?.videoId ?? ctx?.video_id ?? ctx?.video_resource ?? null;
+        if (ctxSentence) {
+          const timeLabel = Number.isFinite(Number(ctxStart)) ? this.formatTime(Number(ctxStart)) : '';
+          const jumpLink = (ctxVideoId && Number.isFinite(Number(ctxStart)))
+            ? `<a href="./video-reader-desktop.html?videoId=${encodeURIComponent(ctxVideoId)}&startSec=${encodeURIComponent(Number(ctxStart))}" style="margin-left:6px;color:#2563eb;text-decoration:none;">跳回</a>`
+            : '';
+          examples.push({
+            meta: `${this.escapeHtml(timeLabel || '语境')}${jumpLink}`,
+            en: ctxSentence,
+            zh: ctxZh
+          });
+        }
+
+        defs.filter(d => d.example).slice(0, 3).forEach(d => {
+          examples.push({
+            meta: '例句',
+            en: d.example,
+            zh: d.exampleZh || ''
+          });
+        });
+
+        const trimmed = examples.slice(0, 3);
+        if (!trimmed.length) {
+          this.examplesEl.innerHTML = '<div style="color:#94a3b8;">暂无例句</div>';
+          return;
+        }
+
+        this.examplesEl.innerHTML = trimmed.map(item => `
+          <div class="example-item">
+            <div class="example-meta">${item.meta}</div>
+            <div class="example-en">${this.escapeHtml(item.en || '')}</div>
+            ${showZh && item.zh ? `<div class="example-zh">${this.escapeHtml(item.zh || '')}</div>` : ''}
+          </div>
+        `).join('');
+      },
+
+      collectDefinitions(entry) {
+        const defs = [];
+        if (!entry || !Array.isArray(entry.meanings)) return defs;
+        entry.meanings.forEach(m => {
+          const pos = m.partOfSpeech || '';
+          (m.definitions || []).forEach(d => {
+            defs.push({
+              pos,
+              def: d.definition || '',
+              zh: d.zh || '',
+              example: d.example || '',
+              exampleZh: d.exampleZh || ''
+            });
+          });
+        });
+        return defs;
+      },
+
+      buildDefinitionsHtml(defs, showZh) {
+        if (!defs || !defs.length) return '';
+
+        const useZh = !!showZh;
+        let html = '';
+
+        defs.slice(0, 4).forEach(d => {
+          const pos = d.pos || '';
+          const enDef = d.def || '';
+          const zhDef = d.zh || '';
+
+          if (pos) {
+            html += `<span style="display:inline-block;background:#e0e7ff;color:#0f5e52;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;margin:0 0 6px;">${pos}</span>`;
+          }
+
+          if (useZh && zhDef && !zhDef.startsWith('[待翻译]') && !zhDef.includes('翻译中')) {
+            html += `<div style="margin:4px 0;color:#334155;">${this.escapeHtml(zhDef)}</div>`;
+            html += `<div style="margin:2px 0 10px;color:#94a3b8;font-size:13px;">${this.escapeHtml(enDef)}</div>`;
+          } else {
+            html += `<div style="margin:4px 0 10px;color:#334155;">${this.escapeHtml(enDef)}</div>`;
+          }
+        });
+
+        return html;
+      },
+
+      flipCard() {
+        this.isFlipped = true;
+        if (this.flashcard) {
+          this.flashcard.classList.add('flipped');
+        }
+        this.showQualityButtons();
+
+        // Auto-play pronunciation
+        setTimeout(() => {
+          if (this.currentReview) {
+            speakWord(this.currentReview.lemma);
+          }
+        }, 400);
+      },
+
+      updateProgress() {
+        const total = this.reviewQueue.length;
+        const current = this.currentIndex + 1;
+        if (this.progressTextEl) {
+          this.progressTextEl.textContent = `${current} / ${total}`;
+        }
+      },
+
+      scheduleListRender() {
+        if (this.listRenderPending) return;
+        this.listRenderPending = true;
+        requestAnimationFrame(() => {
+          this.listRenderPending = false;
+          renderList();
+        });
+      },
+
+      async submitReview(quality) {
+        if (!this.currentReview || this.reviewSubmitting) return;
+        this.reviewSubmitting = true;
+
+        try {
+          const outcome = this.mapQualityToOutcome(quality);
+
+          const res = await fetch(`${API_BASE}/vocab/review`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify({
+              lemma: this.currentReview.lemma,
+              outcome: outcome
+            })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data?.message || '提交失败');
+
+          // Sync local list state so "已掌握" / "学习中" badge stays accurate.
+          const updatedItem = data?.item;
+          const updatedLemma = (updatedItem?.lemma || updatedItem?.word || updatedItem?.word_lowercase || '').toString();
+          if (updatedLemma && Array.isArray(state.items) && state.currentTab === 'my') {
+            const backendState = String(updatedItem.state || updatedItem.status || '').toLowerCase();
+            const uiState =
+              (backendState === 'mastered' || backendState === 'known') ? 'known'
+                : (backendState === 'learning' || backendState === 'reviewing') ? 'learning'
+                  : (backendState === 'encountered') ? 'new'
+                    : 'new';
+            const idx = state.items.findIndex(it => String(it?.lemma || '').toLowerCase() === updatedLemma.toLowerCase());
+          if (idx >= 0) {
+            state.items[idx] = { ...state.items[idx], state: uiState };
+          }
+        }
+
+          // Ensure stats (including "已掌握") update immediately after each review click.
+          // This fixes cases where a word crosses into "mastered" but the dashboard stays stale until finishing the session.
+          await loadStats();
+          this.scheduleListRender();
+          recordReviewHistory(1);
+          const done = loadDailyDone() + 1;
+          saveDailyDone(done);
+          renderStats();
+
+          // Move to next
+          this.currentIndex++;
+          setTimeout(() => this.showNext(), 300);
+
+        } catch (err) {
+          console.error('[ReviewManager] submitReview error:', err);
+          showToast(err?.message || '提交失败', 'warn');
+        } finally {
+          this.reviewSubmitting = false;
+        }
+      },
+
+      mapQualityToOutcome(quality) {
+        switch (quality) {
+          case 'again': return 'fail';
+          case 'hard': return 'pass';
+          case 'good': return 'pass';
+          // "完全掌握" should promote to mastered immediately (and update stats).
+          case 'easy': return 'mastered';
+          default: return 'pass';
+        }
+      },
+
+      finish() {
+        this.close();
+        showToast('本轮复习完成! 🎉', 'success');
+        // Refresh stats (also updates due badge)
+        Promise.resolve(loadStats()).then(() => this.scheduleListRender());
+      },
+
+      close() {
+        this.hideOverlay();
+        try {
+          if (this.practiceRecorder && this.practiceRecorder.state === 'recording') {
+            this.practiceRecorder.stop();
+          }
+        } catch (_) { }
+        this.reviewQueue = [];
+        this.currentIndex = 0;
+        this.currentReview = null;
+        this.isFlipped = false;
+      }
+    };
+
+    // Initialize ReviewManager
+    ReviewManager.init();
+  </script>
+  <script src="./js/onboarding-tour.js?v=1"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const steps = [
+        { target: '#q', title: '搜索词汇', text: '输入关键词，快速定位你要复习的词。' },
+        { target: '#start-review-btn', title: '开始复习', text: '点击开始进入智能复习流程。' },
+        { target: '#list', title: '词汇列表', text: '浏览词汇卡片，随时调整难度。' }
+      ];
+      if (window.startLinglishTour) {
+        window.startLinglishTour(steps, 'linglish_tour_vocab');
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>欢迎加入 Linglish - 新用户引导</title>
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;500;600;700;800&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --ink-900: #151a22;
+      --ink-700: #3a4352;
+      --ink-500: #5e6a7b;
+      --accent-1: #1ea88a;
+      --accent-2: #ff8a3d;
+      --accent-3: #0ea5e9;
+      --surface: #ffffff;
+      --surface-mint: #e8f7f2;
+      --line-soft: rgba(15, 23, 42, 0.08);
+    }
+
+    body {
+      font-family: "Chivo", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #f9ecdb 0%, #e7f5ef 48%, #fff6dd 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      color: var(--ink-900);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: '';
+      position: fixed;
+      width: 440px;
+      height: 440px;
+      border-radius: 50%;
+      opacity: 0.5;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    body::before {
+      top: -160px;
+      left: -120px;
+      background: radial-gradient(circle, rgba(255, 195, 146, 0.65), rgba(255, 195, 146, 0));
+    }
+
+    body::after {
+      bottom: -180px;
+      right: -120px;
+      background: radial-gradient(circle, rgba(150, 223, 205, 0.6), rgba(150, 223, 205, 0));
+    }
+
+    .onboarding-shell {
+      width: min(960px, 95vw);
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 28px;
+      padding: 2.5rem 3rem 2rem;
+      box-shadow: 0 25px 70px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(30, 168, 138, 0.18);
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .onboarding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .brand {
+      font-family: "ZCOOL XiaoWei", "Chivo", serif;
+      font-size: 1.8rem;
+      color: var(--ink-900);
+      letter-spacing: 0.06em;
+    }
+
+    .step-indicator {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.12);
+      transition: all 0.2s ease;
+    }
+
+    .step-dot.active {
+      width: 26px;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    }
+
+    .onboarding-title {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .onboarding-desc {
+      color: var(--ink-500);
+      font-size: 1.05rem;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .step {
+      display: none;
+      animation: fadeInUp 0.4s ease-out;
+    }
+
+    .step.active {
+      display: block;
+    }
+
+    .question {
+      margin-bottom: 1.4rem;
+      padding: 1.2rem 1.4rem;
+      border-radius: 18px;
+      background: #fdfdfc;
+      border: 1px solid rgba(30, 168, 138, 0.12);
+    }
+
+    .question-title {
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+      color: var(--ink-900);
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .option-btn {
+      padding: 0.8rem 1rem;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      background: white;
+      font-size: 0.95rem;
+      color: var(--ink-700);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .option-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(30, 168, 138, 0.3);
+      box-shadow: 0 10px 22px rgba(30, 168, 138, 0.12);
+    }
+
+    .option-btn.selected {
+      border-color: rgba(30, 168, 138, 0.7);
+      background: rgba(30, 168, 138, 0.12);
+      color: var(--ink-900);
+      font-weight: 600;
+    }
+
+    .goal-grid,
+    .time-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    .goal-card,
+    .time-card {
+      padding: 1.2rem;
+      border-radius: 18px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .goal-card:hover,
+    .time-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(30, 168, 138, 0.35);
+      box-shadow: 0 12px 28px rgba(30, 168, 138, 0.12);
+    }
+
+    .goal-card.selected,
+    .time-card.selected {
+      border-color: rgba(30, 168, 138, 0.7);
+      background: rgba(30, 168, 138, 0.12);
+      font-weight: 600;
+      color: var(--ink-900);
+    }
+
+    .goal-card .emoji {
+      font-size: 1.4rem;
+    }
+
+    .summary-panel {
+      background: rgba(30, 168, 138, 0.08);
+      border-radius: 20px;
+      padding: 1.4rem 1.6rem;
+      display: grid;
+      gap: 0.8rem;
+      border: 1px solid rgba(30, 168, 138, 0.16);
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      color: var(--ink-700);
+    }
+
+    .summary-row strong {
+      color: var(--ink-900);
+    }
+
+    .result-plan {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .plan-card,
+    .save-card {
+      padding: 1.2rem;
+      border-radius: 20px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: #ffffff;
+    }
+
+    .plan-card h3,
+    .save-card h3 {
+      margin: 0 0 0.8rem;
+      color: var(--ink-900);
+      font-size: 1.05rem;
+    }
+
+    .plan-list {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .plan-list li {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 0.7rem;
+      align-items: start;
+      color: var(--ink-700);
+      font-size: 0.94rem;
+    }
+
+    .plan-list strong {
+      color: var(--accent-1);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .save-card {
+      background: linear-gradient(135deg, rgba(30, 168, 138, 0.12), rgba(255, 138, 61, 0.1));
+      display: grid;
+      align-content: start;
+      gap: 0.8rem;
+    }
+
+    .save-card p {
+      margin: 0;
+      color: var(--ink-500);
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+
+    .save-actions {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-compact {
+      padding: 0.72rem 1rem;
+      border-radius: 12px;
+      font-size: 0.92rem;
+    }
+
+    .level-switcher {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 0.6rem;
+    }
+
+    .level-chip {
+      padding: 0.5rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      background: white;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .level-chip.active {
+      border-color: rgba(30, 168, 138, 0.7);
+      background: rgba(30, 168, 138, 0.14);
+      font-weight: 600;
+      color: var(--ink-900);
+    }
+
+    .onboarding-footer {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.9rem 1.8rem;
+      border-radius: 14px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: white;
+      box-shadow: 0 12px 28px rgba(30, 168, 138, 0.28);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--accent-3);
+      border: 2px solid var(--accent-1);
+    }
+
+    .btn-outline:hover {
+      background: rgba(30, 168, 138, 0.12);
+    }
+
+    .skip-link {
+      color: var(--ink-500);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .skip-link:hover {
+      color: var(--accent-3);
+    }
+
+    .step-status {
+      font-size: 0.9rem;
+      color: var(--ink-500);
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 1.2rem; }
+      .onboarding-shell { padding: 2rem 1.5rem; }
+      .onboarding-title { font-size: 1.6rem; }
+      .onboarding-desc { font-size: 1rem; }
+      .result-plan { grid-template-columns: 1fr; }
+      .plan-list li { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="onboarding-shell">
+    <div class="onboarding-header">
+      <div class="brand">Linglish</div>
+      <div class="step-indicator">
+        <span class="step-dot active" data-step-dot="0"></span>
+        <span class="step-dot" data-step-dot="1"></span>
+        <span class="step-dot" data-step-dot="2"></span>
+        <span class="step-dot" data-step-dot="3"></span>
+      </div>
+    </div>
+
+    <div class="onboarding-title" id="step-title">1. 小测一下你的英语水平</div>
+    <div class="onboarding-desc" id="step-desc">4 道题，快速判断你适合的学习等级，并生成第一天训练闭环。</div>
+
+    <section class="step active" data-step="0">
+      <div class="question" data-question="0">
+        <div class="question-title">你能听懂多少英语视频？</div>
+        <div class="option-grid">
+          <button class="option-btn" data-level="beginner">只能听懂几个关键词</button>
+          <button class="option-btn" data-level="intermediate">能听懂大意，但细节会漏掉</button>
+          <button class="option-btn" data-level="advanced">能听懂大部分细节并跟上节奏</button>
+        </div>
+      </div>
+      <div class="question" data-question="1">
+        <div class="question-title">你口头表达英语时的感觉是？</div>
+        <div class="option-grid">
+          <button class="option-btn" data-level="beginner">容易卡壳，不太敢开口</button>
+          <button class="option-btn" data-level="intermediate">能表达，但流利度一般</button>
+          <button class="option-btn" data-level="advanced">表达顺畅，能主动扩展观点</button>
+        </div>
+      </div>
+      <div class="question" data-question="2">
+        <div class="question-title">你能理解英文字幕/文章的程度？</div>
+        <div class="option-grid">
+          <button class="option-btn" data-level="beginner">需要频繁查词典</button>
+          <button class="option-btn" data-level="intermediate">能读懂主要内容</button>
+          <button class="option-btn" data-level="advanced">理解速度快，几乎无障碍</button>
+        </div>
+      </div>
+      <div class="question" data-question="3">
+        <div class="question-title">你更常见的学习场景是？</div>
+        <div class="option-grid">
+          <button class="option-btn" data-level="beginner">日常对话或基础输入</button>
+          <button class="option-btn" data-level="intermediate">职场/考试类表达</button>
+          <button class="option-btn" data-level="advanced">学术/专业表达或沉浸式输入</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" data-step="1">
+      <div class="goal-grid">
+        <div class="goal-card" data-goal="面试准备">
+          <div class="emoji">🎯</div>
+          <div>面试准备</div>
+          <div class="step-status">准备面试问答、表达亮点</div>
+        </div>
+        <div class="goal-card" data-goal="出国留学">
+          <div class="emoji">✈️</div>
+          <div>出国留学</div>
+          <div class="step-status">日常沟通 + 学术表达</div>
+        </div>
+        <div class="goal-card" data-goal="职场沟通">
+          <div class="emoji">💼</div>
+          <div>职场沟通</div>
+          <div class="step-status">会议表达、汇报与邮件</div>
+        </div>
+        <div class="goal-card" data-goal="日常交流">
+          <div class="emoji">☕</div>
+          <div>日常交流</div>
+          <div class="step-status">旅行、社交、兴趣交流</div>
+        </div>
+        <div class="goal-card" data-goal="考试提升">
+          <div class="emoji">📝</div>
+          <div>考试提升</div>
+          <div class="step-status">雅思/托福/四六级</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" data-step="2">
+      <div class="time-grid">
+        <div class="time-card" data-minutes="10">每天 10 分钟</div>
+        <div class="time-card" data-minutes="20">每天 20 分钟</div>
+        <div class="time-card" data-minutes="30">每天 30 分钟</div>
+        <div class="time-card" data-minutes="45">每天 45 分钟</div>
+        <div class="time-card" data-minutes="60">每天 60 分钟</div>
+      </div>
+    </section>
+
+    <section class="step" data-step="3">
+      <div class="summary-panel">
+        <div class="summary-row">
+          <span>推荐等级</span>
+          <strong id="summary-level">初级</strong>
+        </div>
+        <div class="summary-row">
+          <span>学习目标</span>
+          <strong id="summary-goal">-</strong>
+        </div>
+        <div class="summary-row">
+          <span>每日学习时长</span>
+          <strong id="summary-time">-</strong>
+        </div>
+        <div>
+          <div class="step-status">如有需要，可手动调整学习等级：</div>
+          <div class="level-switcher">
+            <button class="level-chip" data-level="beginner">🌱 初级</button>
+            <button class="level-chip" data-level="intermediate">🌿 中级</button>
+            <button class="level-chip" data-level="advanced">🌳 高级</button>
+          </div>
+        </div>
+      </div>
+      <div class="result-plan">
+        <div class="plan-card">
+          <h3>你的第一天训练处方</h3>
+          <ul class="plan-list">
+            <li><strong>输入</strong><span id="plan-watch">看一段真实英语视频，先听懂重点句。</span></li>
+            <li><strong>输出</strong><span id="plan-speak">跟读 5 句，并完成 30 秒复述。</span></li>
+            <li><strong>复习</strong><span id="plan-review">复习 3 个词和 1 个错句，明天继续。</span></li>
+          </ul>
+        </div>
+        <div class="save-card">
+          <h3>保存计划后会同步到 Today 工作台</h3>
+          <p id="save-plan-desc">注册后会保存等级、目标和每日时长，明天回来直接继续训练。</p>
+          <div class="save-actions">
+            <button class="btn btn-primary btn-compact" id="savePlanBtn" type="button">注册保存计划</button>
+            <button class="btn btn-outline btn-compact" id="loginSaveBtn" type="button">已有账号登录</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="onboarding-footer">
+      <div class="step-status" id="step-status">第 1 / 4 步</div>
+      <div style="display:flex; gap:0.8rem; align-items:center;">
+        <button class="btn btn-outline" id="backBtn" disabled>上一步</button>
+        <button class="btn btn-primary" id="nextBtn" disabled>下一步</button>
+      </div>
+      <a href="./today.html?from=onboarding_skip" class="skip-link" id="skipLink">跳过引导，直接开始</a>
+    </div>
+  </div>
+
+  <script src="./js/auth-manager.js"></script>
+  <script src="./js/oauth-bootstrap.js"></script>
+  <script>
+    let selectedGoal = null;
+    let selectedMinutes = null;
+    let selectedLevel = null;
+    const levelAnswers = new Array(4).fill(null);
+    const steps = Array.from(document.querySelectorAll('.step'));
+    const stepDots = Array.from(document.querySelectorAll('.step-dot'));
+    const stepTitle = document.getElementById('step-title');
+    const stepDesc = document.getElementById('step-desc');
+    const stepStatus = document.getElementById('step-status');
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const skipLink = document.getElementById('skipLink');
+    const savePlanBtn = document.getElementById('savePlanBtn');
+    const loginSaveBtn = document.getElementById('loginSaveBtn');
+    let currentStep = 0;
+    let resultViewTracked = false;
+    const TODAY_PAGE = './today.html';
+    const VISITOR_ID_KEY = 'linglish_visitor_id';
+    const PENDING_PROFILE_SYNC_KEY = 'linglish_onboarding_pending_profile_sync';
+
+    const stepMeta = [
+      { title: '1. 小测一下你的英语水平', desc: '4 道题，快速判断你适合的学习等级，并生成第一天训练闭环。' },
+      { title: '2. 你的学习目标', desc: '告诉我们这段时间最想提升的方向。' },
+      { title: '3. 每日学习时长', desc: '建议从可持续的时长开始，稳步前进。' },
+      { title: '完成设置', desc: '确认推荐等级，立刻进入今日训练。' }
+    ];
+
+    const levelMap = {
+      beginner: { label: '初级', icon: '🌱' },
+      intermediate: { label: '中级', icon: '🌿' },
+      advanced: { label: '高级', icon: '🌳' }
+    };
+
+    const planTemplates = {
+      '面试准备': {
+        watch: '看一段面试/项目表达视频，标出 3 个可复用句型。',
+        speak: '跟读 5 句经历描述，并完成 30 秒项目复述。',
+        review: '复习优势表达、职责动词和一个被 AI 标记的错句。'
+      },
+      '出国留学': {
+        watch: '看一段校园/课堂场景视频，抓住问题和回应方式。',
+        speak: '跟读 5 句课堂互动表达，并复述 1 个观点。',
+        review: '复习课堂高频词、连接词和一个语音节奏问题。'
+      },
+      '职场沟通': {
+        watch: '看一段会议/汇报视频，提取确认需求和表达建议的句子。',
+        speak: '跟读 5 句职场表达，并完成 30 秒会议复述。',
+        review: '复习会议动词、委婉表达和一个漏词句。'
+      },
+      '日常交流': {
+        watch: '看一段生活对话视频，抓住自然回应和追问方式。',
+        speak: '跟读 5 句日常表达，并用自己的经历改说一遍。',
+        review: '复习口语短语、自然连读和一个不地道表达。'
+      },
+      '考试提升': {
+        watch: '看一段观点表达视频，标出论点、例子和转折句。',
+        speak: '跟读 5 句论述表达，并做 30 秒结构化回答。',
+        review: '复习同义替换、逻辑连接词和一个语法错句。'
+      },
+      default: {
+        watch: '看一段真实英语视频，先听懂重点句。',
+        speak: '跟读 5 句，并完成 30 秒复述。',
+        review: '复习 3 个词和 1 个错句，明天继续。'
+      }
+    };
+
+    function normalizeLevel(raw) {
+      const v = String(raw || '').trim().toLowerCase();
+      if (v === 'beginner' || v === 'intermediate' || v === 'advanced') return v;
+      return null;
+    }
+
+    function getTodayHref(level, source = 'onboarding') {
+      const params = new URLSearchParams({ from: source });
+      const lv = normalizeLevel(level);
+      if (lv) params.set('level', lv);
+      return `${TODAY_PAGE}?${params.toString()}`;
+    }
+
+    function getToken() {
+      try {
+        if (window.AuthManager && typeof window.AuthManager.getToken === 'function') {
+          return window.AuthManager.getToken();
+        }
+      } catch (_) {}
+      try {
+        return localStorage.getItem('linglish_token') || localStorage.getItem('authToken') ||
+          sessionStorage.getItem('linglish_token') || sessionStorage.getItem('authToken') || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getVisitorId() {
+      try {
+        let visitorId = localStorage.getItem(VISITOR_ID_KEY);
+        if (!visitorId) {
+          const random = (window.crypto && window.crypto.randomUUID)
+            ? window.crypto.randomUUID().replace(/-/g, '')
+            : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          visitorId = `llv_${random}`.slice(0, 68);
+          localStorage.setItem(VISITOR_ID_KEY, visitorId);
+        }
+        return visitorId;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function postEvent(name, properties = {}) {
+      const token = getToken();
+      const visitorId = getVisitorId();
+      const endpoint = token ? '/events' : '/track/event';
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      try {
+        fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            event_name: name,
+            visitor_id: visitorId,
+            properties: {
+              page: 'welcome',
+              step: currentStep,
+              visitor_id: visitorId,
+              auth_state: token ? 'logged_in' : 'anonymous',
+              level: selectedLevel || null,
+              goal: selectedGoal || null,
+              daily_goal: selectedMinutes ? Number(selectedMinutes) : null,
+              ...properties,
+            },
+          }),
+          keepalive: true,
+        }).catch(() => {});
+      } catch (_) {}
+    }
+
+    function computeLevelFromAnswers() {
+      const scoreMap = { beginner: 0, intermediate: 1, advanced: 2 };
+      const scores = levelAnswers.map((lv) => scoreMap[lv]);
+      const total = scores.reduce((sum, v) => sum + v, 0);
+      const avg = total / scores.length;
+      if (avg < 0.7) return 'beginner';
+      if (avg < 1.4) return 'intermediate';
+      return 'advanced';
+    }
+
+    function updateSummary() {
+      const meta = levelMap[selectedLevel] || levelMap.beginner;
+      document.getElementById('summary-level').textContent = `${meta.icon} ${meta.label}`;
+      document.getElementById('summary-goal').textContent = selectedGoal || '-';
+      document.getElementById('summary-time').textContent = selectedMinutes ? `每天 ${selectedMinutes} 分钟` : '-';
+      const plan = planTemplates[selectedGoal] || planTemplates.default;
+      document.getElementById('plan-watch').textContent = plan.watch;
+      document.getElementById('plan-speak').textContent = plan.speak;
+      document.getElementById('plan-review').textContent = plan.review;
+      document.getElementById('save-plan-desc').textContent = `等级 ${meta.label} · ${selectedGoal || '个性化目标'} · 每天 ${selectedMinutes || 15} 分钟。注册后会同步目标、进度、AI反馈和复习队列。`;
+      document.querySelectorAll('.level-chip').forEach((chip) => {
+        chip.classList.toggle('active', chip.dataset.level === selectedLevel);
+      });
+    }
+
+    function updateNavState() {
+      backBtn.disabled = currentStep === 0;
+      stepDots.forEach((dot, index) => dot.classList.toggle('active', index === currentStep));
+      stepTitle.textContent = stepMeta[currentStep].title;
+      stepDesc.textContent = stepMeta[currentStep].desc;
+      stepStatus.textContent = `第 ${currentStep + 1} / ${steps.length} 步`;
+
+      let canProceed = true;
+      if (currentStep === 0) {
+        canProceed = levelAnswers.every(Boolean);
+      } else if (currentStep === 1) {
+        canProceed = !!selectedGoal;
+      } else if (currentStep === 2) {
+        canProceed = !!selectedMinutes;
+      }
+      nextBtn.disabled = !canProceed;
+      nextBtn.textContent = currentStep === steps.length - 1 ? '生成今日训练' : '下一步';
+    }
+
+    function goToStep(index) {
+      if (index < 0 || index >= steps.length) return;
+      steps[currentStep].classList.remove('active');
+      currentStep = index;
+      steps[currentStep].classList.add('active');
+      updateNavState();
+      if (currentStep === steps.length - 1) {
+        updateSummary();
+        if (!resultViewTracked) {
+          resultViewTracked = true;
+          postEvent('onboarding_result_view', {
+            final_level: normalizeLevel(selectedLevel) || 'beginner',
+            goal: selectedGoal || null,
+            daily_goal: selectedMinutes ? Number(selectedMinutes) : null,
+          });
+        }
+      }
+    }
+
+    async function persistOnboardingProfile() {
+      const finalLevel = normalizeLevel(selectedLevel) || 'beginner';
+      const token = window.AuthManager ? window.AuthManager.getToken() : getToken();
+      let profileSynced = false;
+
+      if (token) {
+        try {
+          const profileResponse = await fetch('/auth/profile', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              level: finalLevel,
+              daily_goal: selectedMinutes ? Number(selectedMinutes) : undefined,
+              interests: selectedGoal ? [selectedGoal] : undefined
+            })
+          });
+          profileSynced = profileResponse.ok;
+        } catch (e) {
+          console.warn('Failed to save level:', e);
+        }
+      }
+
+      try {
+        localStorage.setItem('linglish_active_level', finalLevel);
+        localStorage.setItem('vocab_difficulty_filter', finalLevel);
+        localStorage.setItem('linglish_onboarding_goal', selectedGoal || '');
+        localStorage.setItem('linglish_onboarding_daily_minutes', selectedMinutes || '');
+        localStorage.setItem('linglish_onboarding_done', '1');
+        if (profileSynced) localStorage.removeItem(PENDING_PROFILE_SYNC_KEY);
+        else localStorage.setItem(PENDING_PROFILE_SYNC_KEY, '1');
+      } catch (e) {
+        console.warn('Cannot save onboarding data:', e);
+      }
+
+      postEvent('onboarding_completed', {
+        final_level: finalLevel,
+        goal: selectedGoal || null,
+        daily_goal: selectedMinutes ? Number(selectedMinutes) : null,
+        profile_synced: profileSynced,
+      });
+
+      return { finalLevel, token, profileSynced };
+    }
+
+    document.querySelectorAll('.question').forEach((question) => {
+      const qIndex = Number(question.dataset.question);
+      question.querySelectorAll('.option-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          question.querySelectorAll('.option-btn').forEach((el) => el.classList.remove('selected'));
+          btn.classList.add('selected');
+          levelAnswers[qIndex] = normalizeLevel(btn.dataset.level);
+          if (levelAnswers.every(Boolean)) {
+            selectedLevel = computeLevelFromAnswers();
+          }
+          updateNavState();
+        });
+      });
+    });
+
+    document.querySelectorAll('.goal-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.goal-card').forEach((el) => el.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedGoal = card.dataset.goal;
+        updateNavState();
+      });
+    });
+
+    document.querySelectorAll('.time-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.time-card').forEach((el) => el.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedMinutes = card.dataset.minutes;
+        updateNavState();
+      });
+    });
+
+    document.querySelectorAll('.level-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        selectedLevel = normalizeLevel(chip.dataset.level);
+        updateSummary();
+      });
+    });
+
+    backBtn.addEventListener('click', () => {
+      goToStep(currentStep - 1);
+    });
+
+    nextBtn.addEventListener('click', async () => {
+      if (currentStep === 0) {
+        selectedLevel = selectedLevel || computeLevelFromAnswers();
+      }
+
+      if (currentStep < steps.length - 1) {
+        postEvent('onboarding_step_completed', {
+          completed_step: currentStep,
+          completed_step_name: stepMeta[currentStep]?.title || '',
+        });
+        goToStep(currentStep + 1);
+        if (currentStep === steps.length - 1) {
+          updateSummary();
+        }
+        return;
+      }
+
+      const { finalLevel } = await persistOnboardingProfile();
+      window.location.href = getTodayHref(finalLevel, 'onboarding');
+    });
+
+    savePlanBtn.addEventListener('click', async () => {
+      if (!selectedGoal || !selectedMinutes || !selectedLevel) return;
+      const { finalLevel, token } = await persistOnboardingProfile();
+      postEvent('onboarding_save_plan_click', {
+        target: token ? 'today' : 'register',
+        final_level: finalLevel,
+      });
+      if (token) {
+        window.location.href = getTodayHref(finalLevel, 'onboarding_save_plan');
+        return;
+      }
+      window.location.href = `./desktop-auth.html?mode=register&next=${encodeURIComponent(getTodayHref(finalLevel, 'save_plan'))}`;
+    });
+
+    loginSaveBtn.addEventListener('click', async () => {
+      if (!selectedGoal || !selectedMinutes || !selectedLevel) return;
+      const { finalLevel, token } = await persistOnboardingProfile();
+      postEvent('onboarding_save_plan_click', {
+        target: token ? 'today' : 'login',
+        final_level: finalLevel,
+      });
+      if (token) {
+        window.location.href = getTodayHref(finalLevel, 'onboarding_save_plan_login');
+        return;
+      }
+      window.location.href = `./desktop-auth.html?next=${encodeURIComponent(getTodayHref(finalLevel, 'save_plan_login'))}`;
+    });
+
+    async function handleOAuthCallback() {
+      if (window.LinglishOAuthBootstrap) {
+        await window.LinglishOAuthBootstrap.ready;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await handleOAuthCallback();
+      const token = getToken();
+      const done = (() => {
+        try {
+          const value = localStorage.getItem('linglish_onboarding_done');
+          return value === '1' || value === 'true';
+        } catch (_) { return false; }
+      })();
+      if (done) {
+        let level = null;
+        try { level = localStorage.getItem('linglish_active_level'); } catch (_) {}
+        window.location.href = getTodayHref(level, 'onboarding_done');
+        return;
+      }
+      skipLink.href = getTodayHref(null, 'onboarding_skip');
+      updateNavState();
+      postEvent('onboarding_started');
+      skipLink.addEventListener('click', () => {
+        try {
+          localStorage.setItem('linglish_onboarding_done', '1');
+          localStorage.removeItem(PENDING_PROFILE_SYNC_KEY);
+        } catch (_) { }
+        postEvent('onboarding_skipped');
+      });
+    });
+  </script>
+</body>
+</html>

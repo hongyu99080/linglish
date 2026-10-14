@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>用户反馈 - linglish</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./auth-helpers.js"></script>
+    <script src="./i18n.js"></script>
+    <style>
+      :root { --border: rgba(148,163,184,.25); --surface:#ffffff; --muted:#64748b; --accent:#0ea5e9; }
+      body { margin:0; font-family: Inter, system-ui, sans-serif; background: #f6f7fb; }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 1rem; }
+      .top { display:flex; align-items:center; justify-content:space-between; padding:.8rem 0; }
+      .panel { background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 24px rgba(0,0,0,.06); }
+      .form { padding:1rem; }
+      .form h2 { margin:.2rem 0 1rem; }
+      .form-row { margin:.6rem 0; }
+      .form-row select, .form-row textarea { width:100%; border:1px solid var(--border); border-radius:10px; padding:.6rem .7rem; font-size:1rem; }
+      .form-row input[type="file"] { width:100%; }
+      .upload-row { display:flex; flex-direction:column; gap:.4rem; }
+      .upload-hint { color:var(--muted); font-size:.85rem; }
+      .preview-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:.6rem; }
+      .preview-card { border:1px dashed var(--border); border-radius:10px; padding:.4rem; background:#f8fafc; position:relative; }
+      .preview-card img { width:100%; height:90px; object-fit:cover; border-radius:8px; display:block; }
+      .preview-card button { position:absolute; top:6px; right:6px; border:none; background:rgba(15,23,42,.7); color:#fff; border-radius:999px; width:22px; height:22px; cursor:pointer; }
+      .attachments { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.5rem; }
+      .attachment-img { width:120px; height:90px; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
+      .btn { padding:.55rem .9rem; border-radius:10px; border:1px solid var(--border); cursor:pointer; }
+      .btn.primary { background:linear-gradient(120deg, #0ea5e9, #5eead4); color:#fff; border-color:transparent; }
+      .list { margin-top:1rem; }
+      .item { border-top:1px solid var(--border); padding: .9rem 1rem; }
+      .item:first-child { border-top:none; }
+      .meta { color:var(--muted); font-size:.85rem; }
+      .replies { margin:.4rem 0 0 .5rem; border-left:3px solid #eef2ff; padding-left:.6rem; }
+      .tag { display:inline-block; padding:.2rem .5rem; border-radius:999px; border:1px solid var(--border); font-size:.8rem; margin-right:.4rem; }
+      @media (max-width: 768px) { .wrap { padding:.6rem; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div style="display:flex; gap:.5rem; align-items:center;">
+          <a class="btn" id="back-home">🏠 <span data-i18n="nav.home">返回首页</span></a>
+          <a class="btn" href="./video-reader-desktop.html">🎬 <span data-i18n="nav.videos">视频</span></a>
+        </div>
+        <div class="btn" id="logout" style="display:none;" data-i18n="nav.logout">退出</div>
+      </div>
+
+      <div class="panel form">
+        <h2>💬 提交反馈</h2>
+        <div class="form-row">
+          <select id="fb-category">
+            <option value="bug">问题/故障</option>
+            <option value="suggestion">功能建议</option>
+            <option value="content">内容问题</option>
+            <option value="general" selected>其他</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <textarea id="fb-content" rows="5" placeholder="请描述你的问题或建议…"></textarea>
+        </div>
+        <div class="form-row upload-row">
+          <input id="fb-images" type="file" accept="image/*" multiple />
+          <div class="upload-hint">支持 PNG/JPG/WebP/GIF，最多 3 张，单张 ≤ 5MB。</div>
+          <div class="preview-grid" id="fb-previews"></div>
+        </div>
+        <div class="form-row">
+          <button class="btn primary" id="fb-submit">提交</button>
+        </div>
+      </div>
+
+      <div class="panel list" id="fb-list"></div>
+    </div>
+
+    <script>
+      const API_BASE = (() => {
+        const { protocol, hostname, port } = window.location;
+        if (protocol === 'file:') return 'http://localhost:8000';
+        if (hostname === 'localhost' || hostname === '127.0.0.1') return `${protocol}//${hostname}:${port||'8000'}`;
+        return '';
+      })();
+      function goHome() {
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        window.location.href = isMobile ? './index.html' : './index-desktop.html';
+      }
+      function smartBack() {
+        const referrer = document.referrer || '';
+        if (referrer && referrer.includes(window.location.host) && window.history.length > 1) {
+          window.history.back();
+        } else {
+          goHome();
+        }
+      }
+      const token = localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token) { alert('请先登录'); goHome(); }
+      document.getElementById('back-home')?.addEventListener('click', (e) => { e.preventDefault(); smartBack(); });
+
+      let submitting = false;
+      const submitBtn = document.getElementById('fb-submit');
+
+      async function loadMyFeedback() {
+        const box = document.getElementById('fb-list');
+        box.innerHTML = '<div style="padding:1rem;color:#64748b;">加载中…</div>';
+        try {
+          const res = await fetch(`${API_BASE}/feedback/my`, { headers: { 'Authorization': `Bearer ${token}` } });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.message || '加载失败');
+          const items = data.items || [];
+          if (!items.length) { box.innerHTML = '<div style="padding:1rem;color:#64748b;">暂无反馈</div>'; return; }
+          items.forEach(it => {
+            if (typeof it.attachments === 'string') {
+              try { it.attachments = JSON.parse(it.attachments); } catch (_) { it.attachments = []; }
+            }
+            if (!Array.isArray(it.attachments)) it.attachments = [];
+          });
+          box.innerHTML = items.map(it => `
+            <div class="item">
+              <div class="meta"><span class="tag">${it.category}</span> ${new Date(it.created_at).toLocaleString()} · 状态：${it.status}</div>
+              <div style="margin:.35rem 0; white-space:pre-wrap;">${escapeHtml(it.content)}</div>
+              ${(it.attachments || []).length ? `
+                <div class="attachments">
+                  ${(it.attachments || []).map(att => `
+                    <a href="${escapeAttr(att.url || '')}" target="_blank" rel="noopener">
+                      <img class="attachment-img" src="${escapeAttr(att.url || '')}" alt="${escapeAttr(att.name || 'attachment')}">
+                    </a>
+                  `).join('')}
+                </div>
+              ` : ''}
+              ${(it.replies||[]).length ? `<div class="replies">${(it.replies||[]).map(r=>`<div class="meta">【${r.role==='admin'?'管理员':'我'}】${new Date(r.created_at).toLocaleString()}</div><div style=\"margin:.2rem 0 .5rem;\">${escapeHtml(r.message)}</div>`).join('')}</div>` : ''}
+            </div>
+          `).join('');
+        } catch (e) {
+          box.innerHTML = `<div style="padding:1rem;color:#ef4444;">${e.message||'加载失败'}</div>`;
+        }
+      }
+
+      function escapeHtml(s){ return String(s??'').replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+      function escapeAttr(s){ return String(s??'').replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+      const fileInput = document.getElementById('fb-images');
+      const previewsEl = document.getElementById('fb-previews');
+      let selectedFiles = [];
+
+      function renderPreviews() {
+        if (!previewsEl) return;
+        previewsEl.innerHTML = '';
+        selectedFiles.forEach((file, idx) => {
+          const card = document.createElement('div');
+          card.className = 'preview-card';
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          img.onload = () => URL.revokeObjectURL(img.src);
+          const btn = document.createElement('button');
+          btn.textContent = '×';
+          btn.addEventListener('click', () => {
+            selectedFiles.splice(idx, 1);
+            renderPreviews();
+          });
+          card.appendChild(img);
+          card.appendChild(btn);
+          previewsEl.appendChild(card);
+        });
+      }
+
+      if (fileInput) {
+        fileInput.addEventListener('change', () => {
+          const files = Array.from(fileInput.files || []);
+          const filtered = files.filter(f => f && f.size <= 5 * 1024 * 1024);
+          selectedFiles = filtered.slice(0, 3);
+          renderPreviews();
+        });
+      }
+
+      document.getElementById('fb-submit').addEventListener('click', async () => {
+        if (submitting) return;
+        const category = document.getElementById('fb-category').value;
+        const content = document.getElementById('fb-content').value.trim();
+        if (!content) { alert('请输入内容'); return; }
+        submitting = true;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = '提交中...';
+        }
+        try {
+          let attachments = [];
+          if (selectedFiles.length) {
+            const formData = new FormData();
+            selectedFiles.forEach(file => formData.append('image', file));
+            const uploadRes = await fetch(`${API_BASE}/feedback/upload`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` },
+              body: formData
+            });
+            const uploadData = await uploadRes.json();
+            if (!uploadRes.ok) throw new Error(uploadData?.message || '图片上传失败');
+            attachments = Array.isArray(uploadData.files) ? uploadData.files : [];
+          }
+
+          const res = await fetch(`${API_BASE}/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ category, content, attachments })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.message || '提交失败');
+          document.getElementById('fb-content').value = '';
+          selectedFiles = [];
+          if (fileInput) fileInput.value = '';
+          renderPreviews();
+          await loadMyFeedback();
+          alert('已提交，感谢你的反馈！');
+        } catch (e) {
+          alert(e.message || '提交失败');
+        } finally {
+          submitting = false;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交';
+          }
+        }
+      });
+
+      // init
+      if (typeof i18n !== 'undefined') i18n.init();
+      loadMyFeedback();
+    </script>
+  </body>
+  </html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduAI Kit — 教培机构 AI 提效套件</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: #1a1a2e; line-height: 1.6; }
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white; padding: 80px 20px; text-align: center;
+}
+.hero h1 { font-size: 2.8em; margin-bottom: 16px; font-weight: 800; }
+.hero .subtitle { font-size: 1.3em; opacity: 0.9; max-width: 600px; margin: 0 auto 32px; }
+.hero .cta { display: inline-block; background: #fff; color: #764ba2; padding: 16px 48px;
+  border-radius: 50px; font-size: 1.2em; font-weight: 700; text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s; }
+.hero .cta:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+
+/* Pain Points */
+.pain { background: #f8f9fa; padding: 60px 20px; text-align: center; }
+.pain h2 { font-size: 2em; margin-bottom: 40px; color: #e74c3c; }
+.pain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px; max-width: 900px; margin: 0 auto; }
+.pain-card { background: white; padding: 32px; border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08); text-align: left; }
+.pain-card .emoji { font-size: 2em; margin-bottom: 12px; }
+.pain-card h3 { margin-bottom: 8px; color: #e74c3c; }
+
+/* Solutions */
+.solutions { padding: 60px 20px; text-align: center; }
+.solutions h2 { font-size: 2em; margin-bottom: 40px; color: #2d3436; }
+.sol-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px; max-width: 1000px; margin: 0 auto; }
+.sol-card { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  padding: 32px; border-radius: 16px; text-align: left; }
+.sol-card h3 { font-size: 1.2em; margin: 12px 0 8px; }
+.sol-card .save { color: #27ae60; font-weight: 700; font-size: 1.1em; margin-top: 12px; }
+
+/* Order Templates */
+.order-templates { background: #fffaf3; padding: 64px 20px; }
+.order-templates .wrap { max-width: 1100px; margin: 0 auto; }
+.order-templates h2 { font-size: 2em; margin-bottom: 12px; text-align: center; color: #2d3436; }
+.order-templates .lead { text-align: center; color: #666; max-width: 760px; margin: 0 auto 36px; }
+.order-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+.order-card { background: white; border: 1px solid #eee; border-radius: 18px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+.order-card h3 { font-size: 1.15em; margin-bottom: 8px; color: #5b3cc4; }
+.order-card p { color: #666; margin-bottom: 12px; }
+.order-card textarea { width: 100%; min-height: 150px; border: 1px solid #ddd; border-radius: 12px; padding: 14px; resize: vertical; font: inherit; line-height: 1.55; background: #fafafa; }
+.order-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.order-btn { border: none; border-radius: 999px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+.order-btn.primary { background: #667eea; color: white; }
+.order-btn.secondary { background: #f1f3f5; color: #333; }
+.order-tips { margin-top: 28px; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+.order-tips ul { margin-left: 18px; color: #555; }
+.order-tips li { margin: 8px 0; }
+
+/* Comparison */
+.compare { background: #f8f9fa; padding: 60px 20px; text-align: center; }
+.compare h2 { font-size: 2em; margin-bottom: 40px; }
+.compare table { margin: 0 auto; border-collapse: collapse; max-width: 700px; width: 100%; }
+.compare th, .compare td { padding: 16px 24px; text-align: left; border-bottom: 1px solid #ddd; }
+.compare th { background: #667eea; color: white; }
+.compare tr:nth-child(even) { background: white; }
+.compare .highlight { color: #27ae60; font-weight: 700; }
+
+/* Pricing */
+.pricing { padding: 60px 20px; text-align: center; }
+.pricing h2 { font-size: 2em; margin-bottom: 40px; }
+.price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px; max-width: 900px; margin: 0 auto; }
+.price-card { border: 2px solid #eee; padding: 32px; border-radius: 16px; position: relative; }
+.price-card.featured { border-color: #667eea; background: linear-gradient(135deg, #667eea08, #764ba208); }
+.price-card.featured::before { content: '🔥 推荐'; position: absolute; top: -12px; left: 50%;
+  transform: translateX(-50%); background: #667eea; color: white; padding: 4px 16px;
+  border-radius: 20px; font-size: 0.85em; }
+.price-card h3 { font-size: 1.3em; margin-bottom: 8px; }
+.price-card .price { font-size: 2em; font-weight: 800; color: #667eea; margin: 16px 0; }
+.price-card .price small { font-size: 0.4em; color: #999; }
+.price-card ul { list-style: none; text-align: left; margin: 16px 0; }
+.price-card ul li { padding: 6px 0; }
+.price-card ul li::before { content: '✅ '; }
+.price-btn { display: inline-block; padding: 12px 32px; border-radius: 50px;
+  text-decoration: none; font-weight: 700; margin-top: 16px; }
+.price-btn.primary { background: #667eea; color: white; }
+.price-btn.secondary { background: #eee; color: #333; }
+
+/* CTA */
+.final-cta { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white; padding: 60px 20px; text-align: center; }
+.final-cta h2 { font-size: 2em; margin-bottom: 16px; }
+.final-cta p { font-size: 1.2em; opacity: 0.9; margin-bottom: 32px; }
+.final-cta .cta { display: inline-block; background: #fff; color: #764ba2; padding: 16px 48px;
+  border-radius: 50px; font-size: 1.2em; font-weight: 700; text-decoration: none; }
+
+/* Footer */
+footer { padding: 32px; text-align: center; color: #999; font-size: 0.9em; }
+
+@media (max-width: 600px) {
+  .hero h1 { font-size: 2em; }
+  .compare table { font-size: 0.85em; }
+  .compare th, .compare td { padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <h1>🎓 EduAI Kit</h1>
+  <p class="subtitle">教培机构 AI 提效套件<br>让老师从重复劳动中解放，把时间留给真正重要的事</p>
+  <a href="#templates" class="cta">查看万能下单模板 →</a>
+</section>
+
+<section class="pain">
+  <h2>😩 这些痛，你一定懂</h2>
+  <div class="pain-grid">
+    <div class="pain-card">
+      <div class="emoji">📝</div>
+      <h3>备课到半夜</h3>
+      <p>每节课花3小时准备教案、练习题、PPT……时间都花在重复劳动上。</p>
+    </div>
+    <div class="pain-card">
+      <div class="emoji">📊</div>
+      <h3>周报写不完</h3>
+      <p>20个学生 × 30分钟 = 10小时/周。家长还嫌不够个性化。</p>
+    </div>
+    <div class="pain-card">
+      <div class="emoji">📱</div>
+      <h3>招生内容没空发</h3>
+      <p>知道要做小红书、朋友圈，但谁有时间？一篇内容要改4个版本。</p>
+    </div>
+    <div class="pain-card">
+      <div class="emoji">💬</div>
+      <h3>家长消息回不过来</h3>
+      <p>通知、咨询、续费……每天光回消息就花2小时。</p>
+    </div>
+  </div>
+</section>
+
+<section class="solutions">
+  <h2>✨ AI 帮你搞定</h2>
+  <div class="sol-grid">
+    <div class="sol-card">
+      <div style="font-size:2.5em">📝</div>
+      <h3>课程内容生成器</h3>
+      <p>输入主题和级别，5分钟生成完整教案+练习题+PPT大纲+词汇卡</p>
+      <div class="save">⏰ 每节课省 2-3 小时</div>
+    </div>
+    <div class="sol-card">
+      <div style="font-size:2.5em">📊</div>
+      <h3>学生周报生成器</h3>
+      <p>输入几个关键词，AI 生成20份个性化学习报告，直接发家长</p>
+      <div class="save">⏰ 每周省 10 小时</div>
+    </div>
+    <div class="sol-card">
+      <div style="font-size:2.5em">📱</div>
+      <h3>内容分发助手</h3>
+      <p>一篇教学内容 → 自动生成小红书+公众号+朋友圈+抖音文案</p>
+      <div class="save">⏰ 每篇省 1-2 小时</div>
+    </div>
+    <div class="sol-card">
+      <div style="font-size:2.5em">💬</div>
+      <h3>家长沟通助手</h3>
+      <p>一键生成通知、续费提醒、个别反馈，专业又温暖</p>
+      <div class="save">⏰ 每天省 1 小时</div>
+    </div>
+  </div>
+</section>
+
+<section class="order-templates" id="templates">
+  <div class="wrap">
+    <h2>🧩 万能下单模板</h2>
+    <p class="lead">不会写需求也没关系。直接选一个模板，改几个词，就能让我自动做出课件包。</p>
+
+    <div class="order-grid">
+      <div class="order-card">
+        <h3>① 单个故事全套</h3>
+        <p>适合典范英语、绘本、分级阅读单篇故事。</p>
+        <textarea id="tpl-story">帮我做《【教材/故事名】》的全套教学课件：PPT + 练习册 + 互动游戏，老师可直接上课使用。</textarea>
+        <div class="order-actions">
+          <button class="order-btn primary" onclick="copyTemplate('tpl-story')">复制模板</button>
+        </div>
+      </div>
+
+      <div class="order-card">
+        <h3>② 单元课全套</h3>
+        <p>适合 PEP、人教版、沪教版、校内教材单元课。</p>
+        <textarea id="tpl-unit">帮我做【教材版本】【年级】【册别】【Unit/Module】的全套教学包：PPT、worksheet、课堂互动游戏，按老师演示可直接使用的标准来做。</textarea>
+        <div class="order-actions">
+          <button class="order-btn primary" onclick="copyTemplate('tpl-unit')">复制模板</button>
+        </div>
+      </div>
+
+      <div class="order-card">
+        <h3>③ 多个故事批量做</h3>
+        <p>适合 3-10 篇故事一起打包生产。</p>
+        <textarea id="tpl-batch">帮我批量做【教材名】的这些内容：【故事1】、【故事2】、【故事3】…… 每个都要做成 PPT + 练习册 + HTML互动游戏，并按文件分开发给我。</textarea>
+        <div class="order-actions">
+          <button class="order-btn primary" onclick="copyTemplate('tpl-batch')">复制模板</button>
+        </div>
+      </div>
+
+      <div class="order-card">
+        <h3>④ 只做 PPT</h3>
+        <p>适合先快速出讲课版本。</p>
+        <textarea id="tpl-ppt">帮我做《【教材/故事名】》的教学PPT，要求老师可直接上课使用，包含：导入、故事讲解、词汇、句型、理解题、讨论题、作业。</textarea>
+        <div class="order-actions">
+          <button class="order-btn primary" onclick="copyTemplate('tpl-ppt')">复制模板</button>
+        </div>
+      </div>
+
+      <div class="order-card">
+        <h3>⑤ 只做练习册</h3>
+        <p>适合打印发学生。</p>
+        <textarea id="tpl-docx">帮我做《【教材/故事名】》的学生练习册，做成可打印 Word 文档，包含词汇、排序题、判断题、填空题、阅读理解、写作题和答案。</textarea>
+        <div class="order-actions">
+          <button class="order-btn primary" onclick="copyTemplate('tpl-docx')">复制模板</button>
+        </div>
+      </div>
+
+      <div class="order-card">
+        <h3>⑥ 只做互动游戏</h3>
+        <p>适合课堂热身、复习、投屏使用。</p>
+        <textarea id="tpl-game">帮我做《【教材/故事名】》的课堂互动游戏，生成一个可离线打开的 HTML 文件，包含故事排序、词汇配对、情节闯关/问答。</textarea>
+        <div class="order-actions">
+          <button class="order-btn primary" onclick="copyTemplate('tpl-game')">复制模板</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="order-tips">
+      <h3 style="margin-bottom:12px; color:#2d3436;">✅ 最好补充这 4 个信息</h3>
+      <ul>
+        <li>教材/故事名：比如《典范英语 5B》Paris Adventure</li>
+        <li>范围：1课 / 3课 / 前5个故事</li>
+        <li>交付物：PPT / 练习册 / 游戏 / 全套</li>
+        <li>用途：老师上课 / 学生练习 / 家长展示</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="compare">
+  <h2>📊 效果对比</h2>
+  <table>
+    <tr><th>指标</th><th>手工方式</th><th>用 EduAI Kit</th></tr>
+    <tr><td>备课时间</td><td>3小时/节</td><td class="highlight">15分钟/节</td></tr>
+    <tr><td>20份周报</td><td>10小时</td><td class="highlight">30分钟</td></tr>
+    <tr><td>多平台内容</td><td>2小时/篇</td><td class="highlight">5分钟/篇</td></tr>
+    <tr><td>家长沟通</td><td>2小时/天</td><td class="highlight">20分钟/天</td></tr>
+    <tr><td><strong>每周节省</strong></td><td>—</td><td class="highlight"><strong>20+ 小时</strong></td></tr>
+  </table>
+</section>
+
+<section class="pricing" id="pricing">
+  <h2>💰 简单透明的定价</h2>
+  <div class="price-grid">
+    <div class="price-card">
+      <h3>单模块</h3>
+      <div class="price">¥3,000 <small>设置费</small></div>
+      <p style="color:#667eea;font-weight:600">+ ¥500/月</p>
+      <ul>
+        <li>任选1个模块</li>
+        <li>全程配置部署</li>
+        <li>使用培训</li>
+        <li>微信群支持</li>
+      </ul>
+      <a href="#contact" class="price-btn secondary">了解更多</a>
+    </div>
+    <div class="price-card featured">
+      <h3>种子期全套</h3>
+      <div class="price">¥8,000 <small>设置费</small></div>
+      <p style="color:#667eea;font-weight:600">+ ¥1,500/月</p>
+      <ul>
+        <li><strong>免费试用2周</strong></li>
+        <li>全部4个模块</li>
+        <li>全程配置部署</li>
+        <li>一对一培训</li>
+        <li>7×12小时支持</li>
+        <li>每月1次优化调整</li>
+      </ul>
+      <a href="#contact" class="price-btn primary">免费试用 →</a>
+    </div>
+    <div class="price-card">
+      <h3>标准套件</h3>
+      <div class="price">¥12,000 <small>设置费</small></div>
+      <p style="color:#667eea;font-weight:600">+ ¥2,000/月</p>
+      <ul>
+        <li>全部4个模块</li>
+        <li>定制化配置</li>
+        <li>教材库导入</li>
+        <li>优先支持</li>
+        <li>每周优化</li>
+      </ul>
+      <a href="#contact" class="price-btn secondary">咨询定制</a>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta" id="contact">
+  <h2>🚀 开始免费试用</h2>
+  <p>加微信聊聊你的需求，2周免费体验全套功能</p>
+  <a href="javascript:void(0)" class="cta" onclick="alert('请添加微信：Linglish')">添加微信咨询 →</a>
+</section>
+
+<footer>
+  <p>© 2026 EduAI Kit | 技术支持：Linglish</p>
+</footer>
+
+<script>
+function copyTemplate(id) {
+  const el = document.getElementById(id);
+  el.select();
+  el.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(el.value).then(() => {
+    alert('已复制，可以直接发给我下单');
+  }).catch(() => {
+    document.execCommand('copy');
+    alert('已复制，可以直接发给我下单');
+  });
+}
+</script>
+
+</body>
+</html>

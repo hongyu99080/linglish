@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Thanks · VIP Info</title>
+    <style>
+      :root { --bg:#0f172a; --card:#111827; --text:#e5e7eb; --muted:#9ca3af; --brand:#0ea5e9; }
+      *{box-sizing:border-box}
+      body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(135deg,#0f172a,#111827);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+      .card{max-width:720px;width:100%;background:rgba(17,24,39,.85);border:1px solid rgba(255,255,255,.08);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:1.25rem}
+      .hero{padding:1rem 1rem 0}
+      h1{margin:.2rem 0 .5rem;font-size:1.6rem}
+      p{margin:.4rem 0;color:var(--muted)}
+      .section{margin:1rem 0;padding:1rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px}
+      .row{display:flex;gap:.75rem;align-items:center}
+      .btns{display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
+      .btn{padding:.55rem .9rem;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer;color:var(--text);text-decoration:none}
+      .btn.primary{background:linear-gradient(120deg,#0ea5e9,#5eead4);border-color:transparent;color:#fff}
+      .mono{font-family:ui-monospace,Menlo,Consolas,monospace;background:rgba(0,0,0,.3);padding:.2rem .4rem;border-radius:6px}
+      @media (max-width: 768px){ h1{font-size:1.4rem} }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="hero">
+        <h1>🎉 Thanks for upgrading to VIP</h1>
+        <p>Linglish is currently in <strong>Beta</strong>. We are continuously improving features and experience. Please share suggestions via the feedback entry.</p>
+      </div>
+
+      <div class="section">
+        <h3>Contact us</h3>
+        <p>Need help or have ideas? Add us on WeChat:</p>
+        <div class="row"><span>WeChat</span> <code class="mono">Linglishvip</code></div>
+        <p style="margin-top:.4rem;">You can also submit feedback from “Treasure → Help & Feedback”.</p>
+      </div>
+
+      <div class="btns">
+        <a class="btn" href="./index.html">← Home</a>
+        <a class="btn primary" href="./video-upload.html">Upload a video</a>
+      </div>
+    </div>
+  </body>
+  </html>
+

@@ -1,0 +1,235 @@
+/* Notification Components - Toast, Badges, Alerts */
+
+/* Badge */
+.badge {
+  background: #e74c3c;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  position: absolute;
+  top: 2px;
+  right: 12px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.badge-count {
+  background: #ff6b6b;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.reward-badge {
+  background: #ffd700;
+  color: #1a1a1a;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+/* Stat Badges */
+.stat-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #f5f5f7;
+}
+
+.stat-badge.blue {
+  background: #e3f2fd;
+}
+
+.stat-badge.yellow {
+  background: #fff9e6;
+}
+
+.stat-badge.white {
+  background: #f5f5f7;
+}
+
+/* Current Badge */
+.current-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Video Status */
+.video-status {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.video-status.ready {
+  background: #4caf50;
+  color: white;
+}
+
+.video-status.processing {
+  background: #ff9800;
+  color: white;
+}
+
+.video-status.learning {
+  background: #ff9800;
+  color: white;
+}
+
+.video-status.completed {
+  background: #4caf50;
+  color: white;
+}
+
+/* Video Duration Overlay */
+.video-duration {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.video-duration-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(5px);
+}
+
+/* Scenario Difficulty */
+.scenario-difficulty {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.scenario-difficulty.easy {
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
+}
+
+.scenario-difficulty.medium {
+  background: rgba(255, 152, 0, 0.9);
+  color: white;
+}
+
+.scenario-difficulty.hard {
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: white;
+  padding: 14px 24px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  display: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.toast-notification.success {
+  background: #4caf50;
+}
+
+.toast-notification.error {
+  background: #f44336;
+}
+
+.toast-notification.info {
+  background: #2196f3;
+}
+
+/* Vocab Status */
+.vocab-status {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.vocab-status.new {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.vocab-status.learning {
+  background: #fff9e6;
+  color: #ff9800;
+}
+
+.vocab-status.mastered {
+  background: #e8f5e9;
+  color: #4caf50;
+}
+
+.vocab-status.reviewing {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* See All Link */
+.see-all-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* View Details */
+.view-details {
+  color: var(--primary-color);
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+  text-align: center;
+}
+
+/* Version Text */
+.version-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}

@@ -1,0 +1,55 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!*.env.example
+.mcp.json
+*.pem
+*.key
+*.p12
+*.pfx
+certs/
+ssl/
+
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+coverage/
+cache/
+tts_cache/
+app/backend/bin/
+*.traineddata
+__pycache__/
+*.pyc
+*.log
+*.log.*
+*.db
+*.sqlite
+*.sqlite3
+
+# User content and database exports
+app/backend/uploads/
+app/backend/public/videos/
+app/backend/public/recordings/
+app/backend/public/thumbnails/
+app/backend/backups/
+*.dump
+*backup*.sql
+*.sql.gz
+
+# Private tooling and local artifacts
+.claude/
+.codex/
+.superpowers/
+.specify/
+artifacts/
+creative/
+books/
+*.skill
+*.bak
+*.backup
+.DS_Store
+.vscode/
+.idea/
+*.swp

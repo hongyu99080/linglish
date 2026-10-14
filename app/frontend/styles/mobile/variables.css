@@ -1,0 +1,63 @@
+/* CSS Custom Properties and Variables
+   Re-pointed to shared design tokens (styles/tokens.css, --lx-*).
+   Literal fallbacks keep pages safe if tokens.css is not linked. */
+
+:root {
+  /* Brand Colors — unified teal primary + sky/mint accents */
+  --primary-color: var(--lx-primary, #0f766e);
+  --primary-dark: var(--lx-primary-strong, #0b5f59);
+  --primary-light: var(--lx-teal-500, #14b8a6);
+  --secondary-color: var(--lx-mint, #2dd4bf);
+
+  /* Gradients */
+  --primary-gradient: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  --card-gradient: var(--lx-grad-card, linear-gradient(180deg, #ffffff 0%, #f8fafc 100%));
+  --surface-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+
+  /* Backgrounds */
+  --background: var(--lx-paper, #f8fafc);
+  --surface: var(--lx-surface, #ffffff);
+  --surface-alt: var(--lx-surface-mint, #ecfeff);
+
+  /* Text Colors */
+  --text-primary: var(--lx-ink-900, #0f172a);
+  --text-secondary: var(--lx-ink-500, #64748b);
+  --text-tertiary: var(--lx-ink-400, #94a3b8);
+  --text-on-primary: #ffffff;
+
+  /* Accents */
+  --accent-success: var(--lx-success, #10b981);
+  --accent-warning: var(--lx-warning, #f59e0b);
+  --accent-error: var(--lx-error, #ef4444);
+  --accent-info: var(--lx-info, #0ea5e9);
+
+  /* Borders & Dividers */
+  --border-color: var(--lx-line, #e2e8f0);
+  --border-light: #f1f5f9;
+
+  /* Shadows - Soft & Layered */
+  --shadow-sm: var(--lx-shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 8px rgba(15, 23, 42, 0.04));
+  --shadow-md: var(--lx-shadow-md, 0 2px 4px rgba(15, 23, 42, 0.05), 0 8px 16px rgba(15, 23, 42, 0.06));
+  --shadow-lg: var(--lx-shadow-lg, 0 4px 8px rgba(15, 23, 42, 0.05), 0 16px 32px rgba(15, 23, 42, 0.08));
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
+  --shadow-color: rgba(15, 118, 110, 0.15);
+  /* Teal-tinted shadow */
+
+  /* Glassmorphism */
+  --glass-bg: var(--lx-glass-bg, rgba(255, 255, 255, 0.8));
+  --glass-border: var(--lx-glass-border, rgba(255, 255, 255, 0.5));
+  --glass-blur: var(--lx-glass-blur, blur(12px));
+
+  /* Animation */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Layout */
+  --header-height: 60px;
+  --bottom-nav-height: 70px;
+  --border-radius-sm: var(--lx-radius-sm, 8px);
+  --border-radius-md: var(--lx-radius-md, 12px);
+  --border-radius-lg: var(--lx-radius-lg, 16px);
+  --border-radius-xl: var(--lx-radius-xl, 24px);
+}

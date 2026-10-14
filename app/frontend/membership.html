@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linglish 订阅中心 - 会员状态与升级</title>
+  <meta name="description" content="查看 Linglish 会员状态、订阅周期和升级入口。升级后解锁更完整的真实视频、AI口语反馈和间隔复习训练闭环。">
+  <link rel="canonical" href="https://example.com/membership.html">
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="./styles/tokens.css?v=1">
+  <script src="./js/auth-manager.js?v=1"></script>
+  <style>
+    :root {
+      --ink: var(--lx-ink-900, #111827);
+      --muted: var(--lx-ink-500, #64748b);
+      --paper: var(--lx-paper, #f8fafc);
+      --surface: #ffffff;
+      --line: var(--lx-line, #d8e0ea);
+      --teal: var(--lx-primary, #0f766e);
+      --teal-strong: var(--lx-primary-strong, #0b5f59);
+      --blue: var(--lx-sky-strong, #0284c7);
+      --amber: #b45309;
+      --rose: #be123c;
+      --shadow: 0 18px 46px rgba(15, 23, 42, 0.12);
+      --radius: var(--lx-radius-md, 12px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: var(--lx-font-body, "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      padding: 0 clamp(18px, 5vw, 64px);
+      background: rgba(255, 255, 255, 0.9);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: var(--teal);
+      font-weight: 800;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-link {
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .nav-link:hover {
+      color: var(--teal-strong);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .btn:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.68;
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--teal);
+      box-shadow: 0 14px 30px rgba(15, 118, 110, 0.24);
+    }
+
+    .btn-primary:not(:disabled):hover {
+      background: var(--teal-strong);
+    }
+
+    .btn-secondary {
+      color: var(--ink);
+      background: #ffffff;
+      border-color: var(--line);
+    }
+
+    .btn-danger {
+      color: var(--rose);
+      background: #fff;
+      border-color: rgba(190, 18, 60, 0.28);
+    }
+
+    .page {
+      width: min(1160px, calc(100% - 36px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: clamp(28px, 6vw, 64px);
+      align-items: center;
+      padding: clamp(56px, 8vw, 92px) 0 34px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      color: var(--teal-strong);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 26px;
+      height: 2px;
+      background: var(--teal);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin-bottom: 20px;
+      font-family: var(--lx-font-display, Georgia, serif);
+      font-weight: 700;
+      font-size: clamp(42px, 7vw, 74px);
+      line-height: 1.04;
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      font-family: var(--lx-font-display, Georgia, serif);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-copy {
+      max-width: 680px;
+      margin-bottom: 28px;
+      color: var(--muted);
+      font-size: clamp(17px, 2.3vw, 21px);
+      line-height: 1.62;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .demo-panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .demo-panel video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      display: block;
+      object-fit: cover;
+      background: #071018;
+    }
+
+    .demo-caption {
+      display: grid;
+      gap: 4px;
+      padding: 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .demo-caption strong {
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    .banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 0 24px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      font-weight: 700;
+    }
+
+    .banner-success {
+      color: #065f46;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+    }
+
+    .banner-cancelled {
+      color: #92400e;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      gap: 18px;
+      align-items: start;
+      margin: 0 0 54px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .card-body {
+      padding: clamp(20px, 4vw, 28px);
+    }
+
+    .card h2 {
+      margin-bottom: 10px;
+      font-size: clamp(24px, 4vw, 36px);
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .section-lead {
+      max-width: 720px;
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.45fr) minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status-row:last-child {
+      border-bottom: 0;
+    }
+
+    .status-label {
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    .status-value {
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: #f1f5f9;
+      border: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .badge-active {
+      color: #065f46;
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+
+    .badge-warning {
+      color: #92400e;
+      background: #fffbeb;
+      border-color: #fcd34d;
+    }
+
+    .status-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .plans {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .plan {
+      min-height: 216px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+
+    .plan-featured {
+      border-color: rgba(15, 118, 110, 0.34);
+      box-shadow: 0 14px 34px rgba(15, 118, 110, 0.11);
+    }
+
+    .plan-kicker {
+      margin-bottom: 8px;
+      color: var(--teal-strong);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .plan h3 {
+      margin-bottom: 8px;
+      font-size: 21px;
+      letter-spacing: 0;
+    }
+
+    .plan p {
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .plan ul {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .plan li::before {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 8px;
+      border-radius: 999px;
+      background: var(--teal);
+      vertical-align: 1px;
+    }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer {
+      margin-top: 44px;
+      padding: 26px 0 34px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      width: min(1160px, calc(100% - 36px));
+      margin: 0 auto;
+      font-size: 14px;
+    }
+
+    #toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 40;
+      max-width: min(360px, calc(100% - 36px));
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: #111827;
+      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.26);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #toast.error {
+      background: var(--rose);
+    }
+
+    @media (max-width: 860px) {
+      .topbar {
+        height: auto;
+        min-height: 64px;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
+
+      .nav-actions {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .hero,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .plans {
+        grid-template-columns: 1fr;
+      }
+
+      .status-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar" aria-label="Linglish">
+    <a class="brand" href="./index-desktop.html" aria-label="Linglish 学习首页">
+      <span class="brand-mark">L</span>
+      <span>Linglish</span>
+    </a>
+    <nav class="nav-actions" aria-label="主要导航">
+      <a class="nav-link" href="./index-desktop.html">学习首页</a>
+      <a class="nav-link" href="./pricing.html">价格方案</a>
+      <a class="nav-link" href="./landing.html">产品介绍</a>
+      <a class="btn btn-secondary" id="login-link" href="./desktop-auth.html?next=membership.html">登录</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow">Membership Center</p>
+        <h1 id="hero-title">订阅中心应该管理真实权益，而不是模拟开通。</h1>
+        <p class="hero-copy">
+          在这里查看当前会员状态、订阅周期和下一步操作。升级会进入统一的价格页和 LemonSqueezy 支付流程，支付成功后由服务器同步权益。
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="./pricing.html#plans">查看价格方案</a>
+          <a class="btn btn-secondary" href="./today.html?from=membership">返回今日训练</a>
+        </div>
+      </div>
+
+      <aside class="demo-panel" aria-label="会员训练系统预览">
+        <img src="./assets/lingbao_3d.jpg" alt="Ling宝" style="width:100%;height:100%;object-fit:cover">
+        <div class="demo-caption">
+          <strong>会员权益围绕训练频率和长期复习设计。</strong>
+          <span>更高频 AI 口语反馈、完整训练模式、内容导入和成长数据都服务于每天可持续输出。</span>
+        </div>
+      </aside>
+    </section>
+
+    <div id="banner-success" class="banner banner-success">
+      <span>支付成功。订阅状态同步后即可使用完整会员权益。</span>
+      <a href="./today.html?from=membership_checkout_success">进入今日训练</a>
+    </div>
+    <div id="banner-cancelled" class="banner banner-cancelled">
+      <span>付款已取消。你仍然可以继续使用免费版，稍后再回来升级。</span>
+      <a href="./pricing.html#plans">查看方案</a>
+    </div>
+
+    <section class="grid" aria-labelledby="status-title">
+      <article class="card">
+        <div class="card-body">
+          <p class="eyebrow">Current Plan</p>
+          <h2 id="status-title">当前会员状态</h2>
+          <p class="section-lead" id="status-summary">正在读取订阅状态...</p>
+
+          <div class="status-row">
+            <div class="status-label">账户</div>
+            <div class="status-value" id="account-state">检查中</div>
+          </div>
+          <div class="status-row">
+            <div class="status-label">会员方案</div>
+            <div class="status-value" id="plan-name">-</div>
+          </div>
+          <div class="status-row">
+            <div class="status-label">订阅状态</div>
+            <div class="status-value"><span class="badge" id="subscription-badge">-</span></div>
+          </div>
+          <div class="status-row">
+            <div class="status-label">周期结束</div>
+            <div class="status-value" id="period-end">-</div>
+          </div>
+          <div class="status-row">
+            <div class="status-label">最近同步</div>
+            <div class="status-value" id="sync-event">-</div>
+          </div>
+          <div class="status-row">
+            <div class="status-label">同步时间</div>
+            <div class="status-value" id="sync-time">-</div>
+          </div>
+
+          <div class="status-actions">
+            <a class="btn btn-primary" id="primary-action" href="./pricing.html#plans">升级会员</a>
+            <button class="btn btn-secondary" id="billing-button" type="button" hidden>管理账单</button>
+            <button class="btn btn-danger" id="cancel-button" type="button" hidden>取消订阅</button>
+            <a class="btn btn-secondary" href="./today.html?from=membership_status">继续训练</a>
+          </div>
+          <p class="note" id="status-note">会员状态以服务器订阅记录为准。若刚完成支付，请稍等片刻后刷新。账单、发票、支付方式和订阅变更会跳转至 Lemon Squeezy 官方门户处理。</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-body">
+          <p class="eyebrow">Why Upgrade</p>
+          <h2>付费重点是让训练不断线。</h2>
+          <p class="section-lead">免费版适合确认方法是否适合自己；会员版更适合需要稳定输出、反馈和复习的长期学习者。</p>
+          <div class="plans">
+            <div class="plan plan-featured">
+              <p class="plan-kicker">Pro</p>
+              <h3>个人会员</h3>
+              <p>适合每天 15 分钟真实内容训练。</p>
+              <ul>
+                <li>更高频 AI 口语反馈</li>
+                <li>Shadowing / Dictogloss / 4-3-2 全模式</li>
+                <li>错句、生词、表达自动复习</li>
+              </ul>
+            </div>
+            <div class="plan">
+              <p class="plan-kicker">Team</p>
+              <h3>教学与团队</h3>
+              <p>适合老师、培训机构和企业训练小组。</p>
+              <ul>
+                <li>成员管理和学习报告</li>
+                <li>场景包与任务模板</li>
+                <li>团队进度和复盘材料</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Linglish - AI英语教练</span>
+      <span>真实内容输入 + 口语输出 + 间隔复习</span>
+    </div>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const PLAN_NAMES = {
+      free: '免费体验',
+      vip: '个人会员',
+      pro: '个人会员',
+      family: '教学与团队',
+      svip: '高级会员',
+    };
+
+    const STATUS_NAMES = {
+      none: '未订阅',
+      active: '订阅中',
+      on_trial: '试用中',
+      trialing: '试用中',
+      cancelled: '已取消',
+      expired: '已过期',
+      past_due: '付款异常',
+      paused: '已暂停',
+      unpaid: '未付款',
+    };
+
+    function getParamBanner() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('success') === '1') {
+        document.getElementById('banner-success').style.display = 'flex';
+      } else if (params.get('cancelled') === '1') {
+        document.getElementById('banner-cancelled').style.display = 'flex';
+      }
+    }
+
+    function isMobile() {
+      const ua = navigator.userAgent.toLowerCase();
+      return /mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua) || window.innerWidth < 768;
+    }
+
+    function authUrl() {
+      return (isMobile() ? './mobile-auth.html' : './desktop-auth.html') + '?next=membership.html';
+    }
+
+    function readToken() {
+      try {
+        if (window.AuthManager && typeof window.AuthManager.getToken === 'function') {
+          const token = window.AuthManager.getToken();
+          if (token) return token;
+        }
+      } catch (_) {}
+
+      const keys = ['linglish_token', 'authToken', 'token'];
+      for (const key of keys) {
+        try {
+          const value = localStorage.getItem(key);
+          if (value && value !== 'null' && value !== 'undefined') return value;
+        } catch (_) {}
+      }
+      for (const key of keys) {
+        try {
+          const value = sessionStorage.getItem(key);
+          if (value && value !== 'null' && value !== 'undefined') return value;
+        } catch (_) {}
+      }
+      return null;
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function setBadge(status, active) {
+      const badge = document.getElementById('subscription-badge');
+      badge.textContent = STATUS_NAMES[status] || status || '未知';
+      badge.className = 'badge';
+      if (active) badge.classList.add('badge-active');
+      if (status === 'past_due' || status === 'cancelled' || status === 'expired' || status === 'paused' || status === 'unpaid') {
+        badge.classList.add('badge-warning');
+      }
+    }
+
+    function formatDate(value) {
+      if (!value) return '未设置';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '未设置';
+      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '未设置';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '未设置';
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    function clearStoredToken() {
+      try {
+        if (window.AuthManager && typeof window.AuthManager.clearToken === 'function') {
+          window.AuthManager.clearToken();
+        }
+      } catch (_) {}
+    }
+
+    function renderSignedOut() {
+      setText('status-summary', '登录后可以查看订阅状态和管理会员权益。');
+      setText('account-state', '未登录');
+      setText('plan-name', '免费体验');
+      setText('period-end', '-');
+      setText('sync-event', '-');
+      setText('sync-time', '-');
+      setBadge('none', false);
+      const primary = document.getElementById('primary-action');
+      primary.textContent = '登录查看订阅';
+      primary.href = authUrl();
+      document.getElementById('login-link').href = authUrl();
+      document.getElementById('billing-button').hidden = true;
+      document.getElementById('cancel-button').hidden = true;
+    }
+
+    function renderStatus(data) {
+      const membershipType = String(data.membership_type || 'free').toLowerCase();
+      const subscriptionStatus = String(data.subscription_status || 'none').toLowerCase();
+      const periodEnd = data.subscription_end_date || data.membership_expires_at || null;
+      const endDate = periodEnd ? new Date(periodEnd) : null;
+      const periodStillValid = Boolean(endDate && !Number.isNaN(endDate.getTime()) && endDate > new Date());
+      const locallyActive = membershipType !== 'free' && ['active', 'on_trial', 'trialing'].includes(subscriptionStatus);
+      const active = data.has_active_vip === true || (data.has_active_vip === undefined && locallyActive && (!periodEnd || periodStillValid));
+      const cancellingButActive = active && subscriptionStatus === 'cancelled';
+      const paidButNoSubscription = membershipType !== 'free' && subscriptionStatus === 'none';
+      const lastEvent = data.last_event || null;
+
+      setText('account-state', '已登录');
+      setText('plan-name', PLAN_NAMES[membershipType] || membershipType || '免费体验');
+      setText('period-end', formatDate(periodEnd));
+      setText('sync-event', lastEvent ? `${STATUS_NAMES[lastEvent.status] || lastEvent.status || lastEvent.event_name} / ${lastEvent.processed_status || 'received'}` : '暂无支付同步记录');
+      setText('sync-time', lastEvent ? formatDateTime(lastEvent.processed_at || lastEvent.received_at) : '-');
+      setBadge(subscriptionStatus, active || cancellingButActive || paidButNoSubscription);
+
+      if (active) {
+        setText('status-summary', '你的会员权益正在生效，可以继续使用完整训练闭环。');
+      } else if (cancellingButActive) {
+        setText('status-summary', '订阅已取消自动续费，但当前周期内会员权益仍然有效。');
+      } else if (lastEvent && lastEvent.processed_status === 'failed') {
+        setText('status-summary', '最近一次支付同步失败。请联系客服处理，或稍后刷新查看是否恢复。');
+      } else if (paidButNoSubscription) {
+        setText('status-summary', '你的账户已有会员标记。若这是一次性或内部开通，周期信息可能不会显示。');
+      } else if (subscriptionStatus === 'past_due') {
+        setText('status-summary', '订阅付款异常。请前往价格页重新完成付款，避免权益中断。');
+      } else {
+        setText('status-summary', '当前为免费体验。升级后可获得更完整的反馈频率、训练模式和复习能力。');
+      }
+
+      const primary = document.getElementById('primary-action');
+      primary.textContent = active || cancellingButActive || paidButNoSubscription ? '查看价格方案' : '升级会员';
+      primary.href = './pricing.html#plans';
+
+      const billingButton = document.getElementById('billing-button');
+      billingButton.hidden = !data.has_billing_portal;
+
+      const cancelButton = document.getElementById('cancel-button');
+      cancelButton.hidden = !active;
+      document.getElementById('login-link').textContent = '账户';
+      document.getElementById('login-link').href = './index-desktop.html';
+    }
+
+    function renderStatusError(message) {
+      setText('status-summary', message || '暂时无法读取订阅状态，请稍后重试。');
+      setText('account-state', '读取失败');
+      setText('plan-name', '-');
+      setText('period-end', '-');
+      setText('sync-event', '-');
+      setText('sync-time', '-');
+      setBadge('none', false);
+      document.getElementById('billing-button').hidden = true;
+      document.getElementById('cancel-button').hidden = true;
+    }
+
+    async function loadStatus() {
+      getParamBanner();
+
+      const token = readToken();
+      if (!token) {
+        renderSignedOut();
+        return;
+      }
+
+      document.getElementById('login-link').textContent = '账户';
+
+      try {
+        const response = await fetch('/api/subscription/status', {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          clearStoredToken();
+          renderSignedOut();
+          showToast('登录已过期，请重新登录', 'error');
+          return;
+        }
+
+        if (!response.ok) {
+          renderStatusError(data.message || '订阅服务暂不可用。');
+          return;
+        }
+
+        renderStatus(data);
+      } catch (error) {
+        console.error('[Membership] status error:', error);
+        renderStatusError('网络错误，暂时无法读取订阅状态。');
+      }
+    }
+
+    async function cancelSubscription() {
+      const token = readToken();
+      if (!token) {
+        renderSignedOut();
+        return;
+      }
+
+      const confirmed = window.confirm('确定要取消当前订阅吗？当前周期结束前仍可继续使用会员权益。');
+      if (!confirmed) return;
+
+      const button = document.getElementById('cancel-button');
+      button.disabled = true;
+      button.textContent = '正在取消...';
+
+      try {
+        const response = await fetch('/api/subscription/cancel', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token },
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          showToast(data.message || '取消订阅失败，请稍后重试', 'error');
+          return;
+        }
+
+        showToast('订阅已取消，当前周期结束前权益仍然有效');
+        await loadStatus();
+      } catch (error) {
+        console.error('[Membership] cancel error:', error);
+        showToast('网络错误，请稍后重试', 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = '取消订阅';
+      }
+    }
+
+    async function openBillingPortal() {
+      const token = readToken();
+      if (!token) {
+        renderSignedOut();
+        return;
+      }
+
+      const button = document.getElementById('billing-button');
+      button.disabled = true;
+      button.textContent = '正在打开...';
+
+      try {
+        const response = await fetch('/api/subscription/customer-portal', {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          clearStoredToken();
+          renderSignedOut();
+          showToast('登录已过期，请重新登录', 'error');
+          return;
+        }
+
+        if (!response.ok || !data.url) {
+          showToast(billingPortalErrorMessage(data.message), 'error');
+          return;
+        }
+
+        window.location.href = data.url;
+      } catch (error) {
+        console.error('[Membership] billing portal error:', error);
+        showToast('网络错误，暂时无法打开账单门户', 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = '管理账单';
+      }
+    }
+
+    function billingPortalErrorMessage(code) {
+      if (code === 'NO_SUBSCRIPTION') return '当前账号还没有可管理的订阅';
+      if (code === 'PAYMENT_SERVICE_UNAVAILABLE') return '支付服务暂不可用，请稍后再试';
+      if (code === 'CUSTOMER_PORTAL_UNAVAILABLE') return '账单门户暂不可用，请联系支持处理';
+      return code || '暂时无法打开账单门户';
+    }
+
+    let toastTimer = null;
+    function showToast(message, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'show' + (type === 'error' ? ' error' : '');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.className = '';
+      }, 3500);
+    }
+
+    document.getElementById('cancel-button').addEventListener('click', cancelSubscription);
+    document.getElementById('billing-button').addEventListener('click', openBillingPortal);
+    document.getElementById('login-link').href = authUrl();
+    loadStatus();
+  </script>
+</body>
+</html>

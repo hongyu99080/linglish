@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="script-src 'self' 'unsafe-inline' 'unsafe-eval'; object-src 'none'; base-uri 'self';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linglish 管理后台 - 视频审核</title>
+  <link rel="stylesheet" href="./admin-styles.css" />
+  <script src="./admin-common.js"></script>
+  <style>
+    .review-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .review-filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .review-video-title {
+      font-weight: 600;
+      color: var(--gray-900);
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .review-note-input {
+      min-width: 220px;
+      min-height: 36px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .review-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .review-subtle {
+      color: var(--gray-500);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    .review-table-wrap {
+      overflow-x: auto;
+    }
+
+    @media (max-width: 768px) {
+      .review-filter-bar {
+        align-items: stretch;
+      }
+
+      .review-filter-group,
+      .review-actions {
+        width: 100%;
+      }
+
+      .review-filter-group .admin-form-input,
+      .review-filter-group .admin-btn {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="admin-content">
+    <div class="admin-stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">待审核</span>
+          <div class="admin-stat-icon warning">⏳</div>
+        </div>
+        <div class="admin-stat-value" id="stat-pending">-</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">公开申请</span>
+          <div class="admin-stat-icon primary">↗</div>
+        </div>
+        <div class="admin-stat-value" id="stat-public">-</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">精选申请</span>
+          <div class="admin-stat-icon success">★</div>
+        </div>
+        <div class="admin-stat-value" id="stat-featured">-</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">已处理</span>
+          <div class="admin-stat-icon primary">✓</div>
+        </div>
+        <div class="admin-stat-value" id="stat-reviewed">-</div>
+      </div>
+    </div>
+
+    <div class="admin-alert admin-alert-info">
+      <div>
+        用户上传视频默认私有。公开视频和精选推荐必须通过这里审核后才会进入公共资源池。
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <div>
+          <div class="admin-card-title">视频公开 / 精选审核</div>
+          <div class="review-subtle">批准公开会设置视频为公开视频；批准精选会同时公开并标记为精选。</div>
+        </div>
+        <div class="review-filter-bar">
+          <div class="review-filter-group">
+            <select id="filter-status" class="admin-form-input" style="width: 128px;">
+              <option value="pending" selected>待审核</option>
+              <option value="approved">已批准</option>
+              <option value="rejected">已拒绝</option>
+              <option value="all">全部</option>
+            </select>
+            <select id="filter-type" class="admin-form-input" style="width: 128px;">
+              <option value="">全部类型</option>
+              <option value="public">公开申请</option>
+              <option value="featured">精选申请</option>
+            </select>
+            <button class="admin-btn admin-btn-secondary" id="btn-refresh">刷新</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>视频</th>
+              <th>类型</th>
+              <th>提交人</th>
+              <th>状态</th>
+              <th>提交时间</th>
+              <th>审核备注</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="reviews-tbody">
+            <tr>
+              <td colspan="7" class="admin-empty-state">加载中…</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    initAdminPage('视频审核');
+
+    const state = {
+      items: [],
+      loading: false,
+      actionId: null,
+    };
+
+    function escapeHtml(value) {
+      return AdminUtils.escapeHtml(value == null ? '' : String(value));
+    }
+
+    function formatDate(value) {
+      if (!value) return '-';
+      try {
+        return new Date(value).toLocaleString('zh-CN', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (_) {
+        return '-';
+      }
+    }
+
+    function statusBadge(status) {
+      const map = {
+        pending: ['admin-badge-warning', '待审核'],
+        approved: ['admin-badge-success', '已批准'],
+        rejected: ['admin-badge-danger', '已拒绝'],
+        cancelled: ['admin-badge-gray', '已取消']
+      };
+      const item = map[status] || ['admin-badge-gray', status || '-'];
+      return `<span class="admin-badge ${item[0]}">${escapeHtml(item[1])}</span>`;
+    }
+
+    function typeBadge(type) {
+      if (type === 'featured') {
+        return '<span class="admin-badge admin-badge-success">精选</span>';
+      }
+      return '<span class="admin-badge admin-badge-primary">公开</span>';
+    }
+
+    function updateStats(summary) {
+      const s = summary || {};
+      document.getElementById('stat-pending').textContent = Number(s.pending || 0);
+      document.getElementById('stat-public').textContent = Number(s.public_pending || 0);
+      document.getElementById('stat-featured').textContent = Number(s.featured_pending || 0);
+      document.getElementById('stat-reviewed').textContent = Number(s.approved || 0) + Number(s.rejected || 0);
+    }
+
+    async function loadReviewStats() {
+      const data = await AdminAPI.get('/admin/video-share-requests/summary');
+      updateStats(data.summary || {});
+    }
+
+    function renderRows() {
+      const tbody = document.getElementById('reviews-tbody');
+      if (state.loading) {
+        tbody.innerHTML = '<tr><td colspan="7" class="admin-empty-state"><span class="admin-loading"></span> 加载中…</td></tr>';
+        return;
+      }
+      if (!state.items.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="admin-empty-state">
+                <div class="admin-empty-icon">✓</div>
+                <div class="admin-empty-text">当前没有审核请求</div>
+                <div class="admin-empty-subtext">新的视频公开或精选申请会出现在这里。</div>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = state.items.map(item => {
+        const videoTitle = item.video_title || `视频 #${item.video_id}`;
+        const requester = item.requester_username || `用户 #${item.requester_id || '-'}`;
+        const disabled = state.actionId === item.id ? 'disabled' : '';
+        const pending = item.status === 'pending';
+        const noteCell = pending
+          ? `<textarea class="admin-form-input review-note-input" data-note-id="${item.id}" placeholder="可选：审核备注"></textarea>`
+          : `<div>${escapeHtml(item.review_note || '-')}</div><div class="review-subtle">${item.reviewer_username ? `审核人：${escapeHtml(item.reviewer_username)}` : ''}</div>`;
+        const actions = pending ? `
+          <div class="review-actions">
+            <button class="admin-btn admin-btn-sm admin-btn-success" data-action="approve" data-id="${item.id}" ${disabled}>批准</button>
+            <button class="admin-btn admin-btn-sm admin-btn-danger" data-action="reject" data-id="${item.id}" ${disabled}>拒绝</button>
+          </div>
+        ` : '<span class="review-subtle">已完成</span>';
+        return `
+          <tr>
+            <td>
+              <div class="review-video-title" title="${escapeHtml(videoTitle)}">${escapeHtml(videoTitle)}</div>
+              <div class="review-subtle">ID: ${escapeHtml(item.video_id)} · <a href="./video-reader-desktop.html?videoId=${encodeURIComponent(item.video_id)}" target="_blank" rel="noopener">打开视频</a></div>
+            </td>
+            <td>${typeBadge(item.request_type)}</td>
+            <td>
+              <div>${escapeHtml(requester)}</div>
+              <div class="review-subtle">用户 ID: ${escapeHtml(item.requester_id || '-')}</div>
+            </td>
+            <td>${statusBadge(item.status)}</td>
+            <td>${formatDate(item.created_at)}</td>
+            <td>${noteCell}</td>
+            <td>${actions}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadReviews() {
+      state.loading = true;
+      renderRows();
+      try {
+        const status = document.getElementById('filter-status').value || 'pending';
+        const type = document.getElementById('filter-type').value || '';
+        const qs = new URLSearchParams({ status, limit: '100' });
+        if (type) qs.set('request_type', type);
+        const [data] = await Promise.all([
+          AdminAPI.get(`/admin/video-share-requests?${qs.toString()}`),
+          loadReviewStats().catch(() => null)
+        ]);
+        state.items = Array.isArray(data.items) ? data.items : [];
+      } catch (err) {
+        state.items = [];
+        updateStats({});
+        AdminUtils.showToast(err.message || '审核队列加载失败', 'error');
+      } finally {
+        state.loading = false;
+        renderRows();
+      }
+    }
+
+    async function reviewRequest(id, status) {
+      const item = state.items.find(row => String(row.id) === String(id));
+      if (!item) return;
+      const label = status === 'approved' ? '批准' : '拒绝';
+      const videoTitle = item.video_title || `视频 #${item.video_id}`;
+      if (!confirm(`确认${label}「${videoTitle}」的${item.request_type === 'featured' ? '精选' : '公开'}申请？`)) return;
+      const noteEl = document.querySelector(`[data-note-id="${String(id).replace(/"/g, '')}"]`);
+      const reviewNote = noteEl ? noteEl.value.trim() : '';
+      state.actionId = id;
+      renderRows();
+      try {
+        await AdminAPI.post(`/admin/video-share-requests/${encodeURIComponent(id)}/review`, {
+          status,
+          review_note: reviewNote
+        });
+        AdminUtils.showToast(status === 'approved' ? '已批准并同步视频状态' : '已拒绝申请', 'success');
+        await loadReviews();
+      } catch (err) {
+        AdminUtils.showToast(err.message || '审核操作失败', 'error');
+      } finally {
+        state.actionId = null;
+        renderRows();
+      }
+    }
+
+    document.getElementById('btn-refresh').addEventListener('click', loadReviews);
+    document.getElementById('filter-status').addEventListener('change', loadReviews);
+    document.getElementById('filter-type').addEventListener('change', loadReviews);
+    document.getElementById('reviews-tbody').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action][data-id]');
+      if (!button) return;
+      const status = button.getAttribute('data-action') === 'approve' ? 'approved' : 'rejected';
+      reviewRequest(button.getAttribute('data-id'), status);
+    });
+
+    loadReviews();
+  </script>
+</body>
+
+</html>

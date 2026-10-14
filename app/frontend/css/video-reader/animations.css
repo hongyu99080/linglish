@@ -1,0 +1,52 @@
+/* Animations and Keyframes */
+
+/* 页面加载动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 数字跳动动画 */
+@keyframes numberPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 单词点击动画 */
+@keyframes wordClick {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 练习成功闪烁动画 */
+@keyframes practiceSuccessGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74,95,247,0.25);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px rgba(74,95,247,0.18);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74,95,247,0.25);
+  }
+}

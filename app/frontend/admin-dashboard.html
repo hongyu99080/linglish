@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+          /iosMetadata\.js/i,
+          /Wu\.updateConfig/i,
+          /ul\.updateConfig/i,
+          /cloudflareinsights/i,
+          /beacon\.min\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            const name = error.name || '';
+            const message = error.message || '';
+
+            // Check error message and name
+            if (matchMsg(message) || matchMsg(name)) return true;
+
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/iosMetadata\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            if (/Wu\.|ul\./i.test(stack)) return true;
+            if (/cloudflare|beacon/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev && ev.reason;
+            if (reason && reason.name === 'SyntaxError') {
+              const msg = reason.message || '';
+              if (matchMsg(msg)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                ev.stopImmediatePropagation();
+                return;
+              }
+            }
+            const msg = (reason && reason.message) || (reason && reason.toString && reason.toString()) || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = (ev && ev.message) || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (ev && ev.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            const filename = (ev && ev.filename) || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js|iosMetadata\.js|^VM\d+:/i.test(filename)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - Dashboard</title>
+  <link rel="stylesheet" href="./admin-styles.css">
+  <script src="./admin-common.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="admin-content">
+    <!-- 筛选和导出 -->
+    <div class="admin-card" style="margin-bottom: 1.5rem;">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🔍 数据筛选</h2>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="exportDashboardData('csv')">
+            <span>📊</span>
+            <span>导出CSV</span>
+          </button>
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="exportDashboardData('json')">
+            <span>📄</span>
+            <span>导出JSON</span>
+          </button>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div>
+            <label class="admin-form-label">日期范围</label>
+            <select id="filter-date-range" class="admin-form-input" onchange="applyFilters()">
+              <option value="all">全部时间</option>
+              <option value="today">今天</option>
+              <option value="7days" selected>最近7天</option>
+              <option value="30days">最近30天</option>
+              <option value="90days">最近90天</option>
+            </select>
+          </div>
+          <div>
+            <label class="admin-form-label">用户类型</label>
+            <select id="filter-user-type" class="admin-form-input" onchange="applyFilters()">
+              <option value="all">全部用户</option>
+              <option value="premium">会员用户</option>
+              <option value="normal">普通用户</option>
+            </select>
+          </div>
+          <div>
+            <label class="admin-form-label">快速搜索</label>
+            <input type="text" id="filter-search" class="admin-form-input" placeholder="搜索用户名或邮箱..." oninput="debounceSearch()">
+          </div>
+          <div style="display: flex; align-items: flex-end;">
+            <button class="admin-btn admin-btn-secondary" onclick="resetFilters()" style="width: 100%;">
+              <span>🔄</span>
+              <span>重置</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="admin-stats-grid">
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">总用户数</span>
+          <div class="admin-stat-icon primary">👥</div>
+        </div>
+        <div class="admin-stat-value" id="stat-total-users">-</div>
+        <div class="admin-stat-change positive" id="stat-users-change">
+          <span>↑</span>
+          <span>+12 本周</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">付费会员</span>
+          <div class="admin-stat-icon success">💳</div>
+        </div>
+        <div class="admin-stat-value" id="stat-paid-members">-</div>
+        <div class="admin-stat-change" id="stat-subscription-change">
+          <span>订阅同步</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">AI 调用</span>
+          <div class="admin-stat-icon primary">🤖</div>
+        </div>
+        <div class="admin-stat-value" id="stat-ai-usage">-</div>
+        <div class="admin-stat-change" id="stat-ai-change">
+          <span>最近 7 天</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">视频资源</span>
+          <div class="admin-stat-icon success">📚</div>
+        </div>
+        <div class="admin-stat-value" id="stat-total-videos">-</div>
+        <div class="admin-stat-change positive" id="stat-video-change">
+          <span>↑</span>
+          <span>+5 本月</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">缺失翻译</span>
+          <div class="admin-stat-icon warning">🌍</div>
+        </div>
+        <div class="admin-stat-value" id="stat-missing-translations">-</div>
+        <div class="admin-stat-change">
+          <span>待处理</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">视频审核</span>
+          <div class="admin-stat-icon warning">✅</div>
+        </div>
+        <div class="admin-stat-value" id="stat-video-review-pending">-</div>
+        <div class="admin-stat-change" id="stat-video-review-change">
+          <span>待处理</span>
+        </div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="admin-stat-header">
+          <span class="admin-stat-label">今日活跃</span>
+          <div class="admin-stat-icon primary">⚡</div>
+        </div>
+        <div class="admin-stat-value" id="stat-active-today">-</div>
+        <div class="admin-stat-change">
+          <span>在线用户</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 快速操作 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🚀 快速操作</h2>
+      </div>
+      <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <a href="./admin-translations.html" class="admin-btn admin-btn-primary">
+            <span>🌍</span>
+            <span>批量翻译</span>
+          </a>
+          <a href="./admin.html" class="admin-btn admin-btn-success">
+            <span>📄</span>
+            <span>导入内容</span>
+          </a>
+          <a href="./admin-users.html" class="admin-btn admin-btn-secondary">
+            <span>👥</span>
+            <span>用户管理</span>
+          </a>
+          <a href="./admin-video-reviews.html" class="admin-btn admin-btn-secondary">
+            <span>✅</span>
+            <span>视频审核</span>
+          </a>
+          <a href="./admin-usage.html" class="admin-btn admin-btn-secondary">
+            <span>📊</span>
+            <span>查看统计</span>
+          </a>
+          <a href="./stats-dashboard.html" class="admin-btn admin-btn-secondary">
+            <span>📈</span>
+            <span>Learning Stats</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据可视化图表 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">📈 数据趋势</h2>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+            <input type="checkbox" id="auto-refresh-toggle" checked>
+            <span>自动刷新 (30s)</span>
+          </label>
+          <span id="last-update-time" style="font-size: 0.75rem; color: var(--gray-500);"></span>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <canvas id="trendsChart" style="max-height: 300px;"></canvas>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+      <!-- 最近活动 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">📋 最近活动</h2>
+          <a href="./admin-users.html" class="admin-btn admin-btn-sm admin-btn-secondary">查看全部</a>
+        </div>
+        <div class="admin-card-body">
+          <div id="recent-activities">
+            <div class="admin-empty-state">
+              <div class="admin-loading"></div>
+              <p class="admin-empty-text">加载中...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 系统状态 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">⚡ 系统状态</h2>
+        </div>
+        <div class="admin-card-body">
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--gray-50); border-radius: 8px;">
+              <span>翻译服务</span>
+              <span class="admin-badge admin-badge-success" id="status-translation">正常</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--gray-50); border-radius: 8px;">
+              <span>数据库</span>
+              <span class="admin-badge admin-badge-success" id="status-database">正常</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--gray-50); border-radius: 8px;">
+              <span>视频资源</span>
+              <span class="admin-badge admin-badge-success" id="status-videos">正常</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--gray-50); border-radius: 8px;">
+              <span>最后更新</span>
+              <span class="admin-badge admin-badge-secondary" id="status-last-refresh">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 初始化页面
+    initAdminPage('Dashboard');
+
+    // 全局变量
+    let trendsChart = null;
+    let autoRefreshTimer = null;
+    let historicalData = {
+      labels: [],
+      users: [],
+      videos: [],
+      translations: []
+    };
+    let allUsers = []; // 缓存所有用户数据用于筛选
+    let filteredUsers = []; // 筛选后的用户
+    let searchDebounceTimer = null;
+
+    function formatCostCents(cents) {
+      const value = Number(cents) || 0;
+      return `$${(value / 100).toFixed(2)}`;
+    }
+
+    // 加载数据
+    async function loadDashboardData(silent = false) {
+      try {
+        if (!silent) {
+          updateSystemStatus('database', 'loading', '加载中...');
+        }
+
+        // 加载用户统计
+        const userStats = await AdminAPI.get('/admin/users/summary');
+        const userSummary = userStats.users || userStats;
+        document.getElementById('stat-total-users').textContent = userSummary.total || 0;
+        document.getElementById('stat-active-today').textContent = userSummary.active_7d || 0;
+
+        try {
+          const subscriptionSummary = await AdminAPI.get('/admin/subscriptions/summary');
+          const subscriptionUsers = subscriptionSummary.users || {};
+          const subscriptionEvents = subscriptionSummary.events || {};
+          const paidMembers = subscriptionUsers.paid_members || 0;
+          const activeSubscriptions = subscriptionUsers.active_subscriptions || 0;
+          const failedEvents = subscriptionEvents.failed_7d || 0;
+          document.getElementById('stat-paid-members').textContent = paidMembers;
+          const subscriptionChangeEl = document.getElementById('stat-subscription-change');
+          subscriptionChangeEl.innerHTML = failedEvents > 0
+            ? `<span>⚠</span><span>${failedEvents} 个异常事件</span>`
+            : `<span>✓</span><span>${activeSubscriptions} 个活跃订阅</span>`;
+          subscriptionChangeEl.className = failedEvents > 0 ? 'admin-stat-change negative' : 'admin-stat-change positive';
+        } catch (subscriptionError) {
+          console.warn('订阅汇总加载失败:', subscriptionError);
+          document.getElementById('stat-paid-members').textContent = '-';
+          const subscriptionChangeEl = document.getElementById('stat-subscription-change');
+          subscriptionChangeEl.innerHTML = '<span>同步不可用</span>';
+          subscriptionChangeEl.className = 'admin-stat-change';
+        }
+
+        try {
+          const aiUsage = await AdminAPI.get('/admin/usage/ai?days=7');
+          const usage = aiUsage.usage || {};
+          const costs = aiUsage.costs || {};
+          const totalCalls = usage.total_ai_calls || 0;
+          const totalCost = costs.estimated_total_cost_cents || 0;
+          const unpricedCalls = costs.unpriced_calls || 0;
+          document.getElementById('stat-ai-usage').textContent = totalCalls;
+
+          const aiChangeEl = document.getElementById('stat-ai-change');
+          if (totalCalls === 0) {
+            aiChangeEl.innerHTML = '<span>最近 7 天暂无调用</span>';
+            aiChangeEl.className = 'admin-stat-change';
+          } else if (unpricedCalls > 0) {
+            aiChangeEl.innerHTML = `<span>⚠</span><span>${formatCostCents(totalCost)} · ${unpricedCalls} 未计价</span>`;
+            aiChangeEl.className = 'admin-stat-change warning';
+          } else {
+            aiChangeEl.innerHTML = `<span>✓</span><span>${formatCostCents(totalCost)} 已计价</span>`;
+            aiChangeEl.className = 'admin-stat-change positive';
+          }
+        } catch (aiUsageError) {
+          console.warn('AI 用量汇总加载失败:', aiUsageError);
+          document.getElementById('stat-ai-usage').textContent = '-';
+          const aiChangeEl = document.getElementById('stat-ai-change');
+          aiChangeEl.innerHTML = '<span>统计不可用</span>';
+          aiChangeEl.className = 'admin-stat-change';
+        }
+
+        // 计算用户本周新增
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const recentUsers = await AdminAPI.get('/admin/users?limit=1000');
+        const weeklyNew = recentUsers.items.filter(u => new Date(u.created_at) >= weekAgo).length;
+        document.querySelector('#stat-total-users').nextElementSibling.innerHTML =
+          `<span>↑</span><span>+${weeklyNew} 本周</span>`;
+
+        // 加载视频统计
+        const videoData = await AdminAPI.get('/admin/videos');
+        const totalVideos = videoData.items ? videoData.items.length : 0;
+        document.getElementById('stat-total-videos').textContent = totalVideos;
+
+        // 计算视频本月新增
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        const monthlyNewVideos = videoData.items.filter(v => new Date(v.created_at) >= monthAgo).length;
+        const videoChangeEl = document.getElementById('stat-video-change');
+        videoChangeEl.innerHTML = `<span>↑</span><span>+${monthlyNewVideos} 本月</span>`;
+        videoChangeEl.className = monthlyNewVideos > 0 ? 'admin-stat-change positive' : 'admin-stat-change';
+
+        updateSystemStatus('videos', 'success', `${totalVideos} 个视频`);
+
+        // 加载翻译统计
+        const translationData = await AdminAPI.get('/admin/translations/missing?limit=1');
+        const missingCount = translationData.total || 0;
+        document.getElementById('stat-missing-translations').textContent = missingCount;
+        updateSystemStatus('translation', missingCount > 0 ? 'warning' : 'success',
+          missingCount > 0 ? `${missingCount} 待处理` : '正常');
+
+        await AdminModeration.refresh();
+
+        // 加载最近活动
+        await loadRecentActivities();
+
+        // 更新图表数据
+        updateChartData(userSummary.total || 0, totalVideos, missingCount);
+
+        // 更新系统状态
+        updateSystemStatus('database', 'success', '正常');
+        updateLastRefreshTime();
+
+        if (!silent) {
+          AdminUtils.showToast('数据已更新', 'success');
+        }
+
+      } catch (error) {
+        console.error('加载Dashboard数据失败:', error);
+        updateSystemStatus('database', 'danger', '错误');
+        if (!silent) {
+          AdminUtils.showToast('加载数据失败: ' + error.message, 'error');
+        }
+      }
+    }
+
+    async function loadRecentActivities() {
+      try {
+        const activitiesEl = document.getElementById('recent-activities');
+
+        // 显示骨架屏
+        activitiesEl.innerHTML = AdminUtils.createSkeletonActivities(5);
+
+        const users = await AdminAPI.get('/admin/users?limit=1000');
+        allUsers = users.items || [];
+
+        // 应用初始筛选
+        applyFilters();
+
+      } catch (error) {
+        console.error('加载最近活动失败:', error);
+        const activitiesEl = document.getElementById('recent-activities');
+        activitiesEl.innerHTML = `
+          <div class="admin-empty-state">
+            <div class="admin-empty-icon">❌</div>
+            <p class="admin-empty-text">加载失败</p>
+          </div>
+        `;
+      }
+    }
+
+    // 渲染活动列表
+    function renderActivities(users) {
+      const activitiesEl = document.getElementById('recent-activities');
+
+      if (!users || users.length === 0) {
+        activitiesEl.innerHTML = `
+          <div class="admin-empty-state">
+            <div class="admin-empty-icon">📭</div>
+            <p class="admin-empty-text">暂无活动</p>
+          </div>
+        `;
+        return;
+      }
+
+      const displayUsers = users.slice(0, 5); // 只显示前5个
+      const html = displayUsers.map(user => {
+        const time = AdminUtils.formatDate(user.last_login_at || user.created_at);
+        return `
+          <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-bottom: 1px solid var(--gray-100);">
+            <div class="admin-user-avatar" style="flex-shrink: 0;">
+              ${user.email ? user.email[0].toUpperCase() : '?'}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${AdminUtils.escapeHtml(user.username || user.email || '未知用户')}
+              </div>
+              <div style="font-size: 0.875rem; color: var(--gray-500);">
+                ${user.last_login_at ? '登录于' : '注册于'} ${time}
+              </div>
+            </div>
+            ${user.is_premium ? '<span class="admin-badge admin-badge-warning">会员</span>' : ''}
+          </div>
+        `;
+      }).join('');
+
+      activitiesEl.innerHTML = html;
+    }
+
+    // 筛选逻辑
+    function applyFilters() {
+      const dateRange = document.getElementById('filter-date-range').value;
+      const userType = document.getElementById('filter-user-type').value;
+      const searchTerm = document.getElementById('filter-search').value.toLowerCase().trim();
+
+      let filtered = [...allUsers];
+
+      // 日期筛选
+      if (dateRange !== 'all') {
+        const now = new Date();
+        let startDate;
+
+        switch(dateRange) {
+          case 'today':
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            break;
+          case '7days':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30days':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case '90days':
+            startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+        }
+
+        filtered = filtered.filter(user => {
+          const userDate = new Date(user.last_login_at || user.created_at);
+          return userDate >= startDate;
+        });
+      }
+
+      // 用户类型筛选
+      if (userType !== 'all') {
+        if (userType === 'premium') {
+          filtered = filtered.filter(user => user.is_premium);
+        } else if (userType === 'normal') {
+          filtered = filtered.filter(user => !user.is_premium);
+        }
+      }
+
+      // 搜索筛选
+      if (searchTerm) {
+        filtered = filtered.filter(user => {
+          const username = (user.username || '').toLowerCase();
+          const email = (user.email || '').toLowerCase();
+          return username.includes(searchTerm) || email.includes(searchTerm);
+        });
+      }
+
+      filteredUsers = filtered;
+      renderActivities(filtered);
+
+      // 更新统计显示
+      updateFilteredStats();
+    }
+
+    // 更新筛选后的统计
+    function updateFilteredStats() {
+      const filteredCount = filteredUsers.length;
+      const totalCount = allUsers.length;
+
+      // 可以在这里添加筛选结果提示
+      if (filteredCount < totalCount) {
+        console.log(`筛选显示: ${filteredCount}/${totalCount} 用户`);
+      }
+    }
+
+    // 防抖搜索
+    function debounceSearch() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        applyFilters();
+      }, 300);
+    }
+
+    // 重置筛选
+    function resetFilters() {
+      document.getElementById('filter-date-range').value = '7days';
+      document.getElementById('filter-user-type').value = 'all';
+      document.getElementById('filter-search').value = '';
+      applyFilters();
+      AdminUtils.showToast('已重置筛选条件', 'info');
+    }
+
+    // 导出数据
+    async function exportDashboardData(format) {
+      try {
+        const timestamp = new Date().toISOString().slice(0, 10);
+
+        if (format === 'csv') {
+          const exportData = filteredUsers.map(user => ({
+            '用户名': user.username || '',
+            '邮箱': user.email || '',
+            '会员': user.is_premium ? '是' : '否',
+            '注册时间': user.created_at || '',
+            '最后登录': user.last_login_at || ''
+          }));
+
+          AdminUtils.exportToCSV(exportData, `linglish-users-${timestamp}.csv`);
+        } else if (format === 'json') {
+          const exportData = {
+            exported_at: new Date().toISOString(),
+            total_users: allUsers.length,
+            filtered_users: filteredUsers.length,
+            users: filteredUsers
+          };
+
+          AdminUtils.exportToJSON(exportData, `linglish-dashboard-${timestamp}.json`);
+        }
+      } catch (error) {
+        console.error('导出失败:', error);
+        AdminUtils.showToast('导出失败: ' + error.message, 'error');
+      }
+    }
+
+    // 更新系统状态
+    function updateSystemStatus(service, status, text) {
+      const statusEl = document.getElementById(`status-${service}`);
+      if (!statusEl) return;
+
+      statusEl.className = `admin-badge admin-badge-${status}`;
+      statusEl.textContent = text;
+    }
+
+    // 更新最后刷新时间
+    function updateLastRefreshTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('status-last-refresh').textContent = timeStr;
+      document.getElementById('last-update-time').textContent = `最后更新: ${timeStr}`;
+    }
+
+    // 初始化图表
+    function initChart() {
+      const ctx = document.getElementById('trendsChart');
+      if (!ctx) return;
+
+      trendsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: historicalData.labels,
+          datasets: [
+            {
+              label: '总用户数',
+              data: historicalData.users,
+              borderColor: 'rgb(14, 165, 233)',
+              backgroundColor: 'rgba(14, 165, 233, 0.1)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: '视频资源',
+              data: historicalData.videos,
+              borderColor: 'rgb(72, 187, 120)',
+              backgroundColor: 'rgba(72, 187, 120, 0.1)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: '缺失翻译',
+              data: historicalData.translations,
+              borderColor: 'rgb(237, 137, 54)',
+              backgroundColor: 'rgba(237, 137, 54, 0.1)',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          },
+          interaction: {
+            intersect: false,
+            mode: 'index'
+          }
+        }
+      });
+    }
+
+    // 更新图表数据
+    function updateChartData(users, videos, translations) {
+      const now = new Date();
+      const timeLabel = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+      // 保持最近20个数据点
+      if (historicalData.labels.length >= 20) {
+        historicalData.labels.shift();
+        historicalData.users.shift();
+        historicalData.videos.shift();
+        historicalData.translations.shift();
+      }
+
+      historicalData.labels.push(timeLabel);
+      historicalData.users.push(users);
+      historicalData.videos.push(videos);
+      historicalData.translations.push(translations);
+
+      if (trendsChart) {
+        trendsChart.data.labels = historicalData.labels;
+        trendsChart.data.datasets[0].data = historicalData.users;
+        trendsChart.data.datasets[1].data = historicalData.videos;
+        trendsChart.data.datasets[2].data = historicalData.translations;
+        trendsChart.update('none'); // 使用 'none' 模式避免动画，提升性能
+      }
+    }
+
+    // 自动刷新功能
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      autoRefreshTimer = setInterval(() => {
+        if (document.getElementById('auto-refresh-toggle').checked) {
+          loadDashboardData(true); // silent mode
+        }
+      }, 30000); // 30秒
+    }
+
+    function stopAutoRefresh() {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
+
+    // 监听自动刷新切换
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggleEl = document.getElementById('auto-refresh-toggle');
+      if (toggleEl) {
+        toggleEl.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            startAutoRefresh();
+            AdminUtils.showToast('已启用自动刷新', 'info');
+          } else {
+            stopAutoRefresh();
+            AdminUtils.showToast('已关闭自动刷新', 'info');
+          }
+        });
+      }
+    });
+
+    // 页面加载完成后执行
+    initChart();
+    loadDashboardData();
+    startAutoRefresh();
+
+    // 页面卸载时清理定时器
+    window.addEventListener('beforeunload', () => {
+      stopAutoRefresh();
+    });
+  </script>
+</body>
+</html>

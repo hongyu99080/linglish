@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="课程与动作校园一日场景插图">
+  <!-- 教室内景上半 + 操场下半 -->
+  <rect x="0" y="0" width="800" height="320" fill="#fdf4e3"/>
+  <rect x="0" y="320" width="800" height="60" fill="#d9ab6e"/>
+  <rect x="0" y="380" width="800" height="220" fill="#b5e08c"/>
+
+  <!-- 墙上五科海报 -->
+  <g font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">
+    <rect x="36" y="28" width="120" height="86" rx="8" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+    <text x="96" y="62" font-size="26" fill="#4a76a8">1+2</text>
+    <path d="M60 84 l18 0 M69 75 l0 18" stroke="#ef5350" stroke-width="4"/>
+    <text x="120" y="94" font-size="22" fill="#2fae74">=3</text>
+
+    <rect x="180" y="28" width="120" height="86" rx="8" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+    <text x="240" y="66" font-size="30" fill="#ef5350">ABC</text>
+    <text x="240" y="98" font-size="20" fill="#8b8fa3">abc</text>
+
+    <rect x="324" y="28" width="120" height="86" rx="8" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+    <path d="M362 96 l0 -40 q0 -8 10 -6 l16 4 q8 2 8 10 l0 34" fill="none" stroke="#2d2f3a" stroke-width="5"/>
+    <ellipse cx="356" cy="98" rx="9" ry="6" fill="#2d2f3a"/>
+    <ellipse cx="390" cy="100" rx="9" ry="6" fill="#2d2f3a"/>
+
+    <rect x="468" y="28" width="120" height="86" rx="8" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+    <path d="M492 100 a18 22 0 0 1 20 -34 q6 2 8 8 q2 -6 8 -8 a18 22 0 0 1 20 34" fill="none" stroke="#8f62ad" stroke-width="5"/>
+    <circle cx="504" cy="58" r="7" fill="#ef5350"/><circle cx="528" cy="52" r="7" fill="#f2b73f"/><circle cx="552" cy="58" r="7" fill="#7fb7ef"/>
+
+    <rect x="612" y="28" width="120" height="86" rx="8" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+    <polygon points="648,96 660,58 668,58 680,96" fill="#7fd4c1" stroke="#4aa392" stroke-width="3"/>
+    <rect x="658" y="48" width="12" height="10" fill="#a8dcd2" stroke="#4aa392" stroke-width="2"/>
+    <circle cx="700" cy="80" r="10" fill="#ef9f6f" stroke="#d0794a" stroke-width="3"/>
+  </g>
+
+  <!-- 教室排:读 写 画 问答 三组小人 -->
+  <!-- 读书的孩子 -->
+  <g>
+    <circle cx="86" cy="196" r="17" fill="#f7c8a0"/>
+    <path d="M66 250 q20 -28 40 0 Z" fill="#7fb7ef"/>
+    <path d="M56 236 h60 v26 h-60 Z" fill="#fffdf4" stroke="#caa06a" stroke-width="3"/>
+    <line x1="86" y1="236" x2="86" y2="262" stroke="#a9683a" stroke-width="3"/>
+  </g>
+  <!-- 写字的孩子(课桌) -->
+  <g>
+    <circle cx="206" cy="188" r="17" fill="#e8b48c"/>
+    <path d="M186 240 q20 -26 40 0 Z" fill="#ef9fae"/>
+    <rect x="172" y="244" width="72" height="10" rx="3" fill="#c98d4e"/>
+    <rect x="178" y="254" width="6" height="26" fill="#a9683a"/><rect x="232" y="254" width="6" height="26" fill="#a9683a"/>
+    <rect x="196" y="232" width="34" height="8" rx="2" fill="#fffdf4" stroke="#caa06a" stroke-width="2"/>
+    <line x1="228" y1="224" x2="238" y2="236" stroke="#f2b73f" stroke-width="4"/>
+  </g>
+  <!-- 画画的孩子(小画架) -->
+  <g>
+    <circle cx="330" cy="188" r="17" fill="#f7c8a0"/>
+    <path d="M310 242 q20 -26 40 0 Z" fill="#8fd18f"/>
+    <polygon points="366,280 384,196 392,196 404,280" fill="#c98d4e" stroke="#a9683a" stroke-width="3"/>
+    <rect x="356" y="200" width="60" height="52" fill="#ffffff" stroke="#a9683a" stroke-width="3"/>
+    <circle cx="378" cy="218" r="8" fill="#ffd66b"/>
+    <path d="M364 244 q12 -14 24 -4 q10 8 20 -2" fill="none" stroke="#7fb7ef" stroke-width="4"/>
+  </g>
+  <!-- 举手提问 + 老师回答(右) -->
+  <g>
+    <circle cx="486" cy="192" r="17" fill="#e8b48c"/>
+    <path d="M466 246 q20 -26 40 0 Z" fill="#f2b73f"/>
+    <line x1="502" y1="182" x2="516" y2="158" stroke="#e8b48c" stroke-width="7" stroke-linecap="round"/>
+    <ellipse cx="540" cy="150" rx="26" ry="17" fill="#ffffff" stroke="#caa06a" stroke-width="3"/>
+    <text x="540" y="158" font-family="system-ui, sans-serif" font-size="20" font-weight="800" text-anchor="middle" fill="#4a76a8">?</text>
+  </g>
+  <g>
+    <circle cx="622" cy="184" r="19" fill="#f7c8a0"/>
+    <path d="M598 250 q24 -32 48 0 Z" fill="#8f62ad"/>
+    <ellipse cx="668" cy="150" rx="26" ry="17" fill="#ffffff" stroke="#caa06a" stroke-width="3"/>
+    <text x="668" y="158" font-family="system-ui, sans-serif" font-size="20" font-weight="800" text-anchor="middle" fill="#2fae74">!</text>
+    <rect x="700" y="170" width="64" height="86" rx="6" fill="#2f7d5a" stroke="#1d5c40" stroke-width="4"/>
+    <line x1="712" y1="192" x2="752" y2="192" stroke="#fff" stroke-width="3" opacity="0.85"/>
+    <line x1="712" y1="208" x2="744" y2="208" stroke="#fff" stroke-width="3" opacity="0.6"/>
+  </g>
+
+  <!-- 操场排:站 走 跑 跳 踢球 唱歌 跳舞 -->
+  <!-- 站 -->
+  <g stroke="#2d2f3a" stroke-width="5" stroke-linecap="round" fill="none">
+    <circle cx="66" cy="428" r="15" fill="#f7c8a0" stroke="none"/>
+    <line x1="66" y1="443" x2="66" y2="496"/>
+    <line x1="66" y1="458" x2="46" y2="480"/><line x1="66" y1="458" x2="86" y2="480"/>
+    <line x1="66" y1="496" x2="54" y2="536"/><line x1="66" y1="496" x2="78" y2="536"/>
+  </g>
+  <!-- 走 -->
+  <g stroke="#2d2f3a" stroke-width="5" stroke-linecap="round" fill="none">
+    <circle cx="156" cy="430" r="15" fill="#e8b48c" stroke="none"/>
+    <line x1="156" y1="445" x2="158" y2="498"/>
+    <line x1="156" y1="460" x2="134" y2="484"/><line x1="156" y1="460" x2="178" y2="478"/>
+    <line x1="158" y1="498" x2="136" y2="538"/><line x1="158" y1="498" x2="180" y2="534"/>
+  </g>
+  <!-- 跑 -->
+  <g stroke="#2d2f3a" stroke-width="5" stroke-linecap="round" fill="none">
+    <circle cx="252" cy="426" r="15" fill="#f7c8a0" stroke="none"/>
+    <line x1="252" y1="441" x2="262" y2="492"/>
+    <line x1="254" y1="456" x2="228" y2="466"/><line x1="254" y1="456" x2="284" y2="440"/>
+    <line x1="262" y1="492" x2="230" y2="512"/><line x1="262" y1="492" x2="292" y2="524"/>
+    <path d="M216 448 q-10 4 -18 0" stroke-width="3"/>
+  </g>
+  <!-- 跳 -->
+  <g stroke="#2d2f3a" stroke-width="5" stroke-linecap="round" fill="none">
+    <circle cx="352" cy="408" r="15" fill="#e8b48c" stroke="none"/>
+    <line x1="352" y1="423" x2="352" y2="470"/>
+    <line x1="352" y1="436" x2="326" y2="416"/><line x1="352" y1="436" x2="378" y2="416"/>
+    <line x1="352" y1="470" x2="332" y2="498"/><line x1="352" y1="470" x2="372" y2="498"/>
+    <path d="M330 522 h44" stroke="#8a5a33" stroke-width="4"/>
+  </g>
+  <!-- 踢球 -->
+  <g stroke="#2d2f3a" stroke-width="5" stroke-linecap="round" fill="none">
+    <circle cx="448" cy="428" r="15" fill="#f7c8a0" stroke="none"/>
+    <line x1="448" y1="443" x2="452" y2="494"/>
+    <line x1="448" y1="458" x2="426" y2="478"/><line x1="448" y1="458" x2="472" y2="470"/>
+    <line x1="452" y1="494" x2="436" y2="536"/><line x1="452" y1="494" x2="486" y2="508"/>
+    <circle cx="502" cy="522" r="13" fill="#ffffff" stroke="#2d2f3a" stroke-width="3"/>
+    <path d="M496 516 l12 12 M508 516 l-12 12" stroke-width="2"/>
+  </g>
+  <!-- 唱歌 -->
+  <g>
+    <circle cx="586" cy="428" r="15" fill="#e8b48c"/>
+    <path d="M568 490 q18 -24 36 0 Z" fill="#ef7f7f"/>
+    <line x1="596" y1="446" x2="608" y2="432" stroke="#e8b48c" stroke-width="6" stroke-linecap="round"/>
+    <rect x="608" y="420" width="7" height="18" rx="3" fill="#8b8fa3"/>
+    <circle cx="611" cy="416" r="6" fill="#2d2f3a"/>
+    <g fill="#4a76a8" font-family="system-ui, sans-serif" font-size="24" font-weight="800">
+      <text x="632" y="412">♪</text><text x="652" y="396">♫</text>
+    </g>
+  </g>
+  <!-- 跳舞 -->
+  <g stroke="#2d2f3a" stroke-width="5" stroke-linecap="round" fill="none">
+    <circle cx="700" cy="424" r="15" fill="#f7c8a0" stroke="none"/>
+    <line x1="700" y1="439" x2="694" y2="490"/>
+    <line x1="698" y1="452" x2="672" y2="432"/><line x1="698" y1="452" x2="728" y2="446"/>
+    <line x1="694" y1="490" x2="672" y2="518"/><line x1="694" y1="490" x2="720" y2="514"/>
+    <path d="M736 420 q10 -10 4 -20" stroke="#ef9fae" stroke-width="4"/>
+    <path d="M660 414 q-10 -8 -6 -18" stroke="#ef9fae" stroke-width="4"/>
+  </g>
+
+  <!-- 底部:作业本(homework)与拼写块(spell) -->
+  <g>
+    <rect x="56" y="556" width="86 " height="34" rx="5" fill="#fffdf4" stroke="#caa06a" stroke-width="3"/>
+    <path d="M68 568 h60 M68 580 h44" stroke="#d9c9a8" stroke-width="3"/>
+    <path d="M118 574 l8 8 14 -16" stroke="#2fae74" stroke-width="4" fill="none"/>
+  </g>
+  <g font-family="system-ui, sans-serif" font-weight="800" text-anchor="middle">
+    <rect x="620" y="556" width="30" height="30" rx="5" fill="#f2b73f" stroke="#d09a28" stroke-width="2.5"/><text x="635" y="578" font-size="18" fill="#7a5a10">C</text>
+    <rect x="656" y="556" width="30" height="30" rx="5" fill="#7fb7ef" stroke="#4a76a8" stroke-width="2.5"/><text x="671" y="578" font-size="18" fill="#fff">A</text>
+    <rect x="692" y="556" width="30" height="30" rx="5" fill="#8fd18f" stroke="#5aa35a" stroke-width="2.5"/><text x="707" y="578" font-size="18" fill="#fff">T</text>
+  </g>
+</svg>

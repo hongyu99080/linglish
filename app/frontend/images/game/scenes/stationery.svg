@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="书桌文具场景插图">
+  <!-- 地板与墙 -->
+  <rect x="0" y="0" width="800" height="180" fill="#f3e2c8"/>
+  <rect x="0" y="180" width="800" height="420" fill="#d9ab6e"/>
+  <line x1="0" y1="180" x2="800" y2="180" stroke="#c69759" stroke-width="3"/>
+
+  <!-- 墙上:挂钟(watch 对应手表,墙上放屏幕与手机货架) -->
+  <!-- 屏幕(显示器)挂墙 -->
+  <rect x="60" y="40" width="150" height="95" rx="8" fill="#31446b" stroke="#1f2c47" stroke-width="4"/>
+  <rect x="72" y="52" width="126" height="71" fill="#7fb7ef"/>
+  <path d="M84 108 l30 -28 l22 18 l28 -34 l30 44 Z" fill="#e8f4ff" opacity="0.9"/>
+  <circle cx="182" cy="66" r="8" fill="#ffd66b"/>
+  <rect x="120" y="135" width="30" height="10" fill="#1f2c47"/>
+
+  <!-- 墙上便签与卡片 -->
+  <rect x="250" y="42" width="66" height="82" rx="4" fill="#fff8e1" stroke="#e0c98f" stroke-width="3" transform="rotate(-4 283 83)"/>
+  <path d="M262 70 h42 M262 84 h42 M262 98 h30" stroke="#caa06a" stroke-width="3" transform="rotate(-4 283 83)"/>
+  <circle cx="283" cy="52" r="5" fill="#ef7f7f" transform="rotate(-4 283 83)"/>
+
+  <!-- 手机挂架 -->
+  <rect x="352" y="44" width="52" height="94" rx="10" fill="#2d2f3a" stroke="#191a22" stroke-width="3"/>
+  <rect x="358" y="56" width="40" height="70" rx="3" fill="#8fd18f"/>
+  <circle cx="378" cy="133" r="4" fill="#8b8fa3"/>
+
+  <!-- 墙上钥匙挂钩 -->
+  <rect x="440" y="52" width="82" height="16" rx="6" fill="#a9683a"/>
+  <line x1="458" y1="68" x2="458" y2="84" stroke="#8a5a33" stroke-width="4"/>
+  <circle cx="458" cy="94" r="9" fill="none" stroke="#f2b73f" stroke-width="5"/>
+  <rect x="455" y="100" width="6" height="16" fill="#f2b73f"/>
+  <rect x="461" y="104" width="6" height="4" fill="#f2b73f"/>
+  <rect x="461" y="110" width="5" height="4" fill="#f2b73f"/>
+
+  <!-- 墙上手表挂钩 -->
+  <line x1="560" y1="52" x2="560" y2="70" stroke="#8a5a33" stroke-width="4"/>
+  <circle cx="560" cy="92" r="21" fill="#fffbe9" stroke="#4a6fa5" stroke-width="6"/>
+  <line x1="560" y1="92" x2="560" y2="80" stroke="#33507c" stroke-width="3"/>
+  <line x1="560" y1="92" x2="569" y2="96" stroke="#33507c" stroke-width="3"/>
+  <rect x="554" y="113" width="12" height="22" rx="4" fill="#4a6fa5"/>
+
+  <!-- 墙角:垃圾桶 + 盒子 + 瓶子(靠墙地面) -->
+  <path d="M648 96 h52 l-7 66 h-38 Z" fill="#8b8fa3" stroke="#6a6e80" stroke-width="3"/>
+  <rect x="642" y="86" width="64" height="12" rx="4" fill="#6a6e80"/>
+  <line x1="664" y1="108" x2="666" y2="150" stroke="#6a6e80" stroke-width="3"/>
+  <line x1="684" y1="108" x2="682" y2="150" stroke="#6a6e80" stroke-width="3"/>
+
+  <rect x="722" y="98" width="62" height="52" fill="#d9a05b" stroke="#a9683a" stroke-width="3"/>
+  <line x1="722" y1="122" x2="784" y2="122" stroke="#a9683a" stroke-width="2"/>
+  <path d="M746 98 v-12 h14 v12" fill="none" stroke="#a9683a" stroke-width="3"/>
+
+  <!-- ===== 桌面(俯瞰大桌) ===== -->
+  <rect x="30" y="210" width="740" height="360" rx="18" fill="#f7dfb2" stroke="#c98d4e" stroke-width="5"/>
+
+  <!-- 左上:打开的书 + 笔记本 -->
+  <g>
+    <path d="M58 240 h86 v70 h-86 Z" fill="#fffdf4" stroke="#caa06a" stroke-width="3"/>
+    <path d="M144 240 h86 v70 h-86 Z" fill="#fff8e1" stroke="#caa06a" stroke-width="3"/>
+    <line x1="144" y1="240" x2="144" y2="310" stroke="#a9683a" stroke-width="4"/>
+    <path d="M66 254 h66 M66 268 h66 M66 282 h56 M154 254 h62 M154 268 h62 M154 282 h48" stroke="#d9c9a8" stroke-width="3"/>
+  </g>
+  <g>
+    <rect x="250" y="236" width="80" height="78" rx="6" fill="#7fb7ef" stroke="#4a76a8" stroke-width="3"/>
+    <circle cx="258" cy="248" r="2.5" fill="#33507c"/><circle cx="258" cy="262" r="2.5" fill="#33507c"/>
+    <circle cx="258" cy="276" r="2.5" fill="#33507c"/><circle cx="258" cy="290" r="2.5" fill="#33507c"/>
+    <circle cx="258" cy="304" r="2.5" fill="#33507c"/>
+    <rect x="268" y="248" width="52" height="8" rx="3" fill="#eef6ff"/>
+    <rect x="268" y="264" width="52" height="8" rx="3" fill="#eef6ff"/>
+  </g>
+
+  <!-- 上中:纸张一叠 + 文件夹 -->
+  <rect x="352" y="236" width="72" height="90" fill="#ffffff" stroke="#d9c9a8" stroke-width="3" transform="rotate(3 388 281)"/>
+  <rect x="346" y="232" width="72" height="90" fill="#fffdf4" stroke="#d9c9a8" stroke-width="3"/>
+  <path d="M356 250 h50 M356 264 h50 M356 278 h40" stroke="#e3d8bd" stroke-width="3"/>
+  <g>
+    <path d="M446 240 h34 l10 12 h48 v66 h-92 Z" fill="#f2b73f" stroke="#d09a28" stroke-width="3"/>
+    <rect x="446" y="262" width="92" height="56" rx="4" fill="#ffd66b" stroke="#d09a28" stroke-width="3"/>
+  </g>
+
+  <!-- 右上:杯子(插着尺子和毛巾角)与毛巾 -->
+  <g>
+    <ellipse cx="600" cy="290" rx="34" ry="12" fill="#c9dff2"/>
+    <path d="M566 290 a34 12 0 0 0 68 0 l-6 -44 a28 10 0 0 0 -56 0 Z" fill="#7fb7ef" stroke="#4a76a8" stroke-width="3"/>
+    <path d="M634 268 q18 4 0 22" fill="none" stroke="#4a76a8" stroke-width="5"/>
+  </g>
+  <g>
+    <rect x="672" y="238" width="96" height="26" rx="8" fill="#ef9fae"/>
+    <rect x="672" y="264" width="96" height="26" rx="8" fill="#fdd0d9"/>
+    <rect x="672" y="290" width="96" height="26" rx="8" fill="#ef9fae"/>
+    <path d="M672 251 h96 M672 277 h96 M672 303 h96" stroke="#d9808f" stroke-width="2" opacity="0.6"/>
+  </g>
+
+  <!-- 中排:铅笔 / 钢笔 / 记号笔 / 蜡笔 / 画笔 排开 -->
+  <g transform="rotate(-8 130 380)">
+    <rect x="66" y="372" width="120" height="14" rx="3" fill="#f2b73f" stroke="#d09a28" stroke-width="2"/>
+    <polygon points="186,372 206,379 186,386" fill="#f7dfb2" stroke="#d09a28" stroke-width="2"/>
+    <polygon points="199,376.5 206,379 199,381.5" fill="#33507c"/>
+    <rect x="58" y="372" width="10" height="14" fill="#ef9fae"/>
+  </g>
+  <g transform="rotate(6 300 385)">
+    <rect x="240" y="378" width="110" height="14" rx="7" fill="#33507c" stroke="#1f2c47" stroke-width="2"/>
+    <polygon points="350,378 372,385 350,392" fill="#f2b73f" stroke="#d09a28" stroke-width="2"/>
+    <rect x="252" y="378" width="8" height="14" fill="#f2b73f"/>
+  </g>
+  <g transform="rotate(-5 460 380)">
+    <rect x="408" y="372" width="104" height="18" rx="9" fill="#2fae74" stroke="#1d8556" stroke-width="2"/>
+    <rect x="504" y="375" width="26" height="12" rx="4" fill="#1d8556"/>
+  </g>
+  <g transform="rotate(7 610 378)">
+    <rect x="560" y="370" width="96" height="16" rx="4" fill="#ef5350" stroke="#c73835" stroke-width="2"/>
+    <polygon points="656,370 672,378 656,386" fill="#ef8c8a"/>
+    <rect x="566" y="373" width="60" height="10" rx="5" fill="#fce4e3"/>
+  </g>
+  <g transform="rotate(-10 730 372)">
+    <rect x="694" y="366" width="64" height="10" rx="4" fill="#a9683a"/>
+    <path d="M758 362 q22 9 0 18 Z" fill="#7fb7ef" stroke="#4a76a8" stroke-width="2"/>
+  </g>
+
+  <!-- 下排左:尺子 + 橡皮 + 卷笔刀 + 回形针 -->
+  <g>
+    <rect x="58" y="430" width="150" height="26" fill="#ffe9a8" stroke="#d0b050" stroke-width="3"/>
+    <path d="M70 430 v9 M84 430 v6 M98 430 v9 M112 430 v6 M126 430 v9 M140 430 v6 M154 430 v9 M168 430 v6 M182 430 v9 M196 430 v6" stroke="#a98a30" stroke-width="2"/>
+  </g>
+  <rect x="234" y="428" width="52" height="30" rx="8" fill="#ef9fae" stroke="#d9808f" stroke-width="3"/>
+  <g>
+    <rect x="312" y="424" width="40" height="34" rx="6" fill="#7fb7ef" stroke="#4a76a8" stroke-width="3"/>
+    <circle cx="332" cy="441" r="8" fill="#2d2f3a"/>
+    <polygon points="352,432 374,441 352,450" fill="#f7dfb2" stroke="#4a76a8" stroke-width="2"/>
+  </g>
+  <g stroke="#8b8fa3" stroke-width="4" fill="none">
+    <path d="M406 434 a10 10 0 0 1 20 0 v16 a7 7 0 0 1 -14 0 v-12 a4 4 0 0 1 8 0 v10"/>
+  </g>
+
+  <!-- 下排中:剪刀 + 胶水 + 胶带 + 印章 -->
+  <g>
+    <circle cx="472" cy="446" r="8" fill="none" stroke="#ef5350" stroke-width="4"/>
+    <circle cx="490" cy="452" r="8" fill="none" stroke="#ef5350" stroke-width="4"/>
+    <line x1="478" y1="440" x2="516" y2="416" stroke="#8b8fa3" stroke-width="5"/>
+    <line x1="494" y1="446" x2="520" y2="412" stroke="#aab0c4" stroke-width="5"/>
+  </g>
+  <g>
+    <rect x="544" y="416" width="30" height="44" rx="6" fill="#fffdf4" stroke="#caa06a" stroke-width="3"/>
+    <rect x="551" y="404" width="16" height="14" rx="3" fill="#f2b73f" stroke="#d09a28" stroke-width="2"/>
+    <rect x="549" y="430" width="20" height="18" rx="2" fill="#7fb7ef"/>
+  </g>
+  <g>
+    <circle cx="626" cy="438" r="22" fill="#c9dff2" stroke="#8fb6dc" stroke-width="4"/>
+    <circle cx="626" cy="438" r="9" fill="#f7dfb2"/>
+    <rect x="644" y="434" width="18" height="8" fill="#8fb6dc"/>
+  </g>
+  <g>
+    <rect x="690" y="408" width="34" height="20" rx="4" fill="#a9683a"/>
+    <rect x="697" y="428" width="20" height="14" fill="#8a5a33"/>
+    <rect x="686" y="442" width="42" height="12" rx="3" fill="#ef5350"/>
+  </g>
+
+  <!-- 底排:书包(斜靠桌) + 按钮 + 绳子 + 蜡笔盒(卡片) -->
+  <g>
+    <path d="M56 500 q0 -26 30 -26 h40 q30 0 30 26 v46 h-100 Z" fill="#ef5350" stroke="#c73835" stroke-width="4"/>
+    <rect x="76" y="498" width="60" height="34" rx="8" fill="#ff8a80" stroke="#c73835" stroke-width="3"/>
+    <path d="M86 474 q20 -18 40 0" fill="none" stroke="#c73835" stroke-width="6"/>
+  </g>
+  <g>
+    <circle cx="230" cy="512" r="20" fill="#f2b73f" stroke="#d09a28" stroke-width="4"/>
+    <circle cx="222" cy="506" r="3" fill="#7a5a10"/><circle cx="238" cy="506" r="3" fill="#7a5a10"/>
+    <circle cx="222" cy="518" r="3" fill="#7a5a10"/><circle cx="238" cy="518" r="3" fill="#7a5a10"/>
+  </g>
+  <g fill="none" stroke="#caa06a" stroke-width="6">
+    <circle cx="330" cy="512" r="22"/>
+    <circle cx="330" cy="512" r="12"/>
+    <path d="M352 512 q26 -8 44 6"/>
+  </g>
+  <g>
+    <rect x="440" y="492" width="64" height="44" rx="6" fill="#fffdf4" stroke="#caa06a" stroke-width="3"/>
+    <rect x="452" y="480" width="64" height="44" rx="6" fill="#ffd66b" stroke="#d09a28" stroke-width="3"/>
+    <circle cx="484" cy="496" r="7" fill="#ef5350"/>
+    <path d="M466 512 h36" stroke="#d09a28" stroke-width="3"/>
+  </g>
+
+  <!-- 底排右:一段绳子系着钥匙圈?不重复;放"string 线团"已有,补一卷胶带备用装饰 -->
+  <g>
+    <ellipse cx="600" cy="512" rx="30" ry="18" fill="#8fd18f" stroke="#5aa35a" stroke-width="3"/>
+    <ellipse cx="600" cy="506" rx="30" ry="18" fill="#b5e08c" stroke="#5aa35a" stroke-width="3"/>
+    <ellipse cx="600" cy="506" rx="12" ry="7" fill="#f7dfb2"/>
+  </g>
+  <g>
+    <rect x="678" y="486" width="84" height="56" rx="8" fill="#b98fd1" stroke="#8f62ad" stroke-width="4"/>
+    <rect x="690" y="498" width="60" height="32" rx="4" fill="#e8d5f2"/>
+    <path d="M696 514 h48" stroke="#8f62ad" stroke-width="3"/>
+  </g>
+</svg>

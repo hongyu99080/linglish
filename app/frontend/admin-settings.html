@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - 系统设置</title>
+  <link rel="stylesheet" href="./admin-styles.css">
+  <script src="./admin-common.js"></script>
+</head>
+<body>
+  <div class="admin-content">
+    <!-- 系统设置 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">⚙️ 系统设置</h2>
+      </div>
+      <div class="admin-card-body">
+        <div class="admin-empty-state">
+          <div class="admin-empty-icon">🚧</div>
+          <p class="admin-empty-text">系统设置功能开发中...</p>
+          <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.5rem;">
+            此功能将包括：系统配置、API 密钥管理、日志查看等
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 计划功能 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🚀 计划功能</h2>
+      </div>
+      <div class="admin-card-body">
+        <div style="display: grid; gap: 1rem;">
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">🔑 API 密钥管理</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              管理各类第三方服务的 API 密钥，如翻译服务、存储服务等
+            </p>
+          </div>
+
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">⚙️ 系统配置</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              配置系统参数，如会员价格、功能开关、限流设置等
+            </p>
+          </div>
+
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">📋 日志查看</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              查看系统日志，包括错误日志、访问日志、操作日志等
+            </p>
+          </div>
+
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">📧 邮件设置</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              配置邮件服务，设置邮件模板和发送规则
+            </p>
+          </div>
+
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">🔒 安全设置</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              配置安全策略，如密码规则、登录限制、IP 白名单等
+            </p>
+          </div>
+
+          <div style="padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem;">💾 备份与恢复</h3>
+            <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
+              管理数据备份，支持自动备份和手动恢复
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 初始化页面
+    initAdminPage('系统设置');
+  </script>
+</body>
+</html>

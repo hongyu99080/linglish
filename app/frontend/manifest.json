@@ -1,0 +1,129 @@
+{
+  "name": "Linglish - AI驱动的沉浸式英语学习平台",
+  "short_name": "Linglish",
+  "description": "通过真实场景原声视频学习地道英语，AI智能分析，个性化推荐，实战场景练习",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#0f766e",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "education",
+    "productivity",
+    "lifestyle"
+  ],
+  "shortcuts": [
+    {
+      "name": "今日学习",
+      "short_name": "今日",
+      "description": "每天10分钟，开始今日任务",
+      "url": "/mobile-today.html",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "探索视频",
+      "short_name": "探索",
+      "description": "浏览学习视频内容",
+      "url": "/mobile-explore.html",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "我的图书馆",
+      "short_name": "图书馆",
+      "description": "查看已保存的内容",
+      "url": "/mobile-library.html",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "练习场",
+      "short_name": "练习",
+      "description": "进行口语练习",
+      "url": "/mobile-arena.html",
+      "icons": [
+        {
+          "src": "/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "iarc_rating_id": "",
+  "features": [
+    "immersive-learning",
+    "ai-powered",
+    "video-based",
+    "vocabulary-tracking",
+    "pronunciation-assessment",
+    "personalized-recommendations"
+  ]
+}

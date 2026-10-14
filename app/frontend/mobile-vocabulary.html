@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>linglish - 词汇表</title>
+  <link rel="stylesheet" href="./mobile-styles.css">
+  <script src="./auth-helpers.js"></script>
+  <script src="./guest-check.js"></script>
+  <script src="./mobile-auth.js"></script>
+  <style>
+    .vocab-header {
+      position: sticky;
+      top: 60px;
+      background: white;
+      z-index: 10;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .tab-switcher {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: white;
+      border-color: #0284c7;
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .stat-card {
+      flex: 0 0 auto;
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .vocab-list {
+      padding: 0 16px 100px;
+    }
+
+    .vocab-item {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .vocab-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .vocab-word {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .vocab-phonetic {
+      font-size: 13px;
+      color: #64748b;
+      font-style: italic;
+    }
+
+    .speak-btn {
+      margin-left: auto;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .vocab-translation {
+      font-size: 14px;
+      color: #475569;
+      margin-bottom: 10px;
+    }
+
+    .vocab-chip {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .chip-new {
+      background: #fef9c3;
+      color: #92400e;
+    }
+
+    .chip-learning {
+      background: #e0e7ff;
+      color: #0b3f3a;
+    }
+
+    .chip-known {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .vocab-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      flex: 1;
+      min-width: 70px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      color: #0b3f3a;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:active {
+      transform: scale(0.95);
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: white;
+      border-color: #0284c7;
+    }
+
+    .action-btn.danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #64748b;
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+    }
+
+    /* Level Progress Section */
+    .level-progress-section {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 12px 16px;
+      border: 1px solid #bae6fd;
+    }
+
+    .level-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .current-level-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .level-icon {
+      font-size: 24px;
+    }
+
+    .level-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0369a1;
+    }
+
+    .change-level-btn {
+      background: white;
+      border: 1px solid #0ea5e9;
+      color: #0ea5e9;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .level-progress-bar {
+      background: #e0f2fe;
+      border-radius: 10px;
+      height: 20px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, #0ea5e9, #0284c7);
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: #0c4a6e;
+    }
+
+    .level-milestone {
+      font-size: 12px;
+      color: #0369a1;
+      text-align: center;
+    }
+
+    .level-complete-badge {
+      font-size: 14px;
+      color: #15803d;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    /* Level Filter Tabs */
+    .level-filter-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 8px 16px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .level-filter-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .level-tab {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .level-tab:hover {
+      background: #ede9fe;
+      border-color: #0ea5e9;
+      color: #0284c7;
+    }
+
+    .level-tab.active {
+      background: #0284c7;
+      color: #ffffff !important;
+      border-color: #0284c7;
+      box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+    }
+
+    .level-tab:active {
+      transform: scale(0.95);
+    }
+
+    /* Level Badge on Vocab Item */
+    .vocab-level-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .vocab-level-badge.beginner {
+      background: #f0fdf4;
+      color: #22c55e;
+    }
+
+    .vocab-level-badge.intermediate {
+      background: #eff6ff;
+      color: #3b82f6;
+    }
+
+    .vocab-level-badge.advanced {
+      background: #faf5ff;
+      color: #a855f7;
+    }
+
+    /* Level Picker Modal */
+    .level-picker-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .level-picker-overlay.show {
+      display: flex;
+    }
+
+    .level-picker-modal {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 500px;
+      padding: 20px;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .level-picker-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .level-picker-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .level-option {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .level-option.active {
+      border-color: #0ea5e9;
+      background: #f5f3ff;
+    }
+
+    .level-option.locked {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .level-option-icon {
+      font-size: 32px;
+      margin-right: 16px;
+    }
+
+    .level-option-info {
+      flex: 1;
+    }
+
+    .level-option-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .level-option-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .level-option-progress {
+      font-size: 11px;
+      color: #0ea5e9;
+      margin-top: 4px;
+    }
+
+    .level-option-lock {
+      font-size: 11px;
+      color: #f59e0b;
+      margin-top: 4px;
+    }
+
+    .level-option-check {
+      font-size: 20px;
+      color: #0ea5e9;
+    }
+
+    .level-picker-close {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="mobile-header">
+    <button class="icon-btn back-btn" onclick="history.back()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    <div class="header-title">
+      <h1 style="font-size: 18px; margin: 0;">📚 词汇表</h1>
+    </div>
+    <button class="icon-btn refresh-btn" id="refresh-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12a9 9 0 1 1-3-6.7"/>
+        <path d="M21 3v7h-7"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Level Progress Section -->
+  <div class="level-progress-section" id="level-progress-section">
+    <div class="level-header">
+      <div class="current-level-badge">
+        <span class="level-icon" id="level-icon">🌱</span>
+        <span class="level-name" id="level-name">初级词汇</span>
+      </div>
+      <button class="change-level-btn" onclick="showLevelPicker()">切换级别</button>
+    </div>
+    <div class="level-progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      <span class="progress-text" id="progress-text">0/0 (0%)</span>
+    </div>
+    <div class="level-milestone" id="level-milestone">达到80%后解锁下一级</div>
+  </div>
+
+  <!-- Sticky Header with Tabs and Search -->
+  <div class="vocab-header">
+    <!-- Tab Switcher -->
+    <div class="tab-switcher">
+      <button class="tab-btn active" id="tab-my">
+        📚 我的词汇
+      </button>
+      <button class="tab-btn" id="tab-full">
+        🌐 词汇库
+      </button>
+    </div>
+
+    <!-- Level Filter Tabs -->
+    <div class="level-filter-tabs" id="level-filter-tabs">
+      <button class="level-tab active" data-level="">全部</button>
+      <button class="level-tab" data-level="beginner">🌱 初级</button>
+      <button class="level-tab" data-level="intermediate">🌿 中级</button>
+      <button class="level-tab" data-level="advanced">🌳 高级</button>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-box">
+      <input type="search" class="search-input" id="search-input" placeholder="搜索词汇...">
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row" id="stats-row"></div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="mobile-content" style="padding-top: 0;">
+    <div class="vocab-list" id="vocab-list">
+      <div class="loading" id="loading">加载中...</div>
+    </div>
+  </main>
+
+  <!-- Level Picker Modal -->
+  <div class="level-picker-overlay" id="level-picker-overlay" onclick="hideLevelPicker(event)">
+    <div class="level-picker-modal" onclick="event.stopPropagation()">
+      <div class="level-picker-header">
+        <div class="level-picker-title">选择学习级别</div>
+      </div>
+      <div id="level-options"></div>
+      <button class="level-picker-close" onclick="hideLevelPicker()">关闭</button>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="mobile-today.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🎯</span></div>
+      <span>今日</span>
+    </a>
+    <a href="mobile-explore.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🌍</span></div>
+      <span>探索世界</span>
+    </a>
+    <a href="mobile-power.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">⚡</span></div>
+      <span>能量站</span>
+    </a>
+    <a href="mobile-arena.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🎪</span></div>
+      <span>实战场</span>
+    </a>
+    <a href="mobile-treasure.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🪴</span></div>
+      <span>成长中心</span>
+    </a>
+  </nav>
+
+  <script>
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.port === '4000' ? 'http://localhost:4000' : '';
+
+    const token = localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      alert('请先登录');
+      window.location.href = './mobile-auth.html';
+    }
+
+    const headers = () => ({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' });
+
+    const state = {
+      currentTab: 'my', // 'my' or 'full'
+      currentLevel: null, // null for all, or 'beginner'/'intermediate'/'advanced'
+      items: [],
+      stats: null,
+      levelStats: null // Level statistics from API
+    };
+
+    // 从 localStorage 初始化用户等级
+    function initLevelFromStorage() {
+      try {
+        const activeLevel = localStorage.getItem('linglish_active_level');
+        if (activeLevel && ['beginner', 'intermediate', 'advanced'].includes(activeLevel)) {
+          state.currentLevel = activeLevel;
+          // 更新 UI 显示正确的等级 tab
+          document.querySelectorAll('.level-tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.dataset.level === activeLevel) {
+              tab.classList.add('active');
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to init level from storage:', e);
+      }
+    }
+
+    const tabMy = document.getElementById('tab-my');
+    const tabFull = document.getElementById('tab-full');
+    const searchInput = document.getElementById('search-input');
+    const statsRow = document.getElementById('stats-row');
+    const vocabList = document.getElementById('vocab-list');
+    const loading = document.getElementById('loading');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const levelFilterTabs = document.getElementById('level-filter-tabs');
+
+    // 切换标签
+    function switchTab(tab) {
+      state.currentTab = tab;
+      if (tab === 'my') {
+        tabMy.classList.add('active');
+        tabFull.classList.remove('active');
+      } else {
+        tabMy.classList.remove('active');
+        tabFull.classList.add('active');
+      }
+      loadData();
+    }
+
+    tabMy.addEventListener('click', () => switchTab('my'));
+    tabFull.addEventListener('click', () => switchTab('full'));
+    refreshBtn.addEventListener('click', loadData);
+    searchInput.addEventListener('input', renderList);
+
+    // Level filter tab click handler
+    levelFilterTabs.addEventListener('click', (e) => {
+      if (e.target.classList.contains('level-tab')) {
+        document.querySelectorAll('.level-tab').forEach(t => t.classList.remove('active'));
+        e.target.classList.add('active');
+        state.currentLevel = e.target.dataset.level || null;
+        loadVocabulary().then(renderList);
+      }
+    });
+
+    // 加载数据
+    async function loadData() {
+      try {
+        loading.style.display = 'block';
+        vocabList.innerHTML = '<div class="loading" id="loading">加载中...</div>';
+
+        await Promise.all([loadVocabulary(), loadStats(), loadLevelStats()]);
+
+        loading.style.display = 'none';
+      } catch (error) {
+        console.error('Load error:', error);
+        vocabList.innerHTML = `<div class="empty-state"><div class="empty-icon">😕</div><div>加载失败: ${error.message}</div></div>`;
+      }
+    }
+
+    // 加载级别统计
+    async function loadLevelStats() {
+      try {
+        const res = await fetch(`${API_BASE}/vocabulary/v2/level-stats`, { headers: headers() });
+        const data = await res.json();
+        if (data.success) {
+          state.levelStats = data;
+          renderLevelProgress();
+        }
+      } catch (error) {
+        console.error('Level stats error:', error);
+      }
+    }
+
+    // 渲染级别进度
+    function renderLevelProgress() {
+      if (!state.levelStats) return;
+
+      const { currentLevel, levels } = state.levelStats;
+      const current = levels.find(l => l.level === currentLevel) || levels[0];
+
+      if (!current) return;
+
+      document.getElementById('level-icon').textContent = current.icon;
+      document.getElementById('level-name').textContent = current.displayName;
+      document.getElementById('progress-fill').style.width = `${current.completion}%`;
+      document.getElementById('progress-text').textContent =
+        `${current.mastered}/${current.globalTotal} (${current.completion}%)`;
+
+      const milestoneEl = document.getElementById('level-milestone');
+      if (current.isCompleted) {
+        milestoneEl.className = 'level-complete-badge';
+        milestoneEl.textContent = '🎉 已完成此级别！';
+      } else {
+        milestoneEl.className = 'level-milestone';
+        milestoneEl.textContent = `达到${current.completionThreshold}%后解锁下一级`;
+      }
+    }
+
+    // 显示级别选择器
+    function showLevelPicker() {
+      if (!state.levelStats) return;
+
+      const optionsContainer = document.getElementById('level-options');
+      optionsContainer.innerHTML = '';
+
+      state.levelStats.levels.forEach((level, index) => {
+        const isActive = level.level === state.levelStats.currentLevel;
+        const prevLevel = index > 0 ? state.levelStats.levels[index - 1] : null;
+        const isLocked = prevLevel && !prevLevel.isCompleted && !isActive;
+
+        const optionDiv = document.createElement('div');
+        optionDiv.className = `level-option ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`;
+
+        optionDiv.innerHTML = `
+          <div class="level-option-icon">${level.icon}</div>
+          <div class="level-option-info">
+            <div class="level-option-name">${level.displayName}</div>
+            <div class="level-option-desc">词频 ${level.rankStart}-${level.rankEnd}</div>
+            ${isLocked
+              ? `<div class="level-option-lock">🔒 完成上一级${prevLevel.completionThreshold}%后解锁</div>`
+              : `<div class="level-option-progress">进度: ${level.mastered}/${level.globalTotal} (${level.completion}%)</div>`
+            }
+          </div>
+          ${isActive ? '<div class="level-option-check">✓</div>' : ''}
+        `;
+
+        if (!isLocked) {
+          optionDiv.onclick = () => selectLevel(level.level);
+        }
+
+        optionsContainer.appendChild(optionDiv);
+      });
+
+      document.getElementById('level-picker-overlay').classList.add('show');
+    }
+
+    // 隐藏级别选择器
+    function hideLevelPicker(event) {
+      if (!event || event.target === document.getElementById('level-picker-overlay')) {
+        document.getElementById('level-picker-overlay').classList.remove('show');
+      }
+    }
+
+    // 选择级别
+    async function selectLevel(level) {
+      try {
+        const res = await fetch(`${API_BASE}/vocabulary/v2/learning-settings`, {
+          method: 'PUT',
+          headers: headers(),
+          body: JSON.stringify({ currentLevel: level })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await loadLevelStats();
+          hideLevelPicker();
+        }
+      } catch (error) {
+        console.error('Select level error:', error);
+        alert('切换级别失败: ' + error.message);
+      }
+    }
+
+    // 加载词汇列表
+    async function loadVocabulary() {
+      let endpoint = state.currentTab === 'my'
+        ? `${API_BASE}/vocabulary/v2/my?limit=1000`
+        : `${API_BASE}/vocabulary/v2/full?limit=1000`;
+
+      // Add level filter if selected
+      if (state.currentLevel) {
+        endpoint += `&level=${state.currentLevel}`;
+      }
+
+      const res = await fetch(endpoint, { headers: headers() });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || '加载失败');
+
+      state.items = (data.words || []).map(it => {
+        // 从 JSONB 格式提取翻译: {"zh": "翻译"}
+        let translation = '';
+        if (it.definitions) {
+          if (typeof it.definitions === 'object' && it.definitions.zh) {
+            translation = it.definitions.zh;
+          } else if (typeof it.definitions === 'string') {
+            translation = it.definitions;
+          }
+        }
+
+        return {
+          ...it,
+          lemma: it.word,
+          computed_level: it.computed_level || 'intermediate',
+          translation,
+          inMyVocabulary: it.inMyVocabulary || state.currentTab === 'my'
+        };
+      });
+
+      renderList();
+    }
+
+    // 加载统计信息
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API_BASE}/vocabulary/v2/stats`, { headers: headers() });
+        const data = await res.json();
+        state.stats = data.stats || {};
+        renderStats();
+      } catch (error) {
+        console.error('Stats error:', error);
+      }
+    }
+
+    // 渲染统计信息
+    function renderStats() {
+      const s = state.stats;
+      statsRow.innerHTML = '';
+
+      const stats = state.currentTab === 'my'
+        ? [
+            { label: '总词数', value: s.myWords || 0 },
+            { label: '学习中', value: state.items.filter(i => i.status === 'learning').length },
+            { label: '已掌握', value: state.items.filter(i => i.status === 'mastered').length },
+            { label: '新词', value: state.items.filter(i => !i.status || i.status === 'unknown').length }
+          ]
+        : [
+            { label: '总词数', value: s.totalGlobalWords || 0 },
+            { label: '我的', value: s.myWords || 0 },
+            { label: '可探索', value: s.canExplore || 0 },
+            { label: '贡献率', value: s.contributionRate || '0%' }
+          ];
+
+      stats.forEach(stat => {
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML = `
+          <div class="stat-label">${stat.label}</div>
+          <div class="stat-value">${stat.value}</div>
+        `;
+        statsRow.appendChild(card);
+      });
+    }
+
+    // 过滤搜索
+    function filterItems() {
+      const query = searchInput.value.trim().toLowerCase();
+      if (!query) return state.items;
+      return state.items.filter(it =>
+        (it.lemma || '').toLowerCase().includes(query) ||
+        (it.definitions?.zh || '').toLowerCase().includes(query)
+      );
+    }
+
+    // 渲染列表
+    function renderList() {
+      const items = filterItems();
+      vocabList.innerHTML = '';
+
+      if (items.length === 0) {
+        vocabList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <div>${state.currentTab === 'my' ? '暂无词汇，快去观看视频添加吧！' : '没有找到词汇'}</div>
+          </div>
+        `;
+        return;
+      }
+
+      items.forEach(it => {
+        const item = document.createElement('div');
+        item.className = 'vocab-item';
+
+        // 状态标签
+        let chipHTML = '';
+        if (state.currentTab === 'my') {
+          const status = it.status || 'unknown';
+          const chipClass = status === 'mastered' ? 'chip-known' : status === 'learning' ? 'chip-learning' : 'chip-new';
+          const chipText = status === 'mastered' ? '已掌握' : status === 'learning' ? '学习中' : '新词';
+          chipHTML = `<div class="vocab-chip ${chipClass}">${chipText}</div>`;
+        }
+
+        // 操作按钮
+        let actionsHTML = '';
+        if (state.currentTab === 'my') {
+          actionsHTML = `
+            <button class="action-btn" onclick="markLearning('${it.lemma}')">学习中</button>
+            <button class="action-btn" onclick="markMastered('${it.lemma}')">已掌握</button>
+            <button class="action-btn danger" onclick="deleteWord('${it.lemma}')">删除</button>
+          `;
+        } else {
+          if (it.inMyVocabulary) {
+            actionsHTML = `<button class="action-btn" disabled>✓ 已添加</button>`;
+          } else {
+            actionsHTML = `<button class="action-btn primary" onclick="addToMy('${it.lemma}')">+ 添加到我的词汇</button>`;
+          }
+        }
+
+        // 级别标识
+        const levelConfig = {
+          beginner: { icon: '🌱', name: '初级' },
+          intermediate: { icon: '🌿', name: '中级' },
+          advanced: { icon: '🌳', name: '高级' }
+        };
+        const levelInfo = levelConfig[it.computed_level];
+        const levelBadgeHTML = levelInfo
+          ? `<span class="vocab-level-badge ${it.computed_level}">${levelInfo.icon} ${levelInfo.name}</span>`
+          : '';
+
+        item.innerHTML = `
+          ${chipHTML}
+          <div class="vocab-top">
+            <div class="vocab-word">${it.lemma}${levelBadgeHTML}</div>
+            <div class="vocab-phonetic" id="phonetic-${it.id}">${it.phonetic || ''}</div>
+            <button class="speak-btn" onclick="speak('${it.lemma}')">🔊</button>
+          </div>
+          <div class="vocab-translation">${it.definitions?.zh || ''}</div>
+          <div class="vocab-actions">${actionsHTML}</div>
+        `;
+
+        vocabList.appendChild(item);
+      });
+    }
+
+    // 添加到我的词汇
+    async function addToMy(word) {
+      try {
+        const res = await fetch(`${API_BASE}/vocabulary/v2/add`, {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ word })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || '添加失败');
+
+        alert(data.message || `"${word}" 已添加到我的词汇`);
+
+        // 更新本地状态
+        const item = state.items.find(it => it.lemma === word);
+        if (item) {
+          item.inMyVocabulary = true;
+          renderList();
+        }
+        await loadStats();
+      } catch (error) {
+        alert('添加失败: ' + error.message);
+      }
+    }
+
+    // 标记为学习中（占位函数，需要根据实际API实现）
+    async function markLearning(word) {
+      alert('标记学习中功能待实现');
+    }
+
+    // 标记为已掌握（占位函数）
+    async function markMastered(word) {
+      alert('标记已掌握功能待实现');
+    }
+
+    // 删除词汇（占位函数）
+    async function deleteWord(word) {
+      if (!confirm(`确定要删除 "${word}" 吗？`)) return;
+      alert('删除功能待实现');
+    }
+
+    // 发音函数（优化音质 - 使用后端 Neural TTS）
+    async function speak(word) {
+      const text = String(word || '').trim();
+      if (!text) return;
+
+      // 使用后端高质量 TTS 服务
+      try {
+        const token = localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token')
+          || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        if (token) {
+          const res = await fetch(`${API_BASE}/tts/generate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              text: text,
+              lang: 'en',
+              provider: 'edge',
+              voice: 'en-US-AriaNeural'  // 专业清晰的女声
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.audioUrl) {
+              const audio = new Audio(data.audioUrl);
+              audio.play().catch(() => {});
+              return;
+            }
+          }
+        }
+      } catch (_) {}
+
+      // 后备：使用浏览器 TTS
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.85;
+        utterance.pitch = 1.0;
+        utterance.volume = 0.8;
+
+        const voices = speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          const preferredVoice = voices.find(v =>
+            v.lang.startsWith('en') && (
+              v.name.includes('Natural') || v.name.includes('Neural') ||
+              v.name.includes('Premium') || v.name.includes('Samantha') ||
+              v.name.includes('Google') || v.name.includes('Microsoft')
+            )
+          ) || voices.find(v => v.lang === 'en-US') || voices.find(v => v.lang.startsWith('en'));
+          if (preferredVoice) utterance.voice = preferredVoice;
+        }
+        speechSynthesis.speak(utterance);
+      }
+    }
+
+    // 初始化
+    initLevelFromStorage();
+    loadData();
+  </script>
+  <script src="./js/page-tracker.js"></script>
+</body>
+</html>

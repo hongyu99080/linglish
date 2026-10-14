@@ -1,0 +1,76 @@
+# Linglish Cron Jobs Configuration
+# 定时任务配置示例
+#
+# 安装方法:
+# 1. 确保logs目录存在: mkdir -p /root/linglish/app/backend/logs
+# 2. 复制此文件: cp crontab.example crontab.conf
+# 3. 安装: crontab crontab.conf
+# 4. 验证: crontab -l
+#
+# 日志路径: /root/linglish/app/backend/logs/cron.log
+
+# 设置环境变量
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+NODE_ENV=production
+
+# ==============================================================================
+# 排行榜更新 (每小时)
+# ==============================================================================
+# 每小时整点更新排行榜
+0 * * * * cd /root/linglish/app/backend && /usr/local/bin/node scripts/update-leaderboards.js >> logs/cron.log 2>&1
+
+# ==============================================================================
+# 统计数据聚合
+# ==============================================================================
+# 每天凌晨1点聚合昨天的统计数据
+0 1 * * * cd /root/linglish/app/backend && /usr/local/bin/node scripts/aggregate-stats.js daily >> logs/cron.log 2>&1
+
+# 每周一凌晨2点聚合上周的统计数据
+0 2 * * 1 cd /root/linglish/app/backend && /usr/local/bin/node scripts/aggregate-stats.js weekly >> logs/cron.log 2>&1
+
+# 每月1号凌晨3点聚合上月的统计数据
+0 3 1 * * cd /root/linglish/app/backend && /usr/local/bin/node scripts/aggregate-stats.js monthly >> logs/cron.log 2>&1
+
+# ==============================================================================
+# 数据库维护
+# ==============================================================================
+# 每天凌晨4点清理过期数据
+# 详细清理策略请查看: /root/linglish/DATA_CLEANUP_POLICY.md
+0 4 * * * cd /root/linglish/app/backend && /usr/local/bin/node scripts/cleanup.js >> logs/cron.log 2>&1
+
+# 每周日凌晨5点备份数据库
+# 0 5 * * 0 pg_dump linklish > /root/backups/linklish_$(date +\%Y\%m\%d).sql 2>> /root/linglish/app/backend/logs/cron.log
+
+# ==============================================================================
+# 日志轮转 (推荐)
+# ==============================================================================
+# 每天凌晨6点轮转Cron日志
+0 6 * * * cd /root/linglish/app/backend/logs && [ -f cron.log ] && mv cron.log cron.log.$(date +\%Y\%m\%d) && touch cron.log
+
+# 每天凌晨6点05分轮转应用日志（Backend和Frontend）
+5 6 * * * cd /root/linglish/app/backend/logs && [ -f backend.log ] && mv backend.log backend.log.$(date +\%Y\%m\%d)
+6 6 * * * cd /root/linglish/app/backend/logs && [ -f frontend.log ] && mv frontend.log frontend.log.$(date +\%Y\%m\%d)
+
+# 每周日凌晨7点删除7天前的所有日志文件
+0 7 * * 0 find /root/linglish/app/backend/logs -name "*.log.*" -mtime +7 -delete
+
+# ==============================================================================
+# Cron 时间格式说明
+# ==============================================================================
+# ┌───────────── 分钟 (0 - 59)
+# │ ┌───────────── 小时 (0 - 23)
+# │ │ ┌───────────── 日期 (1 - 31)
+# │ │ │ ┌───────────── 月份 (1 - 12)
+# │ │ │ │ ┌───────────── 星期 (0 - 7, 0和7都表示周日)
+# │ │ │ │ │
+# * * * * * 命令
+#
+# 示例:
+# 0 0 * * * - 每天午夜
+# */5 * * * * - 每5分钟
+# 0 */2 * * * - 每2小时
+# 0 9 * * 1-5 - 周一到周五早上9点
+# 30 23 * * 6 - 每周六晚上11:30
+#
+# ==============================================================================

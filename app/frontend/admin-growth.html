@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理后台 - 增长总览</title>
+  <link rel="stylesheet" href="./admin-styles.css" />
+  <script src="./admin-common.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .growth-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .growth-title {
+      color: var(--gray-900);
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .growth-subtitle {
+      color: var(--gray-600);
+      font-size: 0.92rem;
+      max-width: 760px;
+    }
+
+    .growth-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .growth-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+
+    .growth-kpi {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 1rem;
+      min-width: 0;
+    }
+
+    .growth-kpi-label {
+      color: var(--gray-500);
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .growth-kpi-value {
+      color: var(--gray-900);
+      font-size: 1.75rem;
+      font-weight: 750;
+      line-height: 1;
+    }
+
+    .growth-kpi-hint {
+      color: var(--gray-500);
+      font-size: 0.78rem;
+      margin-top: 0.5rem;
+      min-height: 1.1rem;
+    }
+
+    .growth-stage-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .growth-stage {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-left: 4px solid var(--gray-300);
+      border-radius: 10px;
+      padding: 1rem;
+      min-width: 0;
+    }
+
+    .growth-stage.good {
+      border-left-color: var(--success-color);
+    }
+
+    .growth-stage.watch {
+      border-left-color: var(--warning-color);
+    }
+
+    .growth-stage.risk {
+      border-left-color: var(--danger-color);
+    }
+
+    .growth-stage-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: flex-start;
+      margin-bottom: 0.85rem;
+    }
+
+    .growth-stage-label {
+      color: var(--gray-900);
+      font-weight: 700;
+    }
+
+    .growth-stage-volume {
+      color: var(--gray-500);
+      font-size: 0.78rem;
+      margin-top: 0.15rem;
+    }
+
+    .growth-stage-value {
+      color: var(--gray-900);
+      font-size: 1.6rem;
+      font-weight: 750;
+      line-height: 1;
+    }
+
+    .growth-stage-rate {
+      color: var(--gray-500);
+      font-size: 0.78rem;
+      margin-top: 0.25rem;
+    }
+
+    .growth-stage-detail {
+      color: var(--gray-600);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .growth-main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+      gap: 1.5rem;
+    }
+
+    .growth-chart {
+      position: relative;
+      height: 320px;
+    }
+
+    .growth-table-wrap {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+
+    .growth-action-list {
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    .growth-action {
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 0.95rem;
+      background: var(--gray-50);
+    }
+
+    .growth-action-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: flex-start;
+      margin-bottom: 0.4rem;
+    }
+
+    .growth-action-title {
+      color: var(--gray-900);
+      font-weight: 700;
+    }
+
+    .growth-action-area {
+      color: var(--gray-500);
+      font-size: 0.78rem;
+      margin-top: 0.15rem;
+    }
+
+    .growth-action-detail {
+      color: var(--gray-600);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .growth-link-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .growth-link {
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      color: var(--gray-800);
+      display: block;
+      padding: 0.85rem;
+      text-decoration: none;
+      transition: background 0.18s, border-color 0.18s;
+    }
+
+    .growth-link:hover {
+      background: var(--gray-50);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .growth-link strong {
+      display: block;
+      font-size: 0.92rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .growth-link span {
+      color: var(--gray-500);
+      font-size: 0.78rem;
+    }
+
+    @media (max-width: 1180px) {
+      .growth-kpi-grid,
+      .growth-stage-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .growth-main-grid,
+      .growth-header {
+        grid-template-columns: 1fr;
+      }
+
+      .growth-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 740px) {
+      .growth-kpi-grid,
+      .growth-stage-grid,
+      .growth-link-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-content">
+    <div class="admin-card">
+      <div class="growth-header">
+        <div>
+          <div class="growth-title">商业增长总览</div>
+          <div class="growth-subtitle">把首日激活、测评引导、Today 激活、训练留存、定价转化、周报传播和团队线索放在同一张经营看板里，优先暴露需要马上处理的增长断点。</div>
+        </div>
+        <div class="growth-actions">
+          <select id="growth-period" class="admin-form-input" style="width: auto;">
+            <option value="7">最近7天</option>
+            <option value="30" selected>最近30天</option>
+            <option value="90">最近90天</option>
+          </select>
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" id="export-growth">
+            <span>📊</span>
+            <span>导出CSV</span>
+          </button>
+          <button class="admin-btn admin-btn-sm admin-btn-primary" id="refresh-growth">
+            <span>🔄</span>
+            <span>刷新</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="growth-kpi-grid" id="growth-kpis">
+      <div class="growth-kpi"><div class="growth-kpi-label">首日训练率</div><div class="growth-kpi-value">-</div><div class="growth-kpi-hint">加载中...</div></div>
+      <div class="growth-kpi"><div class="growth-kpi-label">测评完成率</div><div class="growth-kpi-value">-</div><div class="growth-kpi-hint">加载中...</div></div>
+      <div class="growth-kpi"><div class="growth-kpi-label">Today 激活率</div><div class="growth-kpi-value">-</div><div class="growth-kpi-hint">加载中...</div></div>
+      <div class="growth-kpi"><div class="growth-kpi-label">D1 留存</div><div class="growth-kpi-value">-</div><div class="growth-kpi-hint">加载中...</div></div>
+      <div class="growth-kpi"><div class="growth-kpi-label">定价页付费率</div><div class="growth-kpi-value">-</div><div class="growth-kpi-hint">加载中...</div></div>
+      <div class="growth-kpi"><div class="growth-kpi-label">周报分享率</div><div class="growth-kpi-value">-</div><div class="growth-kpi-hint">加载中...</div></div>
+      <div class="growth-kpi"><div class="growth-kpi-label">团队线索</div><div class="growth-kpi-value">-</div><div class="growth-kpi-hint">加载中...</div></div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🧭 增长链路健康度</h2>
+      </div>
+      <div class="admin-card-body">
+        <div class="growth-stage-grid" id="growth-stages"></div>
+      </div>
+    </div>
+
+    <div class="growth-main-grid">
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">📈 经营趋势</h2>
+        </div>
+        <div class="admin-card-body">
+          <div class="growth-chart">
+            <canvas id="growthTrendChart"></canvas>
+          </div>
+          <div class="growth-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>新用户训练</th>
+                  <th>训练用户</th>
+                  <th>Today 行动</th>
+                  <th>完整闭环</th>
+                  <th>定价访问</th>
+                  <th>付费确认</th>
+                  <th>周报分享</th>
+                  <th>团队线索</th>
+                </tr>
+              </thead>
+              <tbody id="growth-daily-table">
+                <tr><td colspan="9" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">🎯 优先动作</h2>
+        </div>
+        <div class="admin-card-body">
+          <div class="growth-action-list" id="growth-actions">
+            <div class="admin-empty-state">
+              <div class="admin-loading"></div>
+              <p class="admin-empty-text">正在生成优先动作</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🔎 深入分析</h2>
+      </div>
+      <div class="admin-card-body">
+        <div class="growth-link-grid">
+          <a class="growth-link" href="./admin-analytics.html#today-funnel">
+            <strong>Today 漏斗</strong>
+            <span>查看训练工作台激活和动作点击</span>
+          </a>
+          <a class="growth-link" href="./admin-analytics.html#first-day-activation">
+            <strong>首日激活</strong>
+            <span>查看新注册用户首日训练质量</span>
+          </a>
+          <a class="growth-link" href="./admin-analytics.html#pricing-funnel">
+            <strong>定价转化</strong>
+            <span>查看来源、checkout 和权益同步</span>
+          </a>
+          <a class="growth-link" href="./admin-team-leads.html">
+            <strong>团队线索池</strong>
+            <span>跟进学校、企业和团队咨询</span>
+          </a>
+          <a class="growth-link" href="./admin-analytics.html#report-growth">
+            <strong>周报增长</strong>
+            <span>查看分享、邀请和回训行为</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    initAdminPage('增长总览');
+
+    let growthTrendChart = null;
+    let growthOverview = null;
+
+    function n(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function fmt(value) {
+      return n(value).toLocaleString('zh-CN');
+    }
+
+    function pct(value) {
+      const number = n(value);
+      return `${number % 1 === 0 ? number.toFixed(0) : number.toFixed(1)}%`;
+    }
+
+    function statusBadge(status) {
+      const map = {
+        good: '<span class="admin-badge admin-badge-success">健康</span>',
+        watch: '<span class="admin-badge admin-badge-warning">观察</span>',
+        risk: '<span class="admin-badge admin-badge-danger">风险</span>'
+      };
+      return map[status] || map.watch;
+    }
+
+    function priorityBadge(priority) {
+      const map = {
+        high: '<span class="admin-badge admin-badge-danger">高优先级</span>',
+        medium: '<span class="admin-badge admin-badge-warning">中优先级</span>',
+        normal: '<span class="admin-badge admin-badge-secondary">常规</span>'
+      };
+      return map[priority] || map.normal;
+    }
+
+    async function loadGrowthOverview() {
+      const period = document.getElementById('growth-period').value;
+      const button = document.getElementById('refresh-growth');
+      const original = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = '<span class="admin-loading"></span><span>刷新中</span>';
+
+      try {
+        growthOverview = await AdminAPI.get(`/admin/analytics/growth-overview?days=${encodeURIComponent(period)}`);
+        renderKpis(growthOverview.summary || {});
+        renderStages(growthOverview.stages || []);
+        renderTrend(growthOverview.daily || []);
+        renderDailyTable(growthOverview.daily || []);
+        renderRecommendations(growthOverview.recommendations || []);
+      } catch (error) {
+        console.error('加载增长总览失败:', error);
+        AdminUtils.showToast('增长总览加载失败: ' + error.message, 'error');
+        document.getElementById('growth-stages').innerHTML = `
+          <div class="admin-empty-state">
+            <div class="admin-empty-icon">❌</div>
+            <p class="admin-empty-text">加载失败: ${AdminUtils.escapeHtml(error.message)}</p>
+          </div>
+        `;
+      } finally {
+        button.disabled = false;
+        button.innerHTML = original;
+      }
+    }
+
+    function renderKpis(summary) {
+      const kpis = [
+        {
+          label: '首日训练率',
+          value: pct(summary.first_day_training_rate),
+          hint: `注册 ${fmt(summary.first_day_registered_users)} · 训练 ${fmt(summary.first_day_training_started_users)}`
+        },
+        {
+          label: '测评完成率',
+          value: pct(summary.onboarding_completion_rate),
+          hint: `开始 ${fmt(summary.onboarding_started)} · 完成 ${fmt(summary.onboarding_completed)}`
+        },
+        {
+          label: 'Today 激活率',
+          value: pct(summary.today_activation_rate),
+          hint: `访问 ${fmt(summary.today_views)} · 行动 ${fmt(summary.today_action_clicks)}`
+        },
+        {
+          label: 'D1 留存',
+          value: pct(summary.d1_retention_rate),
+          hint: `训练用户 ${fmt(summary.training_users)} · 完整闭环 ${pct(summary.full_loop_rate)}`
+        },
+        {
+          label: '定价页付费率',
+          value: pct(summary.paid_conversion_rate),
+          hint: `访问 ${fmt(summary.pricing_views)} · 权益生效 ${fmt(summary.paid_confirmed)}`
+        },
+        {
+          label: '周报分享率',
+          value: pct(summary.report_share_rate),
+          hint: `查看 ${fmt(summary.report_views)} · 分享 ${fmt(summary.report_shares)}`
+        },
+        {
+          label: '团队线索',
+          value: fmt(summary.team_leads),
+          hint: `合格/成交 ${fmt(summary.qualified_team_leads)} · 合格率 ${pct(summary.lead_qualification_rate)}`
+        }
+      ];
+
+      document.getElementById('growth-kpis').innerHTML = kpis.map(item => `
+        <div class="growth-kpi">
+          <div class="growth-kpi-label">${AdminUtils.escapeHtml(item.label)}</div>
+          <div class="growth-kpi-value">${AdminUtils.escapeHtml(item.value)}</div>
+          <div class="growth-kpi-hint">${AdminUtils.escapeHtml(item.hint)}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderStages(stages) {
+      const wrap = document.getElementById('growth-stages');
+      if (!stages.length) {
+        wrap.innerHTML = '<div class="admin-empty-state"><p class="admin-empty-text">暂无增长链路数据</p></div>';
+        return;
+      }
+      wrap.innerHTML = stages.map(stage => `
+        <div class="growth-stage ${AdminUtils.escapeHtml(stage.status || 'watch')}">
+          <div class="growth-stage-head">
+            <div>
+              <div class="growth-stage-label">${AdminUtils.escapeHtml(stage.label || '-')}</div>
+              <div class="growth-stage-volume">${AdminUtils.escapeHtml(stage.volume_label || '样本')} ${fmt(stage.volume)}</div>
+            </div>
+            ${statusBadge(stage.status)}
+          </div>
+          <div class="growth-stage-value">${pct(stage.primary)}</div>
+          <div class="growth-stage-rate">${AdminUtils.escapeHtml(stage.primary_label || '转化率')}</div>
+          <div class="growth-stage-detail">${AdminUtils.escapeHtml(stage.detail || '')}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderTrend(rows) {
+      const canvas = document.getElementById('growthTrendChart');
+      const labels = rows.map(row => {
+        const date = new Date(row.date);
+        return Number.isNaN(date.getTime()) ? row.date : `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      if (growthTrendChart) growthTrendChart.destroy();
+      if (typeof Chart === 'undefined') return;
+
+      growthTrendChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '新用户训练',
+              data: rows.map(row => n(row.first_day_training_started)),
+              borderColor: '#14b8a6',
+              backgroundColor: 'rgba(20, 184, 166, 0.1)',
+              tension: 0.32
+            },
+            {
+              label: '训练用户',
+              data: rows.map(row => n(row.active_training_users)),
+              borderColor: '#667eea',
+              backgroundColor: 'rgba(102, 126, 234, 0.12)',
+              tension: 0.32,
+              fill: true
+            },
+            {
+              label: 'Today 行动',
+              data: rows.map(row => n(row.today_actions)),
+              borderColor: '#4299e1',
+              backgroundColor: 'rgba(66, 153, 225, 0.08)',
+              tension: 0.32
+            },
+            {
+              label: '付费确认',
+              data: rows.map(row => n(row.paid_confirmed)),
+              borderColor: '#48bb78',
+              backgroundColor: 'rgba(72, 187, 120, 0.1)',
+              tension: 0.32
+            },
+            {
+              label: '团队线索',
+              data: rows.map(row => n(row.team_leads)),
+              borderColor: '#ed8936',
+              backgroundColor: 'rgba(237, 137, 54, 0.1)',
+              tension: 0.32
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'bottom' } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+    }
+
+    function renderDailyTable(rows) {
+      const tbody = document.getElementById('growth-daily-table');
+      const latest = rows.slice(-7).reverse();
+      if (!latest.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray-500);">暂无每日数据</td></tr>';
+        return;
+      }
+      tbody.innerHTML = latest.map(row => `
+        <tr>
+          <td>${AdminUtils.escapeHtml(row.date || '-')}</td>
+          <td>${fmt(row.first_day_training_started)} / ${fmt(row.first_day_registered)}</td>
+          <td>${fmt(row.active_training_users)}</td>
+          <td>${fmt(row.today_actions)}</td>
+          <td>${fmt(row.full_loop_users)}</td>
+          <td>${fmt(row.pricing_views)}</td>
+          <td>${fmt(row.paid_confirmed)}</td>
+          <td>${fmt(row.report_shares)}</td>
+          <td>${fmt(row.team_leads)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRecommendations(items) {
+      const wrap = document.getElementById('growth-actions');
+      if (!items.length) {
+        wrap.innerHTML = '<div class="admin-empty-state"><p class="admin-empty-text">暂无建议</p></div>';
+        return;
+      }
+      wrap.innerHTML = items.map(item => `
+        <div class="growth-action">
+          <div class="growth-action-head">
+            <div>
+              <div class="growth-action-title">${AdminUtils.escapeHtml(item.title || '-')}</div>
+              <div class="growth-action-area">${AdminUtils.escapeHtml(item.area || '增长')}</div>
+            </div>
+            ${priorityBadge(item.priority)}
+          </div>
+          <div class="growth-action-detail">${AdminUtils.escapeHtml(item.detail || '')}</div>
+        </div>
+      `).join('');
+    }
+
+    function exportGrowthCsv() {
+      if (!growthOverview || !Array.isArray(growthOverview.daily) || !growthOverview.daily.length) {
+        AdminUtils.showToast('没有可导出的增长数据', 'warning');
+        return;
+      }
+      const rows = growthOverview.daily.map(row => ({
+        日期: row.date,
+        新注册用户: row.first_day_registered || 0,
+        首日进入Today: row.first_day_today_entered || 0,
+        首日产生训练: row.first_day_training_started || 0,
+        首日完成跟读: row.first_day_practice_completed || 0,
+        训练用户: row.active_training_users || 0,
+        Today访问: row.today_views || 0,
+        Today行动: row.today_actions || 0,
+        完整闭环: row.full_loop_users || 0,
+        定价访问: row.pricing_views || 0,
+        Checkout: row.checkout_started || 0,
+        付费确认: row.paid_confirmed || 0,
+        周报查看: row.report_views || 0,
+        周报分享: row.report_shares || 0,
+        团队线索: row.team_leads || 0,
+        合格团队线索: row.qualified_team_leads || 0
+      }));
+      const date = new Date().toISOString().slice(0, 10);
+      AdminUtils.exportToCSV(rows, `linglish-growth-overview-${date}.csv`);
+    }
+
+    document.getElementById('growth-period').addEventListener('change', loadGrowthOverview);
+    document.getElementById('refresh-growth').addEventListener('click', loadGrowthOverview);
+    document.getElementById('export-growth').addEventListener('click', exportGrowthCsv);
+
+    loadGrowthOverview();
+  </script>
+</body>
+</html>

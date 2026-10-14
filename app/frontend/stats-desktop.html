@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学习成果 - Linglish</title>
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml">
+  <script src="./js/auth-manager.js"></script>
+  <script src="./js/storage-helper.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #1f2937;
+    }
+
+    /* 导航栏 */
+    .navbar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-decoration: none;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-outline {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .btn-outline:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+    }
+
+    /* 主容器 */
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    /* 个人资料卡片 */
+    .profile-card {
+      background: white;
+      border-radius: 28px;
+      padding: 3rem;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .profile-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f59e0b 100%);
+    }
+
+    .profile-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 64px rgba(0, 0, 0, 0.15);
+    }
+
+    .avatar-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    .avatar-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      box-shadow: 0 8px 32px rgba(14, 165, 233, 0.4);
+      position: relative;
+      transition: all 0.3s ease;
+      border: 4px solid white;
+    }
+
+    .avatar-circle::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      padding: 4px;
+      background: linear-gradient(135deg, #667eea, #764ba2, #f59e0b);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: rotate 3s linear infinite;
+    }
+
+    .avatar-circle:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 48px rgba(14, 165, 233, 0.5);
+    }
+
+    .level-badge {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      padding: 0.6rem 1.8rem;
+      border-radius: 24px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      box-shadow: 0 4px 16px rgba(251, 191, 36, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .level-badge::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    .profile-info {
+      flex: 1;
+    }
+
+    .profile-name {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+      color: #1f2937;
+      background: linear-gradient(135deg, #1f2937, #667eea);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .profile-stats-mini {
+      display: flex;
+      gap: 2.5rem;
+      font-size: 1.2rem;
+    }
+
+    .stat-mini-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #6b7280;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      background: #f9fafb;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .stat-mini-item:hover {
+      background: #f3f4f6;
+      transform: scale(1.05);
+    }
+
+    /* 今日目标卡片 */
+    .daily-goal-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 24px;
+      padding: 2.5rem;
+      color: white;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 12px 48px rgba(14, 165, 233, 0.35);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      min-height: 180px;
+    }
+
+    .daily-goal-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .daily-goal-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 64px rgba(14, 165, 233, 0.45);
+    }
+
+    .goal-info {
+      position: relative;
+      z-index: 1;
+    }
+
+    .goal-info h3 {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+      font-weight: 800;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .goal-info p {
+      font-size: 1.3rem;
+      opacity: 0.95;
+      font-weight: 600;
+    }
+
+    .progress-ring {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      z-index: 1;
+    }
+
+    .progress-ring svg {
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+    }
+
+    .progress-ring-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.25);
+      stroke-width: 10;
+    }
+
+    .progress-ring-value {
+      fill: none;
+      stroke: white;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+    }
+
+    .goal-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3rem;
+      animation: pulse-icon 2s ease-in-out infinite;
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
+    }
+
+    @keyframes pulse-icon {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    /* 学习数据网格 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      min-height: 420px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card.primary {
+      grid-column: span 2;
+      background: linear-gradient(135deg, #0284c7 0%, #0b3f3a 100%);
+      color: white;
+      position: relative;
+    }
+
+    .stat-card.primary::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .stat-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1.5rem;
+      display: inline-block;
+      animation: float 3s ease-in-out infinite;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .stat-card:nth-child(2) .stat-icon { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) .stat-icon { animation-delay: 0.4s; }
+    .stat-card:nth-child(4) .stat-icon { animation-delay: 0.6s; }
+    .stat-card:nth-child(5) .stat-icon { animation-delay: 0.8s; }
+
+    .stat-name {
+      font-size: 1.1rem;
+      color: #6b7280;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-card.primary .stat-name {
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    .stat-value {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #1f2937;
+      background: linear-gradient(135deg, #1f2937, #4b5563);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      z-index: 1;
+      line-height: 1.2;
+    }
+
+    .stat-card.primary .stat-value {
+      color: white;
+      background: white;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 1rem;
+      }
+
+      .profile-card {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-card.primary {
+        grid-column: span 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <a href="./index-desktop.html" class="logo">🎯 Linglish</a>
+    <div class="nav-buttons">
+      <a href="./video-reader-desktop.html" class="btn btn-outline">返回主页</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- 个人资料卡片 -->
+    <div class="profile-card">
+      <div class="avatar-section">
+        <div class="avatar-circle">👤</div>
+        <div class="level-badge" id="level-badge">Lv. 1</div>
+      </div>
+      <div class="profile-info">
+        <h2 class="profile-name" id="profile-name">语言探索者</h2>
+        <div class="profile-stats-mini">
+          <span class="stat-mini-item">⏱️ <span id="stat-minutes">0</span> 分钟</span>
+          <span class="stat-mini-item">📝 <span id="stat-outputs">0</span> 次练习</span>
+          <span class="stat-mini-item">🎬 <span id="stat-sessions">0</span> 次训练</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 今日目标卡片 -->
+    <div class="daily-goal-card">
+      <div class="goal-info">
+        <h3>今日目标</h3>
+        <p id="daily-goal-text">加油！还差 15 分钟</p>
+      </div>
+      <div class="progress-ring">
+        <svg width="120" height="120">
+          <circle class="progress-ring-bg" cx="60" cy="60" r="50"></circle>
+          <circle class="progress-ring-value" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="314.16"></circle>
+        </svg>
+        <div class="goal-icon">🎯</div>
+      </div>
+    </div>
+
+    <!-- 学习数据 -->
+    <div class="stats-grid">
+      <!-- Total Time -->
+      <div class="stat-card primary">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-name">学习总时长</div>
+        <div class="stat-value" id="stat-total-time">0 分钟</div>
+      </div>
+
+      <!-- Streak -->
+      <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-name">连续天数</div>
+        <div class="stat-value" id="stat-streak">0 天</div>
+      </div>
+
+      <!-- Words -->
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-name">掌握单词</div>
+        <div class="stat-value" id="stat-words">0 个</div>
+      </div>
+
+      <!-- Video Time -->
+      <div class="stat-card">
+        <div class="stat-icon">🎬</div>
+        <div class="stat-name">视频时长</div>
+        <div class="stat-value" id="stat-video-time">0 分钟</div>
+      </div>
+
+      <!-- Practice Time -->
+      <div class="stat-card">
+        <div class="stat-icon">🎤</div>
+        <div class="stat-name">练习时长</div>
+        <div class="stat-value" id="stat-practice-time">0 分钟</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./gamification.js"></script>
+  <script type="module">
+    import { readStoredToken, readStoredEmail } from './js/app/auth.js';
+
+    const API_BASE = '';
+
+    // API fetch helper
+    async function apiFetch(path, options = {}) {
+      const headers = options.headers ? { ...options.headers } : {};
+      headers['Content-Type'] = 'application/json';
+
+      const token = readStoredToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}${path}`, {
+          ...options,
+          headers,
+        });
+
+        if (response.status === 204) return null;
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+        return await response.json();
+      } catch (err) {
+        console.warn(`[Stats] API fetch failed for ${path}:`, err);
+        return null;
+      }
+    }
+
+    // Get local gamification data
+    function getGamificationData() {
+      if (window.gamificationSystem) {
+        return window.gamificationSystem.getProgress();
+      }
+      // Fallback if system not initialized
+      try {
+        const stored = localStorage.getItem('linglish_gamification');
+        return stored ? JSON.parse(stored) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // 获取用户信息和统计数据
+    async function loadStats() {
+      const token = readStoredToken();
+      if (!token) {
+        window.location.href = './index-desktop.html';
+        return;
+      }
+
+      try {
+        // 获取用户信息
+        const userRes = await apiFetch('/users/me');
+        if (userRes) {
+          const email = userRes.email || readStoredEmail() || '用户';
+          document.getElementById('profile-name').textContent = userRes.username || email;
+        }
+
+        // 1. Get Local Data (Gamification)
+        const gamData = getGamificationData();
+        const localStats = gamData?.stats || {};
+
+        // 2. Get Backend Data (Training Stats)
+        const backendStats = await apiFetch('/training/stats') || {};
+
+        // 3. Aggregate Data
+        const data = {
+          streak: backendStats.streak_days || gamData?.streak || 0,
+          wordsMastered: backendStats.words_mastered || localStats.wordsLearned || 0,
+          videoMinutes: backendStats.video_minutes || Math.round(localStats.videoMinutes || 0),
+          practiceMinutes: Math.round(backendStats.effective_minutes || 0),
+          practiceOutputs: backendStats.effective_outputs || 0,
+          totalSessions: backendStats.total_sessions || ((localStats.videosWatched || 0) + (backendStats.total_sessions || 0)),
+          level: gamData?.level || 1,
+          totalMinutes: backendStats.total_learning_minutes || (Math.round(localStats.videoMinutes || 0) + Math.round(backendStats.effective_minutes || 0)),
+          todayMinutes: backendStats.today_minutes || 0
+        };
+
+        // 4. Render UI
+        requestAnimationFrame(() => {
+          renderUserProfile(data);
+          renderLearningStats(data);
+        });
+
+        console.log('[Stats] Loaded data:', data);
+
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    function setText(el, value) {
+      if (!el) return;
+      const text = String(value);
+      if (el.textContent !== text) {
+        el.textContent = text;
+      }
+    }
+
+    function setStyle(el, key, value) {
+      if (!el) return;
+      if (el.style[key] !== value) {
+        el.style[key] = value;
+      }
+    }
+
+    // Render User Profile Section
+    function renderUserProfile(data) {
+      // Update Level Badge
+      const levelBadge = document.getElementById('level-badge');
+      setText(levelBadge, `Lv. ${data.level}`);
+
+      // Update Mini Stats
+      const statMinutes = document.getElementById('stat-minutes');
+      setText(statMinutes, data.totalMinutes);
+
+      const statOutputs = document.getElementById('stat-outputs');
+      setText(statOutputs, data.practiceOutputs);
+
+      const statSessions = document.getElementById('stat-sessions');
+      setText(statSessions, data.totalSessions);
+    }
+
+    // Render Main Stats Grid
+    function renderLearningStats(data) {
+      updateElement('stat-total-time', `${data.totalMinutes} 分钟`);
+      updateElement('stat-streak', `${data.streak} 天`);
+      updateElement('stat-words', `${data.wordsMastered} 个`);
+      updateElement('stat-video-time', `${data.videoMinutes} 分钟`);
+      updateElement('stat-practice-time', `${data.practiceMinutes} 分钟`);
+
+      // Update Daily Goal
+      updateDailyGoal(data.todayMinutes || 0);
+    }
+
+    function updateDailyGoal(minutes) {
+      const GOAL = 15;
+      const circle = document.querySelector('.progress-ring-value');
+      const text = document.getElementById('daily-goal-text');
+
+      if (!circle || !text) return;
+
+      const radius = circle.r.baseVal.value;
+      const circumference = radius * 2 * Math.PI;
+
+      // Set initial stroke-dasharray
+      circle.style.strokeDasharray = `${circumference} ${circumference}`;
+
+      const progress = Math.min(minutes / GOAL, 1);
+      const offset = circumference - progress * circumference;
+
+      setStyle(circle, 'strokeDashoffset', String(offset));
+
+      if (minutes >= GOAL) {
+        setText(text, `🎉 目标达成！已学 ${minutes} 分钟`);
+        setStyle(text, 'color', '#fbbf24');
+        setStyle(text, 'fontWeight', 'bold');
+      } else {
+        const remaining = GOAL - minutes;
+        setText(text, `加油！还差 ${remaining} 分钟`);
+        setStyle(text, 'color', '');
+        setStyle(text, 'fontWeight', '');
+      }
+    }
+
+    function updateElement(id, text) {
+      const el = document.getElementById(id);
+      setText(el, text);
+    }
+
+    // 页面加载时获取数据
+    document.addEventListener('DOMContentLoaded', loadStats);
+  </script>
+</body>
+</html>

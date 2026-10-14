@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            // Check if it's an error object
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev?.reason;
+            // Check message
+            const msg = reason?.message || reason?.toString?.() || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if from extension
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        });
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = ev?.message || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if error is from extension
+            if (ev?.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              return;
+            }
+            // Check filename for extension patterns
+            const filename = ev?.filename || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- SEO Meta Tags -->
+  <title>Linglish - 沉浸式语言学习 | 主界面</title>
+  <meta name="description" content="Linglish 主界面 - 开始您的语言学习之旅。选择您喜欢的学习模式：视频学习、PDF阅读、智能练习等。">
+  <link rel="canonical" href="https://example.com/router.html">
+
+  <!-- Preload critical resources -->
+  <link rel="preload" href="./guest-check.js?v=1" as="script">
+  <link rel="preload" href="./auth-helpers.js?v=1" as="script">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+
+  <!-- Scripts with cache busting -->
+  <script src="./guest-check.js?v=1"></script>
+  <script src="./auth-helpers.js?v=1"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #059669 0%, #047857 55%, #065f46 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '🏮';
+      position: fixed;
+      top: -20px;
+      left: -10px;
+      font-size: 160px;
+      opacity: 0.12;
+      transform: rotate(-15deg);
+      pointer-events: none;
+      filter: blur(2px);
+    }
+
+    body::after {
+      content: '🏮';
+      position: fixed;
+      bottom: -20px;
+      right: -10px;
+      font-size: 160px;
+      opacity: 0.12;
+      transform: rotate(15deg) scaleX(-1);
+      pointer-events: none;
+      filter: blur(2px);
+    }
+
+    .splash-container {
+      text-align: center;
+      color: white;
+      max-width: 500px;
+      padding: 20px;
+    }
+
+    .logo-wrapper {
+      margin-bottom: 40px;
+    }
+
+    .logo {
+      font-size: 120px;
+      display: inline-block;
+      animation: float 3s ease-in-out infinite;
+      filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
+    }
+
+    .app-title {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    .app-subtitle {
+      font-size: 20px;
+      opacity: 0.95;
+      margin-bottom: 48px;
+      animation: fadeInUp 0.8s ease-out 0.2s both;
+    }
+
+    .loading-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      animation: fadeIn 1s ease-out 0.4s both;
+    }
+
+    .device-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      padding: 16px 32px;
+      border-radius: 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border: 2px solid rgba(255, 215, 0, 0.4);
+    }
+
+    .spring-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      border-radius: 999px;
+      padding: 6px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #059669;
+      margin-bottom: 8px;
+    }
+
+    .device-icon {
+      font-size: 28px;
+    }
+
+    .loading-dots {
+      font-size: 32px;
+      letter-spacing: 8px;
+      margin-top: 20px;
+    }
+
+    .dot {
+      animation: blink 1.4s infinite;
+      display: inline-block;
+    }
+
+    .dot:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 40px;
+      animation: fadeInUp 1s ease-out 0.6s both;
+    }
+
+    .feature-item {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      transition: transform 0.3s ease;
+    }
+
+    .feature-item:hover {
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    .feature-text {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Animations */
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+      }
+      25% {
+        transform: translateY(-10px) rotate(-5deg);
+      }
+      75% {
+        transform: translateY(-5px) rotate(5deg);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes blink {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .app-title {
+        font-size: 36px;
+      }
+
+      .app-subtitle {
+        font-size: 16px;
+      }
+
+      .logo {
+        font-size: 80px;
+      }
+
+      .features {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .feature-item {
+        padding: 16px;
+      }
+
+      .feature-icon {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="splash-container">
+    <div class="logo-wrapper">
+      <div class="logo">🏮</div>
+    </div>
+
+    <h1 class="app-title">linglish</h1>
+    <p class="app-subtitle">沉浸式语言学习，让进步看得见</p>
+
+    <div class="loading-info">
+      <div class="spring-banner">🌊 清凉一夏 · 学习正当时 🏖️</div>
+      <div class="device-info">
+        <span class="device-icon" id="device-icon">📱</span>
+        <span id="device-text">正在检测设备...</span>
+      </div>
+      <div class="loading-dots">
+        <span class="dot">•</span>
+        <span class="dot">•</span>
+        <span class="dot">•</span>
+      </div>
+    </div>
+
+    <div class="features">
+      <div class="feature-item">
+        <div class="feature-icon">🎬</div>
+        <div class="feature-text">原生视频</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📚</div>
+        <div class="feature-text">智能词汇</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🎙️</div>
+        <div class="feature-text">实战练习</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🏆</div>
+        <div class="feature-text">成就系统</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * linglish 智能设备检测与跳转
+     */
+
+    // 检测设备类型
+    function detectDevice() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const screenWidth = window.innerWidth || document.documentElement.clientWidth;
+
+      // 移动设备检测
+      const isMobile = /mobile|android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+
+      // 平板检测
+      const isTablet = /ipad|android(?!.*mobile)|tablet/i.test(userAgent);
+
+      // 屏幕宽度检测（小于768px视为移动设备）
+      const isSmallScreen = screenWidth < 768;
+
+      // 触摸设备检测
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+      return {
+        isMobile: (isMobile && !isTablet) || isSmallScreen,
+        isTablet: isTablet,
+        isDesktop: !isMobile && !isTablet && screenWidth >= 768,
+        isTouchDevice: isTouchDevice,
+        screenWidth: screenWidth,
+        userAgent: userAgent
+      };
+    }
+
+    // 更新设备信息显示
+    function updateDeviceInfo(device) {
+      const deviceIcon = document.getElementById('device-icon');
+      const deviceText = document.getElementById('device-text');
+
+      if (device.isMobile) {
+        deviceIcon.textContent = '📱';
+        deviceText.textContent = '移动设备 - 加载中...';
+      } else if (device.isTablet) {
+        deviceIcon.textContent = '💻';
+        deviceText.textContent = '平板设备 - 加载中...';
+      } else {
+        deviceIcon.textContent = '🖥️';
+        deviceText.textContent = '桌面设备 - 加载中...';
+      }
+    }
+
+    function readAuthToken() {
+      const keys = ['authToken', 'linglish_token'];
+      for (const key of keys) {
+        try {
+          const value = localStorage.getItem(key);
+          if (value && value !== 'null' && value !== 'undefined') return value;
+        } catch (_) {}
+      }
+      for (const key of keys) {
+        try {
+          const value = sessionStorage.getItem(key);
+          if (value && value !== 'null' && value !== 'undefined') return value;
+        } catch (_) {}
+      }
+      return null;
+    }
+
+    function currentParams() {
+      try {
+        return new URLSearchParams(window.location.search || '');
+      } catch (_) {
+        return new URLSearchParams();
+      }
+    }
+
+    function routeOverride() {
+      const params = currentParams();
+      const target = String(params.get('target') || params.get('view') || '').trim().toLowerCase();
+      if (target === 'desktop' || target === 'classic' || target === 'home' || params.get('legacy') === '1') {
+        return 'desktop';
+      }
+      if (target === 'today' || target === 'daily') {
+        return 'today';
+      }
+      if (target === 'mobile') {
+        return 'mobile';
+      }
+      return null;
+    }
+
+    function localHref(path, extra = {}) {
+      const url = new URL(path, window.location.href);
+      Object.entries(extra).forEach(([key, value]) => {
+        if (value != null && value !== '' && !url.searchParams.has(key)) {
+          url.searchParams.set(key, value);
+        }
+      });
+      return `${url.pathname.split('/').pop()}${url.search}${window.location.hash || ''}`;
+    }
+
+    function marketingHref(path) {
+      const source = currentParams();
+      const url = new URL(path, window.location.href);
+      ['from', 'intent', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref'].forEach((key) => {
+        const value = source.get(key);
+        if (value && !url.searchParams.has(key)) url.searchParams.set(key, value);
+      });
+      return `${url.pathname.split('/').pop()}${url.search}${window.location.hash || ''}`;
+    }
+
+    function getVisitorId() {
+      try {
+        const key = 'linglish_visitor_id';
+        const existing = localStorage.getItem(key);
+        if (/^llv_[a-zA-Z0-9_-]{12,64}$/.test(existing || '')) return existing;
+        const random = window.crypto?.getRandomValues
+          ? Array.from(window.crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, '0')).join('')
+          : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`;
+        const visitorId = `llv_${random}`.slice(0, 68);
+        localStorage.setItem(key, visitorId);
+        return visitorId;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function trackRouterRedirect(destination, reason, device) {
+      try {
+        const token = readAuthToken();
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const visitorId = getVisitorId();
+        fetch('/track/event', {
+          method: 'POST',
+          headers,
+          keepalive: true,
+          body: JSON.stringify({
+            event_name: 'router_redirect',
+            visitor_id: visitorId,
+            properties: {
+              visitor_id: visitorId,
+              to: destination,
+              reason,
+              override: routeOverride(),
+              device: device?.isMobile ? 'mobile' : device?.isTablet ? 'tablet' : 'desktop',
+              screen_width: device?.screenWidth || window.innerWidth || null,
+            },
+          }),
+        }).catch(() => {});
+      } catch (_) {}
+    }
+
+    function redirectTo(destination, reason, device) {
+      trackRouterRedirect(destination, reason, device);
+      window.location.href = destination;
+    }
+
+    // 跳转到对应页面
+    function redirectToPage(device) {
+      // 检测是否已登录
+      const authToken = readAuthToken();
+      const override = routeOverride();
+
+      if (override === 'desktop') {
+        console.log('🖥️ 手动选择桌面主页');
+        redirectTo(localHref('index-desktop.html', { from: 'router_override' }), 'override_desktop', device);
+        return;
+      }
+
+      if (override === 'today') {
+        console.log('📅 手动选择今日训练');
+        redirectTo(localHref('today.html', { from: 'router_override' }), 'override_today', device);
+        return;
+      }
+
+      if (override === 'mobile') {
+        console.log('📱 手动选择移动体验');
+        redirectTo(authToken ? localHref('mobile-today.html', { from: 'router_override' }) : 'mobile-auth.html', 'override_mobile', device);
+        return;
+      }
+
+      if (!authToken) {
+        // 未登录用户 → 显示着陆页
+        console.log('🌿 未登录，跳转到着陆页');
+        redirectTo(marketingHref('landing.html'), 'guest_landing', device);
+        return;
+      }
+
+      if (device.isMobile || device.isTablet) {
+        // 移动端/平板 + 已登录 -> 今日学习
+        console.log('📅 跳转到今日学习页面');
+        redirectTo(localHref('mobile-today.html', { from: 'router' }), 'mobile_today', device);
+      } else {
+        // 桌面端 + 已登录 -> 今日训练闭环
+        console.log('📅 跳转到桌面今日训练');
+        redirectTo(localHref('today.html', { from: 'router' }), 'desktop_today', device);
+      }
+    }
+
+    // 主执行流程
+    function init() {
+      // 检测设备
+      const device = detectDevice();
+
+      // 打印检测信息（调试用）
+      console.log('📊 设备检测结果:', {
+        类型: device.isMobile ? '移动设备' : device.isTablet ? '平板' : '桌面',
+        屏幕宽度: device.screenWidth + 'px',
+        触摸设备: device.isTouchDevice ? '是' : '否',
+        UserAgent: device.userAgent.substring(0, 50) + '...'
+      });
+
+      // 更新UI显示
+      updateDeviceInfo(device);
+
+      // 延迟跳转，让用户看到加载动画
+      setTimeout(() => {
+        redirectToPage(device);
+      }, 1200);
+    }
+
+    // 页面加载完成后执行
+    window.addEventListener('DOMContentLoaded', init);
+
+    // 支持手动选择（调试用）
+    // 在控制台输入: forceDesktop() 或 forceMobile()
+    window.forceDesktop = function() {
+      console.log('🖥️ 强制跳转桌面版');
+      window.location.href = 'index-desktop.html?from=router_force';
+    };
+
+    window.forceMobile = function() {
+      console.log('📱 强制跳转移动版');
+      const authToken = readAuthToken();
+      window.location.href = authToken ? 'mobile-today.html?from=router_force' : 'mobile-auth.html';
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,2825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - 数据分析</title>
+  <link rel="stylesheet" href="./admin-styles.css">
+  <script src="./admin-common.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+    .metric-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: transform 0.2s;
+    }
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .metric-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+    .metric-icon.blue { background: #e6f0ff; }
+    .metric-icon.green { background: #e6ffef; }
+    .metric-icon.yellow { background: #fff5e6; }
+    .metric-icon.purple { background: #f3e8ff; }
+    .metric-content {
+      flex: 1;
+    }
+    .metric-label {
+      font-size: 0.875rem;
+      color: var(--gray-600);
+      margin-bottom: 0.25rem;
+    }
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      line-height: 1;
+    }
+    .metric-change {
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+    }
+    .metric-change.positive {
+      color: var(--success-color);
+    }
+    .metric-change.negative {
+      color: var(--danger-color);
+    }
+    .analytics-note {
+      color: var(--gray-500);
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+    }
+    .analytics-section-title {
+      color: var(--gray-700);
+      font-size: 0.86rem;
+      font-weight: 700;
+      margin: 0.2rem 0 0.55rem;
+    }
+    .analytics-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .analytics-table th,
+    .analytics-table td {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .analytics-table th {
+      background: var(--gray-50);
+      color: var(--gray-600);
+      font-weight: 600;
+    }
+    .ai-summary-grid,
+    .business-summary-grid,
+    .today-funnel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .ai-summary-item,
+    .business-summary-item,
+    .today-funnel-item {
+      padding: 1rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      background: var(--gray-50);
+    }
+    .ai-summary-label,
+    .business-summary-label,
+    .today-funnel-label {
+      color: var(--gray-600);
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .ai-summary-value,
+    .business-summary-value,
+    .today-funnel-value {
+      color: var(--gray-900);
+      font-size: 1.6rem;
+      font-weight: 750;
+      line-height: 1.1;
+    }
+    .ai-summary-hint,
+    .business-summary-hint,
+    .today-funnel-hint {
+      color: var(--gray-500);
+      font-size: 0.78rem;
+      margin-top: 0.45rem;
+    }
+    .ai-usage-layout,
+    .business-metrics-layout,
+    .today-funnel-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+      .ai-usage-layout,
+      .business-metrics-layout,
+      .today-funnel-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-content">
+    <!-- 关键指标 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">📊 关键业务指标</h2>
+        <button class="admin-btn admin-btn-sm admin-btn-primary" onclick="refreshAnalytics()">
+          <span>🔄</span>
+          <span>刷新数据</span>
+        </button>
+      </div>
+      <div class="admin-card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+          <div class="metric-card">
+            <div class="metric-icon blue">📊</div>
+            <div class="metric-content">
+              <div class="metric-label">总用户数</div>
+              <div class="metric-value" id="metric-total-users">-</div>
+              <div class="metric-change positive" id="metric-users-change">↑ +12 本周</div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon green">⚡</div>
+            <div class="metric-content">
+              <div class="metric-label">今日活跃</div>
+              <div class="metric-value" id="metric-active-today">-</div>
+              <div class="metric-change" id="metric-active-change">-</div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon yellow">📚</div>
+            <div class="metric-content">
+              <div class="metric-label">视频资源</div>
+              <div class="metric-value" id="metric-total-videos">-</div>
+              <div class="metric-change" id="metric-videos-change">-</div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon purple">💬</div>
+            <div class="metric-content">
+              <div class="metric-label">用户反馈</div>
+              <div class="metric-value" id="metric-total-feedback">-</div>
+              <div class="metric-change" id="metric-feedback-change">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="analytics-grid">
+      <!-- 用户增长趋势 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">📈 用户增长趋势</h2>
+          <select id="user-growth-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadUserGrowth()">
+            <option value="7">最近7天</option>
+            <option value="30" selected>最近30天</option>
+            <option value="90">最近90天</option>
+          </select>
+        </div>
+        <div class="admin-card-body">
+          <div class="chart-container">
+            <canvas id="userGrowthChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 用户类型分布 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">🥧 用户类型分布</h2>
+        </div>
+        <div class="admin-card-body">
+          <div class="chart-container">
+            <canvas id="userTypeChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 视频观看统计 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">📺 视频观看统计</h2>
+        </div>
+        <div class="admin-card-body">
+          <div class="chart-container">
+            <canvas id="videoViewsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 反馈状态分布 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">💭 反馈状态分布</h2>
+        </div>
+        <div class="admin-card-body">
+          <div class="chart-container">
+            <canvas id="feedbackStatusChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA 点击热度 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">🎯 CTA 点击热度</h2>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <select id="click-heatmap-page" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadClickHeatmap()">
+              <option value="index-desktop" selected>首页</option>
+              <option value="today">今日训练</option>
+            </select>
+            <select id="click-heatmap-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadClickHeatmap()">
+              <option value="7">最近7天</option>
+              <option value="30" selected>最近30天</option>
+              <option value="90">最近90天</option>
+            </select>
+          </div>
+        </div>
+        <div class="admin-card-body">
+          <div class="chart-container">
+            <canvas id="clickHeatmapChart"></canvas>
+          </div>
+          <div class="analytics-note" id="click-heatmap-note">统计已登录、游客Token和匿名用户的点击事件。</div>
+        </div>
+      </div>
+
+      <!-- 游客转化漏斗 -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h2 class="admin-card-title">🚪 游客转化漏斗</h2>
+          <select id="guest-funnel-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadGuestFunnel()">
+            <option value="7">最近7天</option>
+            <option value="30" selected>最近30天</option>
+            <option value="90">最近90天</option>
+          </select>
+        </div>
+        <div class="admin-card-body">
+          <div class="chart-container">
+            <canvas id="guestFunnelChart"></canvas>
+          </div>
+          <div class="analytics-note" id="guest-funnel-note">-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 首访测评漏斗 -->
+    <div class="admin-card" id="onboarding-funnel">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🧭 首访测评漏斗</h2>
+        <select id="onboarding-funnel-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadOnboardingFunnel()">
+          <option value="7">最近7天</option>
+          <option value="30" selected>最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <div class="today-funnel-grid" id="onboarding-funnel-steps">
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">开始测评</div>
+            <div class="today-funnel-value">-</div>
+            <div class="today-funnel-hint">加载中...</div>
+          </div>
+        </div>
+        <div class="today-funnel-layout">
+          <div class="chart-container">
+            <canvas id="onboardingFunnelChart"></canvas>
+          </div>
+          <div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>目标</th>
+                  <th>等级</th>
+                  <th>状态</th>
+                  <th>完成</th>
+                </tr>
+              </thead>
+              <tbody id="onboarding-segments-tbody">
+                <tr><td colspan="4" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div style="height: 1rem;"></div>
+            <div style="font-weight: 700; margin-bottom: 0.5rem; color: var(--gray-700);">保存计划转化</div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>来源</th>
+                  <th>事件</th>
+                  <th>次数</th>
+                  <th>用户</th>
+                  <th>测评链路</th>
+                </tr>
+              </thead>
+              <tbody id="onboarding-auth-sources-tbody">
+                <tr><td colspan="5" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="onboarding-funnel-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 今日训练激活漏斗 -->
+    <div class="admin-card" id="today-funnel">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🎓 今日训练激活漏斗</h2>
+        <select id="today-funnel-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadTodayFunnel()">
+          <option value="7">最近7天</option>
+          <option value="30" selected>最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <div class="today-funnel-grid" id="today-funnel-steps">
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">进入今日工作台</div>
+            <div class="today-funnel-value">-</div>
+            <div class="today-funnel-hint">加载中...</div>
+          </div>
+        </div>
+        <div class="today-funnel-layout">
+          <div class="chart-container">
+            <canvas id="todayFunnelChart"></canvas>
+          </div>
+          <div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>行动</th>
+                  <th>位置</th>
+                  <th>点击</th>
+                  <th>用户</th>
+                </tr>
+              </thead>
+              <tbody id="today-actions-tbody">
+                <tr><td colspan="4" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="today-funnel-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 词汇游戏漏斗 -->
+    <div class="admin-card" id="game-funnel">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🎮 词汇游戏漏斗</h2>
+        <select id="game-funnel-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadGameFunnel()">
+          <option value="7">最近7天</option>
+          <option value="30" selected>最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <div class="today-funnel-grid" id="game-funnel-steps">
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">打开游戏</div>
+            <div class="today-funnel-value">-</div>
+            <div class="today-funnel-hint">加载中...</div>
+          </div>
+        </div>
+        <div class="analytics-section-title">关卡内阶段完成</div>
+        <div class="today-funnel-grid" id="game-phase-steps">
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">完成学词</div>
+            <div class="today-funnel-value">-</div>
+            <div class="today-funnel-hint">加载中...</div>
+          </div>
+        </div>
+        <div class="today-funnel-layout">
+          <div class="chart-container">
+            <canvas id="gameFunnelChart"></canvas>
+          </div>
+          <div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>章节</th>
+                  <th>完成关卡</th>
+                  <th>玩家</th>
+                  <th>平均正确率</th>
+                  <th>通章</th>
+                </tr>
+              </thead>
+              <tbody id="game-chapters-tbody">
+                <tr><td colspan="5" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="game-funnel-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 今日训练留存 -->
+    <div class="admin-card" id="today-retention">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">📈 今日训练留存</h2>
+        <select id="today-retention-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadTodayRetention()">
+          <option value="7">最近7天</option>
+          <option value="30" selected>最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <div class="today-funnel-grid" id="today-retention-summary">
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">训练用户</div>
+            <div class="today-funnel-value">-</div>
+            <div class="today-funnel-hint">加载中...</div>
+          </div>
+        </div>
+        <div class="today-funnel-layout">
+          <div class="chart-container">
+            <canvas id="todayRetentionChart"></canvas>
+          </div>
+          <div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>用户</th>
+                  <th>当前连续</th>
+                </tr>
+              </thead>
+              <tbody id="today-streaks-tbody">
+                <tr><td colspan="2" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="today-retention-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 周报增长闭环 -->
+    <div class="admin-card" id="report-growth">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">📣 周报增长闭环</h2>
+        <select id="report-growth-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadReportGrowth()">
+          <option value="7">最近7天</option>
+          <option value="30" selected>最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <div class="today-funnel-grid" id="report-growth-steps">
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">查看周报</div>
+            <div class="today-funnel-value">-</div>
+            <div class="today-funnel-hint">加载中...</div>
+          </div>
+        </div>
+        <div class="today-funnel-layout">
+          <div class="chart-container">
+            <canvas id="reportGrowthChart"></canvas>
+          </div>
+          <div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>动作</th>
+                  <th>细节</th>
+                  <th>次数</th>
+                  <th>用户</th>
+                </tr>
+              </thead>
+              <tbody id="report-actions-tbody">
+                <tr><td colspan="4" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="report-growth-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 定价页付费漏斗 -->
+    <div class="admin-card" id="pricing-funnel">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">💰 定价页付费漏斗</h2>
+        <select id="pricing-funnel-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadPricingFunnel()">
+          <option value="7">最近7天</option>
+          <option value="30" selected>最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <div class="today-funnel-grid" id="pricing-funnel-steps">
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">访问定价页</div>
+            <div class="today-funnel-value">-</div>
+            <div class="today-funnel-hint">加载中...</div>
+          </div>
+        </div>
+        <div class="today-funnel-layout">
+          <div class="chart-container">
+            <canvas id="pricingFunnelChart"></canvas>
+          </div>
+          <div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>来源</th>
+                  <th>意图</th>
+                  <th>访问</th>
+                  <th>唯一</th>
+                  <th>升级率</th>
+                  <th>Checkout</th>
+                  <th>成功</th>
+                  <th>生效</th>
+                </tr>
+              </thead>
+              <tbody id="pricing-sources-tbody">
+                <tr><td colspan="8" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="pricing-funnel-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 团队线索 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🏫 团队线索</h2>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <a class="admin-btn admin-btn-sm admin-btn-secondary" href="./admin-team-leads.html">
+            <span>查看线索池</span>
+          </a>
+          <select id="team-leads-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadTeamLeads()">
+            <option value="7">最近7天</option>
+            <option value="30" selected>最近30天</option>
+            <option value="90">最近90天</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div class="business-summary-grid">
+          <div class="business-summary-item">
+            <div class="business-summary-value" id="team-leads-total">-</div>
+            <div class="business-summary-hint" id="team-leads-total-hint">-</div>
+          </div>
+          <div class="business-summary-item">
+            <div class="business-summary-value" id="team-leads-qualified">-</div>
+            <div class="business-summary-hint">合格/成交线索</div>
+          </div>
+          <div class="business-summary-item">
+            <div class="business-summary-value" id="team-leads-new">-</div>
+            <div class="business-summary-hint">待跟进线索</div>
+          </div>
+          <div class="business-summary-item">
+            <div class="business-summary-value" id="team-leads-won">-</div>
+            <div class="business-summary-hint">已成交</div>
+          </div>
+        </div>
+        <div class="today-funnel-layout" style="margin-top: 1rem;">
+          <div class="chart-container">
+            <canvas id="teamLeadsChart"></canvas>
+          </div>
+          <div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>机构</th>
+                  <th>人数</th>
+                  <th>来源</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody id="team-leads-tbody">
+                <tr><td colspan="4" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="team-leads-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 订阅收入与健康度 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">💳 订阅收入与健康度</h2>
+        <select id="subscription-business-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadSubscriptionBusiness()">
+          <option value="7">最近7天</option>
+          <option value="30" selected>最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <div class="business-summary-grid">
+          <div class="business-summary-item">
+            <div class="business-summary-label">周期收入</div>
+            <div class="business-summary-value" id="subscription-period-revenue">-</div>
+            <div class="business-summary-hint" id="subscription-period-revenue-hint">-</div>
+          </div>
+          <div class="business-summary-item">
+            <div class="business-summary-label">估算 MRR</div>
+            <div class="business-summary-value" id="subscription-estimated-mrr">-</div>
+            <div class="business-summary-hint" id="subscription-estimated-mrr-hint">-</div>
+          </div>
+          <div class="business-summary-item">
+            <div class="business-summary-label">活跃订阅</div>
+            <div class="business-summary-value" id="subscription-active-count">-</div>
+            <div class="business-summary-hint" id="subscription-active-hint">-</div>
+          </div>
+          <div class="business-summary-item">
+            <div class="business-summary-label">订阅风险</div>
+            <div class="business-summary-value" id="subscription-risk-count">-</div>
+            <div class="business-summary-hint" id="subscription-risk-hint">-</div>
+          </div>
+        </div>
+
+        <div class="business-metrics-layout">
+          <div class="chart-container">
+            <canvas id="subscriptionBusinessChart"></canvas>
+          </div>
+          <div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>Variant</th>
+                  <th>活跃订阅</th>
+                </tr>
+              </thead>
+              <tbody id="subscription-variants-tbody">
+                <tr><td colspan="2" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="subscription-business-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 成本与用量 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🤖 AI 成本与用量</h2>
+        <select id="ai-usage-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadAiUsage()">
+          <option value="7" selected>最近7天</option>
+          <option value="30">最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <div class="ai-summary-grid">
+          <div class="ai-summary-item">
+            <div class="ai-summary-label">AI 调用</div>
+            <div class="ai-summary-value" id="ai-total-calls">-</div>
+            <div class="ai-summary-hint" id="ai-total-calls-hint">-</div>
+          </div>
+          <div class="ai-summary-item">
+            <div class="ai-summary-label">已记录/估算成本</div>
+            <div class="ai-summary-value" id="ai-total-cost">-</div>
+            <div class="ai-summary-hint" id="ai-cost-hint">-</div>
+          </div>
+          <div class="ai-summary-item">
+            <div class="ai-summary-label">活跃 AI 用户</div>
+            <div class="ai-summary-value" id="ai-active-users">-</div>
+            <div class="ai-summary-hint" id="ai-active-users-hint">-</div>
+          </div>
+          <div class="ai-summary-item">
+            <div class="ai-summary-label">未计价调用</div>
+            <div class="ai-summary-value" id="ai-unpriced-calls">-</div>
+            <div class="ai-summary-hint">用于提醒成本口径缺口</div>
+          </div>
+        </div>
+
+        <div class="ai-usage-layout">
+          <div class="chart-container">
+            <canvas id="aiUsageChart"></canvas>
+          </div>
+          <div>
+            <div class="analytics-section-title">额度拦截分布</div>
+            <table class="analytics-table" style="margin-bottom: 1rem;">
+              <thead>
+                <tr>
+                  <th>功能</th>
+                  <th>拦截</th>
+                  <th>今日</th>
+                  <th>用户</th>
+                </tr>
+              </thead>
+              <tbody id="ai-quota-breakdown-tbody">
+                <tr><td colspan="4" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-section-title">高用量用户</div>
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>用户</th>
+                  <th>会员</th>
+                  <th>调用</th>
+                  <th>构成</th>
+                </tr>
+              </thead>
+              <tbody id="ai-top-users-tbody">
+                <tr><td colspan="4" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+              </tbody>
+            </table>
+            <div class="analytics-note" id="ai-usage-note">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A/B 测试概览 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🧪 A/B 测试概览（CTA 文案）</h2>
+        <select id="ab-test-period" class="admin-form-input" style="width: auto; padding: 0.375rem 0.5rem;" onchange="loadABTestSummary()">
+          <option value="7">最近7天</option>
+          <option value="30" selected>最近30天</option>
+          <option value="90">最近90天</option>
+        </select>
+      </div>
+      <div class="admin-card-body">
+        <table class="analytics-table">
+          <thead>
+            <tr>
+              <th>Variant</th>
+              <th>曝光</th>
+              <th>用户数</th>
+            </tr>
+          </thead>
+          <tbody id="ab-test-tbody">
+            <tr><td colspan="3" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+          </tbody>
+        </table>
+        <div class="analytics-note">测试键：ab_cta_copy_v1。当前仅统计已登录/游客Token用户曝光。</div>
+      </div>
+    </div>
+
+    <!-- TOP 10 统计 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🏆 TOP 10 活跃用户</h2>
+        <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="exportTopUsers()">
+          <span>📊</span>
+          <span>导出</span>
+        </button>
+      </div>
+      <div class="admin-card-body">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>排名</th>
+              <th>用户</th>
+              <th>会员</th>
+              <th>活跃天数</th>
+              <th>最后登录</th>
+            </tr>
+          </thead>
+          <tbody id="top-users-tbody">
+            <tr><td colspan="5" style="text-align: center; color: var(--gray-500);">加载中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 初始化页面
+    initAdminPage('数据分析');
+
+    let userGrowthChart = null;
+    let userTypeChart = null;
+    let videoViewsChart = null;
+    let feedbackStatusChart = null;
+    let clickHeatmapChart = null;
+    let guestFunnelChart = null;
+    let onboardingFunnelChart = null;
+    let todayFunnelChart = null;
+    let gameFunnelChart = null;
+    let todayRetentionChart = null;
+    let reportGrowthChart = null;
+    let pricingFunnelChart = null;
+    let teamLeadsChart = null;
+    let aiUsageChart = null;
+    let subscriptionBusinessChart = null;
+
+    function formatCostCents(cents) {
+      const value = Number(cents) || 0;
+      return `$${(value / 100).toFixed(2)}`;
+    }
+
+    function formatPercent(value) {
+      const number = Number(value) || 0;
+      return `${Number.isInteger(number) ? number : number.toFixed(1)}%`;
+    }
+
+    // 加载分析数据
+    async function refreshAnalytics() {
+      try {
+        AdminUtils.showToast('正在刷新数据...', 'info');
+
+        await Promise.all([
+          loadKeyMetrics(),
+          loadUserGrowth(),
+          loadUserTypeDistribution(),
+          loadVideoStats(),
+          loadFeedbackStats(),
+          loadTopUsers(),
+          loadClickHeatmap(),
+          loadGuestFunnel(),
+          loadOnboardingFunnel(),
+          loadTodayFunnel(),
+          loadGameFunnel(),
+          loadTodayRetention(),
+          loadReportGrowth(),
+          loadPricingFunnel(),
+          loadTeamLeads(),
+          loadABTestSummary(),
+          loadSubscriptionBusiness(),
+          loadAiUsage()
+        ]);
+
+        AdminUtils.showToast('数据已刷新', 'success');
+      } catch (error) {
+        console.error('刷新数据失败:', error);
+        AdminUtils.showToast('刷新失败: ' + error.message, 'error');
+      }
+    }
+
+    // 加载关键指标
+    async function loadKeyMetrics() {
+      try {
+        const userStats = await AdminAPI.get('/admin/users/summary');
+        const videoData = await AdminAPI.get('/admin/videos');
+
+        // 用户总数和本周新增
+        const totalUsers = userStats.users?.total || 0;
+        const newUsersThisWeek = userStats.users?.new_7d || 0;
+        document.getElementById('metric-total-users').textContent = totalUsers;
+        document.getElementById('metric-users-change').textContent = `↑ +${newUsersThisWeek} 本周`;
+        document.getElementById('metric-users-change').className = newUsersThisWeek > 0 ? 'metric-change positive' : 'metric-change';
+
+        // 活跃用户
+        const activeUsers = userStats.users?.active_7d || 0;
+        document.getElementById('metric-active-today').textContent = activeUsers;
+        const activeRate = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
+        document.getElementById('metric-active-change').textContent = `活跃率 ${activeRate}%`;
+        document.getElementById('metric-active-change').className = 'metric-change';
+
+        // 视频资源
+        const totalVideos = videoData.items?.length || 0;
+        document.getElementById('metric-total-videos').textContent = totalVideos;
+        document.getElementById('metric-videos-change').textContent = `共 ${totalVideos} 个视频`;
+        document.getElementById('metric-videos-change').className = 'metric-change';
+
+        // 用户反馈
+        try {
+          const feedbackData = await AdminAPI.get('/admin/feedback');
+          const totalFeedback = feedbackData.items?.length || 0;
+          const openFeedback = feedbackData.items?.filter(f => f.status === 'open').length || 0;
+          document.getElementById('metric-total-feedback').textContent = totalFeedback;
+          document.getElementById('metric-feedback-change').textContent = `待处理 ${openFeedback} 条`;
+          document.getElementById('metric-feedback-change').className = openFeedback > 0 ? 'metric-change' : 'metric-change positive';
+        } catch (feedbackError) {
+          console.warn('无法加载反馈数据:', feedbackError);
+          document.getElementById('metric-total-feedback').textContent = '-';
+          document.getElementById('metric-feedback-change').textContent = '功能未启用';
+          document.getElementById('metric-feedback-change').className = 'metric-change';
+        }
+
+      } catch (error) {
+        console.error('加载关键指标失败:', error);
+      }
+    }
+
+    // 加载用户增长趋势
+    async function loadUserGrowth() {
+      try {
+        const period = document.getElementById('user-growth-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/user-growth?days=${period}`);
+
+        const labels = response.items.map(item => {
+          const date = new Date(item.date);
+          return `${date.getMonth() + 1}/${date.getDate()}`;
+        });
+        const data = response.items.map(item => item.new_users);
+        const premiumData = response.items.map(item => item.new_premium_users);
+
+        if (userGrowthChart) {
+          userGrowthChart.destroy();
+        }
+
+        const ctx = document.getElementById('userGrowthChart');
+        userGrowthChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: '新增用户',
+                data: data,
+                borderColor: 'rgb(14, 165, 233)',
+                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                tension: 0.4,
+                fill: true
+              },
+              {
+                label: '新增会员',
+                data: premiumData,
+                borderColor: 'rgb(237, 137, 54)',
+                backgroundColor: 'rgba(237, 137, 54, 0.1)',
+                tension: 0.4,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  precision: 0
+                }
+              }
+            }
+          }
+        });
+
+      } catch (error) {
+        console.error('加载用户增长趋势失败:', error);
+      }
+    }
+
+    // 加载用户类型分布
+    async function loadUserTypeDistribution() {
+      try {
+        const distribution = await AdminAPI.get('/admin/analytics/user-distribution');
+
+        if (userTypeChart) {
+          userTypeChart.destroy();
+        }
+
+        const ctx = document.getElementById('userTypeChart');
+        userTypeChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['会员用户', '普通用户', '访客用户'],
+            datasets: [{
+              data: [distribution.premium, distribution.normal, distribution.guests],
+              backgroundColor: [
+                'rgba(237, 137, 54, 0.8)',
+                'rgba(14, 165, 233, 0.8)',
+                'rgba(160, 174, 192, 0.8)'
+              ],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom'
+              }
+            }
+          }
+        });
+
+      } catch (error) {
+        console.error('加载用户类型分布失败:', error);
+      }
+    }
+
+    // 加载视频统计
+    async function loadVideoStats() {
+      try {
+        const response = await AdminAPI.get('/admin/analytics/videos?limit=10');
+
+        if (!response.items || response.items.length === 0) {
+          // 如果没有数据，显示空状态
+          if (videoViewsChart) {
+            videoViewsChart.destroy();
+          }
+          const ctx = document.getElementById('videoViewsChart');
+          videoViewsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ['暂无数据'],
+              datasets: [{
+                label: '观看时长(分钟)',
+                data: [0],
+                backgroundColor: 'rgba(72, 187, 120, 0.8)',
+                borderRadius: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    precision: 0
+                  }
+                }
+              }
+            }
+          });
+          return;
+        }
+
+        const labels = response.items.map(v =>
+          v.title.length > 15 ? v.title.substring(0, 15) + '...' : v.title
+        );
+        const watchMinutes = response.items.map(v => Math.round(v.total_watch_seconds / 60));
+        const uniqueViewers = response.items.map(v => v.unique_viewers);
+
+        if (videoViewsChart) {
+          videoViewsChart.destroy();
+        }
+
+        const ctx = document.getElementById('videoViewsChart');
+        videoViewsChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: '观看时长(分钟)',
+              data: watchMinutes,
+              backgroundColor: 'rgba(72, 187, 120, 0.8)',
+              borderRadius: 6,
+              yAxisID: 'y'
+            }, {
+              label: '观看人数',
+              data: uniqueViewers,
+              backgroundColor: 'rgba(14, 165, 233, 0.8)',
+              borderRadius: 6,
+              yAxisID: 'y1'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom'
+              },
+              tooltip: {
+                callbacks: {
+                  title: function(context) {
+                    const index = context[0].dataIndex;
+                    return response.items[index].title;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                beginAtZero: true,
+                ticks: {
+                  precision: 0
+                },
+                title: {
+                  display: true,
+                  text: '观看时长(分钟)'
+                }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: true,
+                ticks: {
+                  precision: 0
+                },
+                title: {
+                  display: true,
+                  text: '观看人数'
+                },
+                grid: {
+                  drawOnChartArea: false
+                }
+              }
+            }
+          }
+        });
+
+      } catch (error) {
+        console.error('加载视频统计失败:', error);
+      }
+    }
+
+    // 加载反馈统计
+    async function loadFeedbackStats() {
+      try {
+        const response = await AdminAPI.get('/admin/analytics/feedback-distribution');
+
+        if (feedbackStatusChart) {
+          feedbackStatusChart.destroy();
+        }
+
+        const ctx = document.getElementById('feedbackStatusChart');
+
+        // Check if there's any data
+        if (!response.items || response.items.length === 0) {
+          feedbackStatusChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: ['暂无反馈数据'],
+              datasets: [{
+                data: [1],
+                backgroundColor: ['rgba(160, 174, 192, 0.3)'],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                },
+                tooltip: {
+                  enabled: false
+                }
+              }
+            }
+          });
+          return;
+        }
+
+        const statusMap = {
+          'open': '待处理',
+          'in_progress': '处理中',
+          'resolved': '已解决',
+          'closed': '已关闭'
+        };
+
+        const labels = response.items.map(item => statusMap[item.status] || item.status);
+        const data = response.items.map(item => item.count);
+
+        feedbackStatusChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: data,
+              backgroundColor: [
+                'rgba(237, 137, 54, 0.8)',
+                'rgba(14, 165, 233, 0.8)',
+                'rgba(72, 187, 120, 0.8)',
+                'rgba(160, 174, 192, 0.8)'
+              ],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom'
+              }
+            }
+          }
+        });
+
+      } catch (error) {
+        console.error('加载反馈统计失败:', error);
+      }
+    }
+
+    // 加载TOP用户
+    async function loadTopUsers() {
+      try {
+        const response = await AdminAPI.get('/admin/analytics/active-users?limit=10&days=30');
+
+        const tbody = document.getElementById('top-users-tbody');
+
+        if (!response.items || response.items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--gray-500);">暂无数据</td></tr>';
+          return;
+        }
+
+        const html = response.items.map((user, index) => {
+          const rank = index + 1;
+          const rankBadge = rank <= 3 ? `<span style="font-size: 1.5rem;">${['🥇', '🥈', '🥉'][rank - 1]}</span>` : rank;
+          const practiceMinutes = Math.round(user.total_practice_seconds / 60);
+          return `
+            <tr>
+              <td style="font-weight: 600;">${rankBadge}</td>
+              <td>
+                <div>${AdminUtils.escapeHtml(user.username || user.email || '未知用户')}</div>
+                <div style="font-size: 0.75rem; color: var(--gray-500);">练习 ${practiceMinutes} 分钟 · ${user.total_sessions} 次训练</div>
+              </td>
+              <td>${user.is_premium ? '<span class="admin-badge admin-badge-warning">会员</span>' : '<span class="admin-badge admin-badge-secondary">普通</span>'}</td>
+              <td>${user.active_days} 天</td>
+              <td>${user.last_login_at ? AdminUtils.formatDate(user.last_login_at) : '-'}</td>
+            </tr>
+          `;
+        }).join('');
+
+        tbody.innerHTML = html;
+
+      } catch (error) {
+        console.error('加载TOP用户失败:', error);
+        const tbody = document.getElementById('top-users-tbody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger-color);">加载失败: ' + error.message + '</td></tr>';
+      }
+    }
+
+    // CTA 点击热度
+    async function loadClickHeatmap() {
+      try {
+        const period = document.getElementById('click-heatmap-period').value;
+        const page = document.getElementById('click-heatmap-page')?.value || 'index-desktop';
+        const response = await AdminAPI.get(`/admin/analytics/click-heatmap?days=${period}&limit=12&page=${encodeURIComponent(page)}`);
+        const items = response.items || [];
+        const pageLabel = page === 'today' ? '今日训练' : '首页';
+
+        if (clickHeatmapChart) {
+          clickHeatmapChart.destroy();
+        }
+
+        const labels = items.map(item => item.name.replace(/_/g, ' '));
+        const data = items.map(item => item.clicks);
+
+        const ctx = document.getElementById('clickHeatmapChart');
+        clickHeatmapChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels.length ? labels : ['暂无数据'],
+            datasets: [{
+              label: '点击次数',
+              data: data.length ? data : [0],
+              backgroundColor: 'rgba(14, 165, 233, 0.8)',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const idx = context.dataIndex;
+                    const item = items[idx];
+                    if (!item) return `点击 ${context.parsed.y}`;
+                    return `点击 ${item.clicks} · 用户 ${item.users} · 游客 ${item.guest_clicks}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { precision: 0 }
+              }
+            }
+          }
+        });
+
+        const note = document.getElementById('click-heatmap-note');
+        if (note) note.textContent = `统计已登录、游客Token和匿名用户的点击事件（页面：${pageLabel}）。`;
+      } catch (error) {
+        console.error('加载 CTA 点击热度失败:', error);
+      }
+    }
+
+    // 游客转化漏斗
+    async function loadGuestFunnel() {
+      try {
+        const period = document.getElementById('guest-funnel-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/guest-funnel?days=${period}`);
+        const items = response.items || [];
+        const order = ['guest_login_success', 'register_success', 'login_success'];
+        const labelMap = {
+          guest_login_success: '游客登录成功',
+          register_success: '注册成功',
+          login_success: '登录成功'
+        };
+
+        const dataMap = new Map(items.map(item => [item.event_name, item]));
+        const labels = order.map(key => labelMap[key]);
+        const data = order.map(key => (dataMap.get(key)?.events || 0));
+        const users = order.map(key => (dataMap.get(key)?.users || 0));
+
+        if (guestFunnelChart) {
+          guestFunnelChart.destroy();
+        }
+
+        const ctx = document.getElementById('guestFunnelChart');
+        guestFunnelChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: '事件数',
+              data,
+              backgroundColor: [
+                'rgba(160, 174, 192, 0.8)',
+                'rgba(72, 187, 120, 0.8)',
+                'rgba(14, 165, 233, 0.8)'
+              ],
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const idx = context.dataIndex;
+                    return `事件 ${data[idx]} · 用户 ${users[idx]}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { precision: 0 }
+              }
+            }
+          }
+        });
+
+        const guestCount = dataMap.get('guest_login_success')?.events || 0;
+        const registerCount = dataMap.get('register_success')?.events || 0;
+        const conversion = guestCount > 0 ? Math.round((registerCount / guestCount) * 100) : 0;
+        const note = document.getElementById('guest-funnel-note');
+        if (note) {
+          note.textContent = `游客登录成功 ${guestCount} 次 → 注册成功 ${registerCount} 次 · 转化率 ${conversion}%`;
+        }
+      } catch (error) {
+        console.error('加载游客转化漏斗失败:', error);
+      }
+    }
+
+    async function loadTodayFunnel() {
+      try {
+        const period = document.getElementById('today-funnel-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/today-funnel?days=${period}`);
+        const steps = response.steps || [];
+        const daily = response.daily || [];
+        const actions = response.actions || [];
+
+        renderTodayFunnelSteps(steps);
+        renderTodayFunnelChart(daily);
+        renderTodayActions(actions);
+
+        const start = steps[0] || {};
+        const action = steps.find(step => step.key === 'next_action_click') || {};
+        const readiness = steps.find(step => step.key === 'workspace_ready') || {};
+        const video = steps.find(step => step.key === 'video_watch') || {};
+        const practice = steps.find(step => step.key === 'practice_completed') || {};
+        const commitment = steps.find(step => step.key === 'next_session_commitment') || {};
+        const note = document.getElementById('today-funnel-note');
+        if (note) {
+          note.textContent = `最近 ${response.days || period} 天：工作台去重访客 ${start.users || 0} 人（诊断事件行 ${start.events || 0}），下一步点击率 ${formatPercent(action.rate_from_start || 0)}，首课工作区就绪率 ${formatPercent(readiness.rate_from_start || 0)}，视频观看率 ${formatPercent(video.rate_from_start || 0)}，跟读完成率 ${formatPercent(practice.rate_from_start || 0)}，下次训练承诺率 ${formatPercent(commitment.rate_from_start || 0)}。`;
+        }
+      } catch (error) {
+        console.error('加载今日训练激活漏斗失败:', error);
+        const wrap = document.getElementById('today-funnel-steps');
+        if (wrap) {
+          wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">加载失败</div><div class="today-funnel-value">-</div><div class="today-funnel-hint">请检查接口或权限</div></div>';
+        }
+      }
+    }
+
+    async function loadGameFunnel() {
+      try {
+        const period = document.getElementById('game-funnel-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/game-funnel?days=${period}`);
+        const steps = response.steps || [];
+        const phases = response.phases || [];
+        const daily = response.daily || [];
+        const chapters = response.chapters || [];
+
+        renderGameFunnelSteps(steps);
+        renderGamePhaseSteps(phases);
+        renderGameFunnelChart(daily);
+        renderGameChapters(chapters);
+
+        const start = steps[0] || {};
+        const complete = steps.find(step => step.key === 'level_complete') || {};
+        const pass = steps.find(step => step.key === 'chapter_pass') || {};
+        const note = document.getElementById('game-funnel-note');
+        if (note) {
+          note.textContent = `最近 ${response.days || period} 天：游戏去重玩家 ${start.users || 0} 人（打开 ${start.events || 0} 次），关卡完成率 ${formatPercent(complete.rate_from_start || 0)}，通章 ${pass.events || 0} 次。`;
+        }
+      } catch (error) {
+        console.error('加载词汇游戏漏斗失败:', error);
+        const wrap = document.getElementById('game-funnel-steps');
+        if (wrap) {
+          wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">加载失败</div><div class="today-funnel-value">-</div><div class="today-funnel-hint">请检查接口或权限</div></div>';
+        }
+        const phaseWrap = document.getElementById('game-phase-steps');
+        if (phaseWrap) phaseWrap.innerHTML = wrap ? wrap.innerHTML : '';
+      }
+    }
+
+    function renderGameFunnelSteps(steps) {
+      const wrap = document.getElementById('game-funnel-steps');
+      if (!wrap) return;
+      if (!steps.length) {
+        wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">暂无数据</div><div class="today-funnel-value">0</div><div class="today-funnel-hint">游戏事件尚未产生</div></div>';
+        return;
+      }
+      wrap.innerHTML = steps.map((step, index) => {
+        const hint = index === 0
+          ? `去重玩家 · 事件 ${step.events || 0} 次`
+          : `去重玩家 · 上一步 ${formatPercent(step.rate_from_previous || 0)} · 总转化 ${formatPercent(step.rate_from_start || 0)} · 事件 ${step.events || 0} 次`;
+        return `
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">${AdminUtils.escapeHtml(step.label || step.key)}</div>
+            <div class="today-funnel-value">${step.users || 0}</div>
+            <div class="today-funnel-hint">${hint}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderGamePhaseSteps(phases) {
+      const wrap = document.getElementById('game-phase-steps');
+      if (!wrap) return;
+      if (!phases.length) {
+        wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">暂无阶段数据</div><div class="today-funnel-value">0</div><div class="today-funnel-hint">新埋点上线后开始累计</div></div>';
+        return;
+      }
+      wrap.innerHTML = phases.map(phase => `
+        <div class="today-funnel-item">
+          <div class="today-funnel-label">${AdminUtils.escapeHtml(phase.label || phase.key)}</div>
+          <div class="today-funnel-value">${phase.users || 0}</div>
+          <div class="today-funnel-hint">去重玩家 · 开始关卡 ${formatPercent(phase.rate_from_level_start || 0)} · 事件 ${phase.events || 0} 次</div>
+        </div>
+      `).join('');
+    }
+
+    function renderGameFunnelChart(daily) {
+      if (gameFunnelChart) {
+        gameFunnelChart.destroy();
+      }
+      const items = daily.length ? daily : [{ date: new Date(), players: 0, levels_completed: 0 }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+      const ctx = document.getElementById('gameFunnelChart');
+      gameFunnelChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '游戏玩家 · 去重',
+              data: items.map(item => item.players || 0),
+              borderColor: 'rgb(249, 115, 22)',
+              backgroundColor: 'rgba(249, 115, 22, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '完成关卡 · 次数',
+              data: items.map(item => item.levels_completed || 0),
+              borderColor: 'rgb(14, 165, 233)',
+              backgroundColor: 'rgba(14, 165, 233, 0.12)',
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } },
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+      });
+    }
+
+    function renderGameChapters(chapters) {
+      const tbody = document.getElementById('game-chapters-tbody');
+      if (!tbody) return;
+      if (!chapters.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--gray-500);">暂无章节数据</td></tr>';
+        return;
+      }
+      const themes = { 1: '学校', 2: '文具', 3: '数字', 4: '颜色', 5: '动作', 6: '时间' };
+      tbody.innerHTML = chapters.map(row => `
+        <tr>
+          <td>第 ${row.chapter} 章 ${AdminUtils.escapeHtml(themes[row.chapter] || '')}</td>
+          <td>${row.levels_completed || 0}</td>
+          <td>${row.players || 0}</td>
+          <td>${row.avg_accuracy === null || row.avg_accuracy === undefined ? '-' : formatPercent(row.avg_accuracy)}</td>
+          <td>${row.passes || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadOnboardingFunnel() {
+      try {
+        const period = document.getElementById('onboarding-funnel-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/onboarding-funnel?days=${period}`);
+        const steps = response.steps || [];
+        const daily = response.daily || [];
+        const segments = response.segments || [];
+        const authSources = response.auth_sources || [];
+
+        renderOnboardingFunnelSteps(steps);
+        renderOnboardingFunnelChart(daily);
+        renderOnboardingSegments(segments);
+        renderOnboardingAuthSources(authSources);
+
+        const start = steps.find(step => step.key === 'started') || steps[0] || {};
+        const completed = steps.find(step => step.key === 'completed') || {};
+        const todayEntered = steps.find(step => step.key === 'today_entered') || {};
+        const synced = steps.find(step => step.key === 'profile_synced') || {};
+        const savePlanRegisters = authSources
+          .filter(item => item.source === 'save_plan' && item.event_name === 'register_success')
+          .reduce((sum, item) => sum + (Number(item.events) || 0), 0);
+        const note = document.getElementById('onboarding-funnel-note');
+        if (note) {
+          note.textContent = `最近 ${response.days || period} 天：开始 ${start.events || 0} 次，测评完成率 ${formatPercent(completed.rate_from_start || 0)}，进入 Today 率 ${formatPercent(todayEntered.rate_from_start || 0)}，登录后画像生效率 ${formatPercent(synced.rate_from_start || 0)}，保存计划注册 ${savePlanRegisters} 次。`;
+        }
+      } catch (error) {
+        console.error('加载首访测评漏斗失败:', error);
+        const wrap = document.getElementById('onboarding-funnel-steps');
+        if (wrap) {
+          wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">加载失败</div><div class="today-funnel-value">-</div><div class="today-funnel-hint">请检查接口或权限</div></div>';
+        }
+      }
+    }
+
+    function renderOnboardingFunnelSteps(steps) {
+      const wrap = document.getElementById('onboarding-funnel-steps');
+      if (!wrap) return;
+      if (!steps.length) {
+        wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">暂无数据</div><div class="today-funnel-value">0</div><div class="today-funnel-hint">测评事件尚未产生</div></div>';
+        return;
+      }
+
+      wrap.innerHTML = steps.map((step, index) => {
+        const hint = index === 0
+          ? `${step.users || 0} 个唯一访客/用户`
+          : `上一步 ${formatPercent(step.rate_from_previous || 0)} · 总转化 ${formatPercent(step.rate_from_start || 0)}`;
+        return `
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">${AdminUtils.escapeHtml(step.label || step.key)}</div>
+            <div class="today-funnel-value">${step.events || 0}</div>
+            <div class="today-funnel-hint">${AdminUtils.escapeHtml(hint)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderOnboardingFunnelChart(daily) {
+      if (onboardingFunnelChart) {
+        onboardingFunnelChart.destroy();
+      }
+
+      const items = daily.length ? daily : [{
+        date: new Date(),
+        started: 0,
+        completed: 0,
+        today_entered: 0,
+        profile_synced: 0
+      }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      const ctx = document.getElementById('onboardingFunnelChart');
+      if (!ctx) return;
+      onboardingFunnelChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '开始测评',
+              data: items.map(item => item.started || 0),
+              borderColor: 'rgb(14, 165, 233)',
+              backgroundColor: 'rgba(14, 165, 233, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '完成测评',
+              data: items.map(item => item.completed || 0),
+              borderColor: 'rgb(72, 187, 120)',
+              backgroundColor: 'rgba(72, 187, 120, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '进入 Today',
+              data: items.map(item => item.today_entered || 0),
+              borderColor: 'rgb(99, 102, 241)',
+              backgroundColor: 'rgba(99, 102, 241, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '画像生效',
+              data: items.map(item => item.profile_synced || 0),
+              borderColor: 'rgb(245, 158, 11)',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              borderDash: [5, 4],
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderOnboardingSegments(segments) {
+      const tbody = document.getElementById('onboarding-segments-tbody');
+      if (!tbody) return;
+      if (!segments.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray-500);">暂无测评完成数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = segments.map(item => `
+        <tr>
+          <td>${AdminUtils.escapeHtml(item.goal || '未选择')}</td>
+          <td>${AdminUtils.escapeHtml(item.level || 'unknown')}</td>
+          <td>${AdminUtils.escapeHtml(item.auth_state || 'unknown')}</td>
+          <td>${item.completions || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    function getAuthSourceLabel(source) {
+      const labelMap = {
+        save_plan: '保存计划注册',
+        save_plan_login: '保存计划登录',
+        guest_auth_cta: '游客注册 CTA',
+        today_guest: 'Today 游客入口',
+        topbar_login: '顶部登录',
+        login_cta: '登录 CTA',
+        login: '登录页',
+        register: '注册页',
+        guest: '游客入口'
+      };
+      return labelMap[source] || source || 'unknown';
+    }
+
+    function getAuthEventLabel(eventName) {
+      const labelMap = {
+        register_success: '注册成功',
+        login_success: '登录成功',
+        guest_login_success: '游客登录成功'
+      };
+      return labelMap[eventName] || eventName || 'unknown';
+    }
+
+    function renderOnboardingAuthSources(authSources) {
+      const tbody = document.getElementById('onboarding-auth-sources-tbody');
+      if (!tbody) return;
+      if (!authSources.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--gray-500);">暂无保存计划转化数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = authSources.map(item => `
+        <tr>
+          <td>${AdminUtils.escapeHtml(getAuthSourceLabel(item.source))}</td>
+          <td>${AdminUtils.escapeHtml(getAuthEventLabel(item.event_name))}</td>
+          <td>${item.events || 0}</td>
+          <td>${item.users || 0}</td>
+          <td>${item.linked_onboarding_users || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderTodayFunnelSteps(steps) {
+      const wrap = document.getElementById('today-funnel-steps');
+      if (!wrap) return;
+      if (!steps.length) {
+        wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">暂无数据</div><div class="today-funnel-value">0</div><div class="today-funnel-hint">今日页事件尚未产生</div></div>';
+        return;
+      }
+
+      wrap.innerHTML = steps.map((step, index) => {
+        const hint = index === 0
+          ? `去重访客 · 诊断事件行 ${step.events || 0}`
+          : `去重访客 · 上一步 ${formatPercent(step.rate_from_previous || 0)} · 总转化 ${formatPercent(step.rate_from_start || 0)} · 诊断事件行 ${step.events || 0}`;
+        return `
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">${AdminUtils.escapeHtml(step.label || step.key)}</div>
+            <div class="today-funnel-value">${step.users || 0}</div>
+            <div class="today-funnel-hint">${hint}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTodayFunnelChart(daily) {
+      if (todayFunnelChart) {
+        todayFunnelChart.destroy();
+      }
+
+      const items = daily.length ? daily : [{
+        date: new Date(),
+        workspace_view_users: 0,
+        next_action_click_users: 0,
+        workspace_ready_users: 0,
+        video_watch_users: 0,
+        practice_completed_users: 0,
+        next_session_commitment_users: 0
+      }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      const ctx = document.getElementById('todayFunnelChart');
+      todayFunnelChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '工作台访问 · 去重访客',
+              data: items.map(item => item.workspace_view_users || 0),
+              borderColor: 'rgb(14, 165, 233)',
+              backgroundColor: 'rgba(14, 165, 233, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '下一步点击 · 去重访客',
+              data: items.map(item => item.next_action_click_users || 0),
+              borderColor: 'rgb(72, 187, 120)',
+              backgroundColor: 'rgba(72, 187, 120, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '首课工作区就绪 · 去重访客',
+              data: items.map(item => item.workspace_ready_users || 0),
+              borderColor: 'rgb(139, 92, 246)',
+              backgroundColor: 'rgba(139, 92, 246, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '视频观看 · 去重访客',
+              data: items.map(item => item.video_watch_users || 0),
+              borderColor: 'rgb(99, 102, 241)',
+              backgroundColor: 'rgba(99, 102, 241, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '跟读完成 · 去重访客',
+              data: items.map(item => item.practice_completed_users || 0),
+              borderColor: 'rgb(237, 137, 54)',
+              backgroundColor: 'rgba(237, 137, 54, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '承诺下次训练 · 去重访客',
+              data: items.map(item => item.next_session_commitment_users || 0),
+              borderColor: 'rgb(16, 185, 129)',
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              borderDash: [5, 4],
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTodayActions(actions) {
+      const tbody = document.getElementById('today-actions-tbody');
+      if (!tbody) return;
+      if (!actions.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray-500);">暂无点击数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = actions.map(item => `
+        <tr>
+          <td>${AdminUtils.escapeHtml(item.name || 'unknown')}</td>
+          <td>${AdminUtils.escapeHtml(item.section || '-')}</td>
+          <td>${item.clicks || 0}</td>
+          <td>${item.users || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadTodayRetention() {
+      try {
+        const period = document.getElementById('today-retention-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/today-retention?days=${period}`);
+        renderTodayRetentionSummary(response.summary || {});
+        renderTodayRetentionChart(response.daily || []);
+        renderTodayStreaks(response.streaks || []);
+
+        const summary = response.summary || {};
+        const note = document.getElementById('today-retention-note');
+        if (note) {
+          note.textContent = `最近 ${response.days || period} 天：训练用户 ${summary.training_users || 0}，D1 留存 ${formatPercent(summary.d1_retention_rate || 0)}，完整闭环率 ${formatPercent(summary.full_loop_rate || 0)}。`;
+        }
+      } catch (error) {
+        console.error('加载今日训练留存失败:', error);
+        const wrap = document.getElementById('today-retention-summary');
+        if (wrap) {
+          wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">加载失败</div><div class="today-funnel-value">-</div><div class="today-funnel-hint">请检查接口或权限</div></div>';
+        }
+      }
+    }
+
+    function renderTodayRetentionSummary(summary) {
+      const wrap = document.getElementById('today-retention-summary');
+      if (!wrap) return;
+      const items = [
+        ['训练用户', summary.training_users || 0, `回访率 ${formatPercent(summary.returning_rate || 0)}`],
+        ['D1 留存', formatPercent(summary.d1_retention_rate || 0), `${summary.d1_retained_user_days || 0}/${summary.d1_base_user_days || 0} 用户日`],
+        ['完整闭环用户', summary.full_loop_users || 0, `完整闭环率 ${formatPercent(summary.full_loop_rate || 0)}`],
+        ['连续训练用户', summary.current_streak_users || 0, `平均 ${summary.avg_current_streak || 0} 天 · 最长 ${summary.longest_current_streak || 0} 天`],
+      ];
+
+      wrap.innerHTML = items.map(([label, value, hint]) => `
+        <div class="today-funnel-item">
+          <div class="today-funnel-label">${AdminUtils.escapeHtml(label)}</div>
+          <div class="today-funnel-value">${value}</div>
+          <div class="today-funnel-hint">${AdminUtils.escapeHtml(hint)}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderTodayRetentionChart(daily) {
+      if (todayRetentionChart) {
+        todayRetentionChart.destroy();
+      }
+
+      const items = daily.length ? daily : [{
+        date: new Date(),
+        active_users: 0,
+        retained_next_day_users: 0,
+        full_loop_users: 0
+      }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      const ctx = document.getElementById('todayRetentionChart');
+      todayRetentionChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '训练用户',
+              data: items.map(item => item.active_users || 0),
+              backgroundColor: 'rgba(14, 165, 233, 0.72)'
+            },
+            {
+              label: '次日留存',
+              data: items.map(item => item.retained_next_day_users || 0),
+              backgroundColor: 'rgba(72, 187, 120, 0.72)'
+            },
+            {
+              label: '完整闭环',
+              data: items.map(item => item.full_loop_users || 0),
+              backgroundColor: 'rgba(99, 102, 241, 0.72)'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            }
+          },
+          scales: {
+            x: { stacked: false },
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTodayStreaks(streaks) {
+      const tbody = document.getElementById('today-streaks-tbody');
+      if (!tbody) return;
+      if (!streaks.length) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--gray-500);">暂无连续训练用户</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = streaks.slice(0, 8).map(item => `
+        <tr>
+          <td>#${AdminUtils.escapeHtml(item.user_id || '-')}</td>
+          <td>${item.current_streak || 0} 天</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadReportGrowth() {
+      try {
+        const period = document.getElementById('report-growth-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/report-growth?days=${period}`);
+        const steps = response.steps || [];
+        const daily = response.daily || [];
+        const actions = response.actions || [];
+
+        renderReportGrowthSteps(steps);
+        renderReportGrowthChart(daily);
+        renderReportActions(actions);
+
+        const view = steps.find(step => step.key === 'report_view') || {};
+        const share = steps.find(step => step.key === 'share_action') || {};
+        const commitment = steps.find(step => step.key === 'next_commitment') || {};
+        const pricing = steps.find(step => step.key === 'pricing_click') || {};
+        const today = steps.find(step => step.key === 'today_click') || {};
+        const note = document.getElementById('report-growth-note');
+        if (note) {
+          note.textContent = `最近 ${response.days || period} 天：周报查看 ${view.events || 0} 次，分享率 ${formatPercent(share.rate_from_start || 0)}，下次训练承诺率 ${formatPercent(commitment.rate_from_start || 0)}，会员点击率 ${formatPercent(pricing.rate_from_start || 0)}，回训率 ${formatPercent(today.rate_from_start || 0)}。`;
+        }
+      } catch (error) {
+        console.error('加载周报增长闭环失败:', error);
+        const wrap = document.getElementById('report-growth-steps');
+        if (wrap) {
+          wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">加载失败</div><div class="today-funnel-value">-</div><div class="today-funnel-hint">请检查接口或权限</div></div>';
+        }
+      }
+    }
+
+    function renderReportGrowthSteps(steps) {
+      const wrap = document.getElementById('report-growth-steps');
+      if (!wrap) return;
+      if (!steps.length) {
+        wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">暂无数据</div><div class="today-funnel-value">0</div><div class="today-funnel-hint">周报事件尚未产生</div></div>';
+        return;
+      }
+
+      wrap.innerHTML = steps.map((step, index) => {
+        const hint = index === 0
+          ? `${step.users || 0} 个用户`
+          : `总转化 ${formatPercent(step.rate_from_start || 0)} · 上一步 ${formatPercent(step.rate_from_previous || 0)}`;
+        return `
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">${AdminUtils.escapeHtml(step.label || step.key)}</div>
+            <div class="today-funnel-value">${step.events || 0}</div>
+            <div class="today-funnel-hint">${AdminUtils.escapeHtml(hint)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderReportGrowthChart(daily) {
+      if (reportGrowthChart) {
+        reportGrowthChart.destroy();
+      }
+
+      const items = daily.length ? daily : [{
+        date: new Date(),
+        report_views: 0,
+        share_actions: 0,
+        next_commitments: 0,
+        pricing_clicks: 0,
+        today_clicks: 0
+      }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      const ctx = document.getElementById('reportGrowthChart');
+      if (!ctx) return;
+      reportGrowthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '查看周报',
+              data: items.map(item => item.report_views || 0),
+              borderColor: 'rgb(14, 165, 233)',
+              backgroundColor: 'rgba(14, 165, 233, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '分享/复制',
+              data: items.map(item => item.share_actions || 0),
+              borderColor: 'rgb(72, 187, 120)',
+              backgroundColor: 'rgba(72, 187, 120, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '训练承诺',
+              data: items.map(item => item.next_commitments || 0),
+              borderColor: 'rgb(245, 158, 11)',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '会员点击',
+              data: items.map(item => item.pricing_clicks || 0),
+              borderColor: 'rgb(99, 102, 241)',
+              backgroundColor: 'rgba(99, 102, 241, 0.12)',
+              borderDash: [5, 4],
+              tension: 0.35
+            },
+            {
+              label: '回到训练',
+              data: items.map(item => item.today_clicks || 0),
+              borderColor: 'rgb(15, 118, 110)',
+              backgroundColor: 'rgba(15, 118, 110, 0.12)',
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: true, position: 'bottom' } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+
+    function reportActionLabel(action) {
+      const labelMap = {
+        learning_report_view: '查看周报',
+        learning_report_shared: '系统分享',
+        learning_report_share_summary_copied: '复制摘要',
+        learning_report_invite_link_copied: '复制邀请链接',
+        learning_report_commitment_saved: '保存训练承诺',
+        learning_report_calendar_downloaded: '下载日历',
+        primary_today: '继续今日训练',
+        commitment_start_now: '现在开始',
+        practice_from_report: '进入跟读',
+        review_words: '复习词句',
+        report_upgrade_pricing: '建议区会员点击',
+        share_pricing_link: '分享区会员点击',
+        nav_pricing: '导航会员点击'
+      };
+      return labelMap[action] || action || 'unknown';
+    }
+
+    function renderReportActions(actions) {
+      const tbody = document.getElementById('report-actions-tbody');
+      if (!tbody) return;
+      if (!actions.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray-500);">暂无周报动作数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = actions.map(item => `
+        <tr>
+          <td>${AdminUtils.escapeHtml(reportActionLabel(item.action))}</td>
+          <td>${AdminUtils.escapeHtml(item.detail || '-')}</td>
+          <td>${item.events || 0}</td>
+          <td>${item.users || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadPricingFunnel() {
+      try {
+        const period = document.getElementById('pricing-funnel-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/pricing-funnel?days=${period}`);
+        const steps = response.steps || [];
+        const outcomes = response.outcomes || [];
+
+        renderPricingFunnelSteps(steps, outcomes);
+        renderPricingFunnelChart(response.daily || []);
+        renderPricingSources(response.sources || []);
+
+        const pageView = steps.find(step => step.key === 'page_view') || {};
+        const upgrade = steps.find(step => step.key === 'upgrade_click') || {};
+        const checkout = steps.find(step => step.key === 'checkout_started') || {};
+        const success = steps.find(step => step.key === 'success_view') || {};
+        const active = steps.find(step => step.key === 'entitlement_active') || {};
+        const authRequired = outcomes.find(item => item.key === 'auth_required') || {};
+        const error = outcomes.find(item => item.key === 'checkout_error') || {};
+        const entitlementError = outcomes.find(item => item.key === 'entitlement_error') || {};
+        const note = document.getElementById('pricing-funnel-note');
+        if (note) {
+          note.textContent = `最近 ${response.days || period} 天：访问 ${pageView.events || 0} 次 / ${pageView.users || 0} 个唯一访客或用户，升级点击率 ${formatPercent(upgrade.rate_from_start || 0)}，checkout 开始率 ${formatPercent(checkout.rate_from_start || 0)}，支付成功回访率 ${formatPercent(success.rate_from_start || 0)}，权益生效率 ${formatPercent(active.rate_from_start || 0)}，未登录拦截 ${authRequired.events || 0}，checkout 错误 ${error.events || 0}，权益异常 ${entitlementError.events || 0}。`;
+        }
+      } catch (error) {
+        console.error('加载定价页付费漏斗失败:', error);
+        const wrap = document.getElementById('pricing-funnel-steps');
+        if (wrap) {
+          wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">加载失败</div><div class="today-funnel-value">-</div><div class="today-funnel-hint">请检查接口或权限</div></div>';
+        }
+      }
+    }
+
+    function renderPricingFunnelSteps(steps, outcomes) {
+      const wrap = document.getElementById('pricing-funnel-steps');
+      if (!wrap) return;
+      const cards = [...steps, ...outcomes];
+      if (!cards.length) {
+        wrap.innerHTML = '<div class="today-funnel-item"><div class="today-funnel-label">暂无数据</div><div class="today-funnel-value">0</div><div class="today-funnel-hint">定价页事件尚未产生</div></div>';
+        return;
+      }
+
+      wrap.innerHTML = cards.map((step, index) => {
+        const isOutcome = index >= steps.length;
+        const hint = isOutcome
+          ? `访问占比 ${formatPercent(step.rate_from_start || 0)}`
+          : (index === 0
+            ? `${step.users || 0} 个唯一访客/用户`
+            : `上一步 ${formatPercent(step.rate_from_previous || 0)} · 总转化 ${formatPercent(step.rate_from_start || 0)}`);
+        return `
+          <div class="today-funnel-item">
+            <div class="today-funnel-label">${AdminUtils.escapeHtml(step.label || step.key)}</div>
+            <div class="today-funnel-value">${step.events || 0}</div>
+            <div class="today-funnel-hint">${AdminUtils.escapeHtml(hint)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderPricingFunnelChart(daily) {
+      if (pricingFunnelChart) {
+        pricingFunnelChart.destroy();
+      }
+
+      const items = daily.length ? daily : [{
+        date: new Date(),
+        page_views: 0,
+        upgrade_clicks: 0,
+        checkout_started: 0,
+        checkout_redirects: 0,
+        success_views: 0,
+        entitlement_active: 0,
+        cancelled_views: 0,
+        checkout_errors: 0
+      }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      const ctx = document.getElementById('pricingFunnelChart');
+      if (!ctx) return;
+      pricingFunnelChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '访问定价页',
+              data: items.map(item => item.page_views || 0),
+              borderColor: 'rgb(14, 165, 233)',
+              backgroundColor: 'rgba(14, 165, 233, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '点击升级',
+              data: items.map(item => item.upgrade_clicks || 0),
+              borderColor: 'rgb(72, 187, 120)',
+              backgroundColor: 'rgba(72, 187, 120, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '开始 checkout',
+              data: items.map(item => item.checkout_started || 0),
+              borderColor: 'rgb(99, 102, 241)',
+              backgroundColor: 'rgba(99, 102, 241, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '支付成功回访',
+              data: items.map(item => item.success_views || 0),
+              borderColor: 'rgb(245, 158, 11)',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '权益确认生效',
+              data: items.map(item => item.entitlement_active || 0),
+              borderColor: 'rgb(16, 185, 129)',
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              tension: 0.35
+            },
+            {
+              label: '取消/错误',
+              data: items.map(item => (item.cancelled_views || 0) + (item.checkout_errors || 0) + (item.entitlement_errors || 0)),
+              borderColor: 'rgb(220, 38, 38)',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              borderDash: [6, 4],
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderPricingSources(sources) {
+      const tbody = document.getElementById('pricing-sources-tbody');
+      if (!tbody) return;
+      if (!sources.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--gray-500);">暂无来源数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = sources.map(item => `
+        <tr>
+          <td>${AdminUtils.escapeHtml(item.source || 'direct')}</td>
+          <td>${AdminUtils.escapeHtml(item.intent || '-')}</td>
+          <td>${item.page_views || 0}</td>
+          <td>${item.page_view_users || 0}</td>
+          <td>${formatPercent(item.user_upgrade_rate || item.upgrade_rate || 0)}</td>
+          <td>${item.checkout_started || 0}</td>
+          <td>${item.success_views || 0}</td>
+          <td>${item.entitlement_active || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadTeamLeads() {
+      try {
+        const period = document.getElementById('team-leads-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/team-leads?days=${period}`);
+        const summary = response.summary || {};
+        const daily = response.daily || [];
+        const recent = response.recent || [];
+
+        document.getElementById('team-leads-total').textContent = summary.total_leads || 0;
+        document.getElementById('team-leads-total-hint').textContent = `唯一联系人 ${summary.unique_contacts || 0}`;
+        document.getElementById('team-leads-qualified').textContent = (summary.qualified_leads || 0) + (summary.won_leads || 0);
+        document.getElementById('team-leads-new').textContent = summary.new_leads || 0;
+        document.getElementById('team-leads-won').textContent = summary.won_leads || 0;
+
+        renderTeamLeadsChart(daily);
+        renderTeamLeadRows(recent);
+
+        const note = document.getElementById('team-leads-note');
+        if (note) {
+          note.textContent = `最近 ${response.days || period} 天：团队线索 ${summary.total_leads || 0} 条，已联系 ${summary.contacted_leads || 0}，合格 ${summary.qualified_leads || 0}，成交 ${summary.won_leads || 0}。`;
+        }
+      } catch (error) {
+        console.error('加载团队线索失败:', error);
+        const tbody = document.getElementById('team-leads-tbody');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray-500);">加载失败</td></tr>';
+        }
+      }
+    }
+
+    function renderTeamLeadsChart(daily) {
+      if (teamLeadsChart) {
+        teamLeadsChart.destroy();
+      }
+
+      const items = daily.length ? daily : [{ date: new Date(), leads: 0, qualified_or_won: 0 }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      const ctx = document.getElementById('teamLeadsChart');
+      if (!ctx) return;
+      teamLeadsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '团队线索',
+              data: items.map(item => item.leads || 0),
+              backgroundColor: 'rgba(14, 165, 233, 0.75)',
+              borderRadius: 6
+            },
+            {
+              label: '合格/成交',
+              data: items.map(item => item.qualified_or_won || 0),
+              backgroundColor: 'rgba(72, 187, 120, 0.75)',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'bottom' } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            }
+          }
+        }
+      });
+    }
+
+    function teamLeadStatusLabel(status) {
+      const labelMap = {
+        new: '待跟进',
+        contacted: '已联系',
+        qualified: '合格',
+        won: '成交',
+        lost: '无效'
+      };
+      return labelMap[status] || status || 'new';
+    }
+
+    function renderTeamLeadRows(items) {
+      const tbody = document.getElementById('team-leads-tbody');
+      if (!tbody) return;
+      if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray-500);">暂无团队线索</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = items.map(item => `
+        <tr>
+          <td>
+            <div>${AdminUtils.escapeHtml(item.organization || '-')}</div>
+            <div style="font-size: 0.75rem; color: var(--gray-500);">${AdminUtils.escapeHtml(item.name || '')} · ${AdminUtils.escapeHtml(item.email || '')}</div>
+          </td>
+          <td>${AdminUtils.escapeHtml(item.team_size || '-')}</td>
+          <td>${AdminUtils.escapeHtml(item.source || 'pricing')}</td>
+          <td>${AdminUtils.escapeHtml(teamLeadStatusLabel(item.status))}</td>
+        </tr>
+      `).join('');
+    }
+
+    // A/B 测试概览
+    async function loadABTestSummary() {
+      try {
+        const period = document.getElementById('ab-test-period').value;
+        const response = await AdminAPI.get(`/admin/analytics/ab-test?days=${period}&test=ab_cta_copy_v1`);
+        const items = response.items || [];
+        const tbody = document.getElementById('ab-test-tbody');
+
+        if (!items.length) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--gray-500);">暂无数据</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = items.map(item => `
+          <tr>
+            <td>${AdminUtils.escapeHtml(item.variant)}</td>
+            <td>${item.exposures}</td>
+            <td>${item.users}</td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('加载 A/B 测试概览失败:', error);
+        const tbody = document.getElementById('ab-test-tbody');
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--danger-color);">加载失败</td></tr>';
+      }
+    }
+
+    async function loadAiUsage() {
+      const period = document.getElementById('ai-usage-period').value;
+      const response = await AdminAPI.get(`/admin/usage/ai?days=${period}`);
+      const usage = response.usage || {};
+      const today = response.today || {};
+      const costs = response.costs || {};
+      const assumptions = response.assumptions || {};
+      const daily = response.daily || [];
+      const topUsers = response.top_users || [];
+      const quotaBreakdown = response.quota_breakdown || [];
+
+      document.getElementById('ai-total-calls').textContent = usage.total_ai_calls || 0;
+      document.getElementById('ai-total-calls-hint').textContent =
+        `今日 ${today.total_ai_calls || 0} 次 · 打分 ${usage.ai_score_requests || 0} · 单词 ${usage.word_deep_generations || 0} · 发音 ${usage.pronunciation_assessments || 0} · 拦截 ${usage.quota_limit_reached || 0}`;
+      document.getElementById('ai-total-cost').textContent = formatCostCents(costs.estimated_total_cost_cents || 0);
+      document.getElementById('ai-cost-hint').textContent =
+        `AI 打分 ${formatCostCents(costs.ai_score_cost_cents || 0)} · 单词估算 ${formatCostCents(costs.deep_word_estimated_cost_cents || 0)}`;
+      document.getElementById('ai-active-users').textContent = usage.active_ai_users || 0;
+      document.getElementById('ai-active-users-hint').textContent = `今日 ${today.active_ai_users || 0} 人使用 AI 能力`;
+      document.getElementById('ai-unpriced-calls').textContent = costs.unpriced_calls || 0;
+
+      const note = document.getElementById('ai-usage-note');
+      const hasEstimate = (assumptions.deep_word_estimated_cost_cents || 0) > 0
+        || (assumptions.pronunciation_estimated_cost_cents || 0) > 0;
+      note.textContent = hasEstimate
+        ? `成本包含 ai_scores.cost_cents 与环境变量估算值；额度拦截 ${usage.quota_limit_reached || 0} 次；周期：最近 ${response.days || period} 天。`
+        : `当前仅 AI 打分有真实成本记录；额度拦截 ${usage.quota_limit_reached || 0} 次；周期：最近 ${response.days || period} 天。`;
+
+      renderAiUsageChart(daily);
+      renderAiQuotaBreakdown(quotaBreakdown);
+      renderAiTopUsers(topUsers);
+    }
+
+    async function loadSubscriptionBusiness() {
+      const period = document.getElementById('subscription-business-period').value;
+      const response = await AdminAPI.get(`/admin/subscriptions/business?days=${period}`);
+      const revenue = response.revenue || {};
+      const subscriptions = response.subscriptions || {};
+      const events = response.events || {};
+      const estimatedMrr = response.estimated_mrr || {};
+      const daily = response.daily || [];
+      const variants = response.variants || [];
+
+      document.getElementById('subscription-period-revenue').textContent = formatCostCents(revenue.period_revenue_cents || 0);
+      document.getElementById('subscription-period-revenue-hint').textContent =
+        `${revenue.period_payment_count || 0} 笔支付 · ${revenue.period_paying_users || 0} 个付费用户 · 客单 ${formatCostCents(revenue.period_avg_payment_cents || 0)}`;
+      document.getElementById('subscription-estimated-mrr').textContent = estimatedMrr.configured
+        ? formatCostCents(estimatedMrr.amount_cents || 0)
+        : '未配置';
+      document.getElementById('subscription-estimated-mrr-hint').textContent = estimatedMrr.configured
+        ? `${estimatedMrr.unmapped_active_subscriptions || 0} 个活跃订阅未匹配价格`
+        : '配置价格和 variant 后启用估算';
+      document.getElementById('subscription-active-count').textContent = subscriptions.active_subscriptions || 0;
+      document.getElementById('subscription-active-hint').textContent =
+        `付费会员 ${subscriptions.paid_members || 0} · 付费转化 ${subscriptions.paid_conversion_rate || 0}%`;
+      const riskCount = (subscriptions.cancelling_at_period_end || 0) + (subscriptions.billing_issues || 0) + (events.failed_events || 0);
+      document.getElementById('subscription-risk-count').textContent = riskCount;
+      document.getElementById('subscription-risk-hint').textContent =
+        `取消 ${subscriptions.cancelling_at_period_end || 0} · 账单异常 ${subscriptions.billing_issues || 0} · Webhook失败 ${events.failed_events || 0}`;
+
+      const note = document.getElementById('subscription-business-note');
+      note.textContent = `周期：最近 ${response.days || period} 天 · 新增订阅 ${events.new_subscriptions || 0} · 取消 ${events.cancellations || 0} · 过期 ${events.expirations || 0}`;
+
+      renderSubscriptionBusinessChart(daily);
+      renderSubscriptionVariants(variants);
+    }
+
+    function renderSubscriptionBusinessChart(daily) {
+      if (subscriptionBusinessChart) {
+        subscriptionBusinessChart.destroy();
+      }
+
+      const items = daily.length ? daily : [{ date: new Date(), revenue_cents: 0, new_subscriptions: 0, cancellations: 0 }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      const ctx = document.getElementById('subscriptionBusinessChart');
+      subscriptionBusinessChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '收入($)',
+              data: items.map(item => ((Number(item.revenue_cents) || 0) / 100).toFixed(2)),
+              backgroundColor: 'rgba(72, 187, 120, 0.72)',
+              borderRadius: 6,
+              yAxisID: 'y'
+            },
+            {
+              type: 'line',
+              label: '新增订阅',
+              data: items.map(item => item.new_subscriptions || 0),
+              borderColor: 'rgb(14, 165, 233)',
+              backgroundColor: 'rgba(14, 165, 233, 0.12)',
+              tension: 0.35,
+              yAxisID: 'y1'
+            },
+            {
+              type: 'line',
+              label: '取消',
+              data: items.map(item => item.cancellations || 0),
+              borderColor: 'rgb(220, 38, 38)',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              tension: 0.35,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: '收入($)' }
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'right',
+              ticks: { precision: 0 },
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: '订阅事件' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderSubscriptionVariants(variants) {
+      const tbody = document.getElementById('subscription-variants-tbody');
+      if (!variants.length) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--gray-500);">暂无活跃订阅</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = variants.map(item => `
+        <tr>
+          <td>${AdminUtils.escapeHtml(item.variant_id || 'unknown')}</td>
+          <td>${item.subscriptions || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAiUsageChart(daily) {
+      if (aiUsageChart) {
+        aiUsageChart.destroy();
+      }
+
+      const items = daily.length ? daily : [{ date: new Date(), total_ai_calls: 0, estimated_total_cost_cents: 0 }];
+      const labels = items.map(item => {
+        const date = new Date(item.date);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      const ctx = document.getElementById('aiUsageChart');
+      aiUsageChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'AI 调用',
+              data: items.map(item => item.total_ai_calls || 0),
+              backgroundColor: 'rgba(14, 165, 233, 0.75)',
+              borderRadius: 6,
+              yAxisID: 'y'
+            },
+            {
+              label: 'AI 打分',
+              data: items.map(item => item.ai_score_requests || 0),
+              backgroundColor: 'rgba(72, 187, 120, 0.72)',
+              borderRadius: 6,
+              yAxisID: 'y'
+            },
+            {
+              type: 'line',
+              label: '成本($)',
+              data: items.map(item => ((Number(item.estimated_total_cost_cents) || 0) / 100).toFixed(2)),
+              borderColor: 'rgb(237, 137, 54)',
+              backgroundColor: 'rgba(237, 137, 54, 0.12)',
+              tension: 0.35,
+              yAxisID: 'y1'
+            },
+            {
+              type: 'line',
+              label: '额度拦截',
+              data: items.map(item => item.quota_limit_reached || 0),
+              borderColor: 'rgb(220, 38, 38)',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              borderDash: [6, 4],
+              tension: 0.35,
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 },
+              title: { display: true, text: '调用次数' }
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: '成本($)' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderAiTopUsers(users) {
+      const tbody = document.getElementById('ai-top-users-tbody');
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray-500);">暂无 AI 用量数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(user => {
+        const displayName = AdminUtils.escapeHtml(user.username || user.email || `User #${user.user_id}`);
+        const email = user.email ? `<div style="font-size: 0.75rem; color: var(--gray-500);">${AdminUtils.escapeHtml(user.email)}</div>` : '';
+        const membership = AdminUtils.escapeHtml(user.membership_type || 'free');
+        return `
+          <tr>
+            <td><div>${displayName}</div>${email}</td>
+            <td><span class="admin-badge admin-badge-secondary">${membership}</span></td>
+            <td>${user.total_ai_calls || 0}</td>
+            <td style="font-size: 0.8rem; color: var(--gray-600);">
+              打分 ${user.ai_score_requests || 0} · 单词 ${user.word_deep_generations || 0} · 发音 ${user.pronunciation_assessments || 0} · 拦截 ${user.quota_limit_reached || 0}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function quotaFeatureLabel(feature) {
+      const labels = {
+        pronunciation: '发音评测',
+        ai_score: 'AI 口语打分',
+        word_deep: '单词深度解析',
+        unknown: '未标记功能'
+      };
+      return labels[feature] || feature || '未标记功能';
+    }
+
+    function renderAiQuotaBreakdown(items) {
+      const tbody = document.getElementById('ai-quota-breakdown-tbody');
+      if (!tbody) return;
+      if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--gray-500);">暂无额度拦截</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = items.map(item => `
+        <tr>
+          <td>${AdminUtils.escapeHtml(quotaFeatureLabel(item.feature))}</td>
+          <td>${item.events || 0}</td>
+          <td>${item.today_events || 0}</td>
+          <td>${item.users || 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    // 导出TOP用户
+    function exportTopUsers() {
+      const tbody = document.getElementById('top-users-tbody');
+      const rows = tbody.querySelectorAll('tr');
+
+      const data = Array.from(rows).map(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 5) return null;
+        return {
+          '排名': cells[0].textContent.trim(),
+          '用户': cells[1].textContent.trim(),
+          '会员状态': cells[2].textContent.trim(),
+          '活跃天数': cells[3].textContent.trim(),
+          '最后登录': cells[4].textContent.trim()
+        };
+      }).filter(Boolean);
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      AdminUtils.exportToCSV(data, `linglish-top-users-${timestamp}.csv`);
+    }
+
+    // 页面加载后执行
+    refreshAnalytics();
+  </script>
+</body>
+</html>

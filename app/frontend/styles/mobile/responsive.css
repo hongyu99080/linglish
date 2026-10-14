@@ -1,0 +1,53 @@
+/* Responsive Adjustments - Media Queries and Safe Area Support */
+
+/* Responsive Adjustments for Small Screens */
+@media (max-width: 375px) {
+  .lesson-card {
+    min-width: 240px;
+  }
+
+  .challenges-banner {
+    padding: 16px;
+  }
+
+  .banner-icon {
+    display: none;
+  }
+
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid-detailed {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card-large {
+    padding: 16px;
+  }
+
+  .stat-icon-large {
+    font-size: 40px;
+    width: 60px;
+    height: 60px;
+  }
+
+  .stat-number-hero {
+    font-size: 28px;
+  }
+}
+
+/* Safe Area Support for Notched Devices */
+@supports (padding: max(0px)) {
+  .mobile-header {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .bottom-nav {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  body {
+    padding-bottom: max(70px, calc(70px + env(safe-area-inset-bottom)));
+  }
+}

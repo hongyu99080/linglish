@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="颜色与形状画室场景插图">
+  <!-- 画室墙与地板 -->
+  <rect x="0" y="0" width="800" height="440" fill="#fdf4e3"/>
+  <rect x="0" y="440" width="800" height="160" fill="#d9ab6e"/>
+  <line x1="0" y1="440" x2="800" y2="440" stroke="#c69759" stroke-width="3"/>
+
+  <!-- 墙上形状展板(左) -->
+  <rect x="36" y="36" width="300" height="230" rx="10" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+  <circle cx="102" cy="96" r="30" fill="none" stroke="#ef5350" stroke-width="7"/>
+  <rect x="156" y="66" width="60" height="60" fill="none" stroke="#4a76a8" stroke-width="7"/>
+  <polygon points="282,64 312,124 252,124" fill="none" stroke="#2fae74" stroke-width="7"/>
+  <path d="M92 172 l9 20 22 2 -16 15 5 22 -20 -12 -20 12 5 -22 -16 -15 22 -2 Z" fill="#f2b73f" stroke="#d09a28" stroke-width="3"/>
+  <path d="M186 200 a13 13 0 0 1 24 -8 a13 13 0 0 1 24 8 q0 16 -24 32 q-24 -16 -24 -32 Z" fill="#ef5350" stroke="#c73835" stroke-width="3"/>
+  <path d="M252 168 q22 16 44 0 q-10 24 10 34" fill="none" stroke="#8f62ad" stroke-width="6"/>
+  <circle cx="318" cy="230" r="8" fill="#2d2f3a"/>
+
+  <!-- 大画架(中):画布上彩虹配色条 -->
+  <g>
+    <polygon points="392,470 430,120 444,120 482,470" fill="#c98d4e" stroke="#a9683a" stroke-width="4"/>
+    <line x1="437" y1="140" x2="437" y2="470" stroke="#a9683a" stroke-width="6"/>
+    <rect x="352" y="130" width="172" height="220" fill="#ffffff" stroke="#a9683a" stroke-width="5"/>
+    <rect x="368" y="148" width="140" height="24" rx="6" fill="#ef5350"/>
+    <rect x="368" y="178" width="140" height="24" rx="6" fill="#f2946d"/>
+    <rect x="368" y="208" width="140" height="24" rx="6" fill="#ffd66b"/>
+    <rect x="368" y="238" width="140" height="24" rx="6" fill="#8fd18f"/>
+    <rect x="368" y="268" width="140" height="24" rx="6" fill="#7fb7ef"/>
+    <rect x="368" y="298" width="140" height="24" rx="6" fill="#b98fd1"/>
+    <rect x="352" y="352" width="172" height="14" fill="#c98d4e"/>
+  </g>
+
+  <!-- 调色盘(右上):黑白灰金银粉棕 -->
+  <g>
+    <path d="M582 84 a86 66 0 1 0 118 62 q-8 -12 -28 -8 a26 20 0 0 1 -30 -26 q2 -22 -20 -28 a86 66 0 0 0 -40 0 Z" fill="#f7dfb2" stroke="#c98d4e" stroke-width="4"/>
+    <circle cx="600" cy="118" r="13" fill="#2d2f3a"/>
+    <circle cx="636" cy="104" r="13" fill="#fefefe" stroke="#c9c9c9" stroke-width="2"/>
+    <circle cx="672" cy="112" r="13" fill="#9aa0a6"/>
+    <circle cx="596" cy="154" r="13" fill="#f2b73f"/>
+    <circle cx="628" cy="170" r="13" fill="#c9d2e0"/>
+    <circle cx="664" cy="162" r="13" fill="#ef9fae"/>
+    <circle cx="618" cy="136" r="12" fill="#8a5a33"/>
+  </g>
+
+  <!-- 明暗对比灯(右中):亮灯泡 vs 暗月亮 -->
+  <g>
+    <rect x="566" y="238" width="196" height="96" rx="12" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+    <line x1="664" y1="238" x2="664" y2="334" stroke="#d9b98c" stroke-width="3"/>
+    <circle cx="614" cy="278" r="24" fill="#ffd66b" stroke="#d09a28" stroke-width="3"/>
+    <g stroke="#f2b73f" stroke-width="4">
+      <line x1="614" y1="242" x2="614" y2="230"/><line x1="614" y1="314" x2="614" y2="326"/>
+      <line x1="578" y1="278" x2="590" y2="278"/><line x1="650" y1="278" x2="638" y2="278"/>
+    </g>
+    <rect x="678" y="252" width="72" height="66" rx="8" fill="#31446b"/>
+    <path d="M726 262 a22 22 0 1 0 10 40 a18 18 0 0 1 -10 -40 Z" fill="#ffd66b"/>
+  </g>
+
+  <!-- 大象与小鼠海报:big/small + grey(墙右下) -->
+  <g>
+    <rect x="566" y="352" width="196" height="74" rx="10" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+    <ellipse cx="626" cy="396" rx="36" ry="24" fill="#9aa0a6"/>
+    <circle cx="662" cy="382" r="15" fill="#9aa0a6"/>
+    <path d="M674 386 q14 4 10 20" fill="none" stroke="#9aa0a6" stroke-width="7"/>
+    <circle cx="666" cy="378" r="2.5" fill="#2d2f3a"/>
+    <rect x="606" y="416" width="9" height="10" fill="#8b8fa3"/><rect x="638" y="416" width="9" height="10" fill="#8b8fa3"/>
+    <ellipse cx="728" cy="410" rx="13" ry="9" fill="#c9a68a"/>
+    <circle cx="740" cy="404" r="6" fill="#c9a68a"/>
+    <path d="M714 412 q-8 4 -4 10" fill="none" stroke="#c9a68a" stroke-width="3"/>
+    <circle cx="742" cy="402" r="1.5" fill="#2d2f3a"/>
+  </g>
+
+  <!-- 长短铅笔架(左中) -->
+  <g>
+    <rect x="46" y="306" width="250" height="84" rx="10" fill="#ffffff" stroke="#d9b98c" stroke-width="4"/>
+    <g transform="translate(62 330)">
+      <rect x="0" y="0" width="180" height="13" rx="3" fill="#8fd18f" stroke="#5aa35a" stroke-width="2"/>
+      <polygon points="180,0 198,6.5 180,13" fill="#f7dfb2" stroke="#5aa35a" stroke-width="2"/>
+    </g>
+    <g transform="translate(62 362)">
+      <rect x="0" y="0" width="70" height="13" rx="3" fill="#ef9fae" stroke="#d9808f" stroke-width="2"/>
+      <polygon points="70,0 88,6.5 70,13" fill="#f7dfb2" stroke="#d9808f" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- 地面:颜料桶一排(红蓝绿黄橙紫) -->
+  <g>
+    <g transform="translate(56 484)"><path d="M0 14 h44 l-5 44 h-34 Z" fill="#ef5350" stroke="#c73835" stroke-width="3"/><ellipse cx="22" cy="14" rx="22" ry="8" fill="#ff8a80" stroke="#c73835" stroke-width="3"/></g>
+    <g transform="translate(124 484)"><path d="M0 14 h44 l-5 44 h-34 Z" fill="#7fb7ef" stroke="#4a76a8" stroke-width="3"/><ellipse cx="22" cy="14" rx="22" ry="8" fill="#a8cff5" stroke="#4a76a8" stroke-width="3"/></g>
+    <g transform="translate(192 484)"><path d="M0 14 h44 l-5 44 h-34 Z" fill="#8fd18f" stroke="#5aa35a" stroke-width="3"/><ellipse cx="22" cy="14" rx="22" ry="8" fill="#b5e0b5" stroke="#5aa35a" stroke-width="3"/></g>
+    <g transform="translate(260 484)"><path d="M0 14 h44 l-5 44 h-34 Z" fill="#ffd66b" stroke="#d09a28" stroke-width="3"/><ellipse cx="22" cy="14" rx="22" ry="8" fill="#ffe9a8" stroke="#d09a28" stroke-width="3"/></g>
+    <g transform="translate(328 484)"><path d="M0 14 h44 l-5 44 h-34 Z" fill="#f2946d" stroke="#d0794a" stroke-width="3"/><ellipse cx="22" cy="14" rx="22" ry="8" fill="#f7b795" stroke="#d0794a" stroke-width="3"/></g>
+    <g transform="translate(396 484)"><path d="M0 14 h44 l-5 44 h-34 Z" fill="#b98fd1" stroke="#8f62ad" stroke-width="3"/><ellipse cx="22" cy="14" rx="22" ry="8" fill="#d5b8e5" stroke="#8f62ad" stroke-width="3"/></g>
+  </g>
+
+  <!-- 圆形地毯(round)+ 摊平的纸(flat)(右下地面) -->
+  <ellipse cx="560" cy="516" rx="64" ry="30" fill="#ef9fae" stroke="#d9808f" stroke-width="4"/>
+  <ellipse cx="560" cy="516" rx="40" ry="18" fill="#fce4e3"/>
+  <g>
+    <rect x="660" y="492" width="104" height="66" rx="4" fill="#ffffff" stroke="#d9c9a8" stroke-width="3" transform="rotate(-4 712 525)"/>
+    <path d="M676 512 h70 M676 526 h70 M676 540 h52" stroke="#e3d8bd" stroke-width="3" transform="rotate(-4 712 525)"/>
+  </g>
+</svg>

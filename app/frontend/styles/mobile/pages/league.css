@@ -1,0 +1,831 @@
+/**
+ * League System Styles
+ * 联赛系统样式
+ */
+
+/* ============================================================================
+   Container & Loading
+   ============================================================================ */
+
+#league-container {
+  min-height: 100vh;
+  padding-bottom: 80px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.league-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+}
+
+.league-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0ea5e9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   Not Joined State
+   ============================================================================ */
+
+.league-not-joined {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 32px;
+  text-align: center;
+}
+
+.league-not-joined .not-joined-icon {
+  font-size: 72px;
+  margin-bottom: 24px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.league-not-joined h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.league-not-joined p {
+  font-size: 16px;
+  color: #64748b;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.btn-join-league {
+  padding: 16px 48px;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #0ea5e9, #2dd4bf);
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.btn-join-league:active {
+  transform: scale(0.98);
+}
+
+/* ============================================================================
+   League Header
+   ============================================================================ */
+
+.league-header {
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-radius: 0 0 24px 24px;
+}
+
+.tier-badge-large {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+.tier-badge-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.tier-info {
+  flex: 1;
+}
+
+.tier-name {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.tier-name-en {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.rank-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.current-rank,
+.weekly-xp {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.rank-label,
+.xp-label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rank-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.xp-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0ea5e9;
+}
+
+/* ============================================================================
+   Progress Bar Section
+   ============================================================================ */
+
+.league-progress-section {
+  margin: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.zone-badge {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  border-radius: 20px;
+}
+
+.group-info {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.league-progress-bar {
+  position: relative;
+  height: 32px;
+  display: flex;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.progress-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.progress-zone.promotion-zone {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.progress-zone.safe-zone {
+  background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+}
+
+.progress-zone.demotion-zone {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.zone-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.progress-marker {
+  position: absolute;
+  top: -8px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+}
+
+.marker-dot {
+  width: 16px;
+  height: 16px;
+  background: #1e293b;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.marker-rank {
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  background: #1e293b;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.progress-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-dot.promotion {
+  background: #10b981;
+}
+
+.legend-dot.demotion {
+  background: #ef4444;
+}
+
+/* ============================================================================
+   Season Countdown
+   ============================================================================ */
+
+.season-countdown {
+  margin: 0 20px 20px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.countdown-icon {
+  font-size: 28px;
+}
+
+.countdown-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.countdown-label {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.countdown-time {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* ============================================================================
+   Leaderboard
+   ============================================================================ */
+
+.league-leaderboard {
+  margin: 0 20px 20px;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.leaderboard-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.btn-refresh {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0ea5e9;
+  background: #eef2ff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-refresh:active {
+  background: #e0e7ff;
+}
+
+.leaderboard-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.league-leaderboard-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* Leaderboard Item */
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  gap: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.leaderboard-item:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-item.current-user {
+  background: #fef3c7;
+}
+
+.leaderboard-item.promotion {
+  border-left: 3px solid #10b981;
+}
+
+.leaderboard-item.demotion {
+  border-left: 3px solid #ef4444;
+}
+
+.item-rank {
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.rank-icon {
+  font-size: 20px;
+}
+
+.rank-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.item-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #0ea5e9, #2dd4bf);
+  border-radius: 50%;
+}
+
+.item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-username {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-level {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.item-xp {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.item-xp .xp-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0ea5e9;
+}
+
+.item-xp .xp-label {
+  font-size: 10px;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+/* ============================================================================
+   Rewards Preview
+   ============================================================================ */
+
+.rewards-preview {
+  margin: 0 20px 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.rewards-preview h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px;
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.reward-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.reward-card.current {
+  background: #f8fafc;
+}
+
+.reward-card.promotion {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-color: #a7f3d0;
+}
+
+.reward-tier-badge {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  border-radius: 20px;
+}
+
+.reward-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.reward-icon {
+  font-size: 16px;
+}
+
+.reward-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.reward-label {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* ============================================================================
+   Tier Badges Gallery
+   ============================================================================ */
+
+.tier-badges-gallery {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+}
+
+.tier-badge-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: all 0.3s;
+}
+
+.tier-badge-small.active {
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tier-badge-small.bronze { background: linear-gradient(135deg, #CD7F32, #B87333); }
+.tier-badge-small.silver { background: linear-gradient(135deg, #C0C0C0, #A8A8A8); }
+.tier-badge-small.gold { background: linear-gradient(135deg, #FFD700, #FFA500); }
+.tier-badge-small.diamond { background: linear-gradient(135deg, #B9F2FF, #87CEEB); }
+.tier-badge-small.master { background: linear-gradient(135deg, #9B30FF, #7B1FA2); }
+
+/* ============================================================================
+   Rank Change Animations
+   ============================================================================ */
+
+@keyframes rank-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes rank-down {
+  0% { transform: translateY(-20px); opacity: 0; }
+  50% { transform: translateY(5px); }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.rank-change-up {
+  animation: rank-up 0.5s ease-out;
+}
+
+.rank-change-down {
+  animation: rank-down 0.5s ease-out;
+}
+
+.rank-change-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.rank-change-indicator.up {
+  color: #10b981;
+}
+
+.rank-change-indicator.down {
+  color: #ef4444;
+}
+
+/* ============================================================================
+   League Promotion/Demotion Modal
+   ============================================================================ */
+
+.league-result-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.league-result-content {
+  background: white;
+  border-radius: 24px;
+  padding: 32px;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+  animation: modal-appear 0.4s ease-out;
+}
+
+.league-result-content.promotion {
+  background: linear-gradient(180deg, #ecfdf5 0%, white 50%);
+}
+
+.league-result-content.demotion {
+  background: linear-gradient(180deg, #fef2f2 0%, white 50%);
+}
+
+.result-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.result-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.promotion .result-title {
+  color: #059669;
+}
+
+.demotion .result-title {
+  color: #dc2626;
+}
+
+.result-description {
+  font-size: 16px;
+  color: #64748b;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.new-tier-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.new-tier-badge {
+  width: 48px;
+  height: 48px;
+}
+
+.new-tier-badge img {
+  width: 100%;
+  height: 100%;
+}
+
+.new-tier-name {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.result-close-btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #0ea5e9, #2dd4bf);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+/* ============================================================================
+   Responsive Adjustments
+   ============================================================================ */
+
+@media (max-width: 360px) {
+  .league-header {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .tier-badge-large {
+    width: 56px;
+    height: 56px;
+  }
+
+  .tier-name {
+    font-size: 20px;
+  }
+
+  .rank-value {
+    font-size: 20px;
+  }
+
+  .rewards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================================
+   Dark Mode Support
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  #league-container {
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  }
+
+  .league-not-joined h2,
+  .tier-name,
+  .rank-value,
+  .countdown-time,
+  .leaderboard-header h3,
+  .item-username,
+  .rewards-preview h3,
+  .reward-amount {
+    color: #f1f5f9;
+  }
+
+  .league-not-joined p,
+  .tier-name-en,
+  .rank-label,
+  .group-info,
+  .countdown-label,
+  .legend-item,
+  .item-level,
+  .reward-label {
+    color: #94a3b8;
+  }
+
+  .league-progress-section,
+  .season-countdown,
+  .league-leaderboard,
+  .rewards-preview {
+    background: #1e293b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .leaderboard-header,
+  .leaderboard-item {
+    border-color: #334155;
+  }
+
+  .leaderboard-item.current-user {
+    background: #422006;
+  }
+
+  .reward-card {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  .reward-card.promotion {
+    background: linear-gradient(135deg, #064e3b, #065f46);
+    border-color: #059669;
+  }
+}

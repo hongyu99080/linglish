@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linglish</title>
+  <meta http-equiv="refresh" content="0; url=router.html" />
+  <script>
+    // Skip welcome page: redirect straight to router.html (preserve query/hash)
+    (function () {
+      try {
+        const target = new URL('router.html', window.location.href);
+        target.search = window.location.search;
+        target.hash = window.location.hash;
+        window.location.replace(target.toString());
+      } catch (_) {
+        window.location.href = 'router.html';
+      }
+    })();
+  </script>
+</head>
+<body></body>
+</html>

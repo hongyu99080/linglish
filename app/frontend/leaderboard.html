@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>排行榜 - Linglish</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="./styles/tokens.css?v=1">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--lx-font-body, 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif);
+      background: linear-gradient(135deg, #0f766e 0%, #0d9488 40%, #0284c7 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 25px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid transparent;
+    }
+
+    .tab.active {
+      background: white;
+      color: #0f766e;
+      font-weight: bold;
+    }
+
+    .tab:hover:not(.active) {
+      background: rgba(255,255,255,0.3);
+      border-color: white;
+    }
+
+    .leaderboard {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .leaderboard-header {
+      background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .leaderboard-title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .leaderboard-subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 20px;
+      padding: 40px 20px;
+      background: linear-gradient(180deg, #f8f9fa 0%, white 100%);
+    }
+
+    .podium-place {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 150px;
+    }
+
+    .podium-place.first {
+      order: 2;
+    }
+
+    .podium-place.second {
+      order: 1;
+    }
+
+    .podium-place.third {
+      order: 3;
+    }
+
+    .podium-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      position: relative;
+    }
+
+    .podium-place.first .podium-avatar {
+      width: 100px;
+      height: 100px;
+      font-size: 40px;
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    }
+
+    .podium-medal {
+      position: absolute;
+      bottom: -10px;
+      right: -10px;
+      width: 30px;
+      height: 30px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .podium-name {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+      text-align: center;
+    }
+
+    .podium-score {
+      color: #0f766e;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .rankings-list {
+      padding: 20px 0;
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      padding: 15px 30px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.3s;
+    }
+
+    .ranking-item:hover {
+      background: #f8f9fa;
+    }
+
+    .ranking-item.current-user {
+      background: #fff8e1;
+      border-left: 4px solid #ffd700;
+    }
+
+    .rank-number {
+      font-size: 20px;
+      font-weight: bold;
+      color: #999;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .rank-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      margin: 0 20px;
+    }
+
+    .rank-info {
+      flex: 1;
+    }
+
+    .rank-name {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .rank-level {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .rank-score {
+      font-size: 18px;
+      font-weight: bold;
+      color: #0f766e;
+      min-width: 100px;
+      text-align: right;
+    }
+
+    .rank-change {
+      margin-left: 15px;
+      font-size: 14px;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .rank-change.up {
+      color: #10b981;
+    }
+
+    .rank-change.down {
+      color: #ef4444;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #999;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0d9488;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .back-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: white;
+      color: #0f766e;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .back-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 30px rgba(0,0,0,0.3);
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 24px;
+      }
+      .podium {
+        flex-direction: column;
+        align-items: center;
+      }
+      .podium-place {
+        order: 0 !important;
+      }
+      .ranking-item {
+        padding: 15px;
+      }
+      .rank-number {
+        min-width: 40px;
+        font-size: 16px;
+      }
+      .rank-avatar {
+        width: 40px;
+        height: 40px;
+        margin: 0 10px;
+      }
+      .back-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+      }
+    }
+
+    /* 个人目标快捷入口 */
+    .goals-shortcut {
+      position: fixed;
+      bottom: 100px;
+      right: 30px;
+      background: white;
+      padding: 12px 20px;
+      border-radius: 25px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .goals-shortcut:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 30px rgba(0,0,0,0.3);
+    }
+
+    .goals-icon {
+      font-size: 20px;
+    }
+
+    .goals-text {
+      font-weight: bold;
+      color: #0f766e;
+    }
+
+    .goals-badge {
+      background: #ef4444;
+      color: white;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    /* 目标面板 */
+    .goals-panel-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .goals-panel-overlay.show {
+      display: flex;
+    }
+
+    .goals-panel {
+      background: white;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .goals-panel-header {
+      background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .goals-panel-title {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .goals-panel-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .goals-panel-content {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .goals-section {
+      margin-bottom: 24px;
+    }
+
+    .goals-section-title {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .goal-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .goal-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .goal-card-title {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .goal-card-badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .goal-card-badge.easy {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .goal-card-badge.medium {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .goal-card-badge.hard {
+      background: #fce7f3;
+      color: #db2777;
+    }
+
+    .goal-progress {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .goal-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #0d9488 0%, #2dd4bf 100%);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .goal-progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .goal-reward {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .goal-reward-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .goal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .goal-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .goal-btn-primary {
+      background: linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%);
+      color: white;
+    }
+
+    .goal-btn-primary:hover {
+      transform: scale(1.02);
+    }
+
+    .goal-btn-danger {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .goal-btn-danger:hover {
+      background: #fecaca;
+    }
+
+    .preset-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+
+    .preset-card:hover {
+      border-color: #0f766e;
+      transform: scale(1.02);
+    }
+
+    .preset-card.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .preset-card.disabled:hover {
+      border-color: transparent;
+      transform: none;
+    }
+
+    .goals-stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .goals-stat {
+      flex: 1;
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .goals-stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #0f766e;
+    }
+
+    .goals-stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 768px) {
+      .goals-shortcut {
+        bottom: 80px;
+        right: 20px;
+        padding: 10px 16px;
+      }
+
+      .goals-panel {
+        max-height: 90vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏆 排行榜</h1>
+      <p>与全球学习者竞技，成为顶尖英语达人！</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchLeaderboard('global_xp')">总经验榜</button>
+      <button class="tab" onclick="switchLeaderboard('weekly_study')">本周学霸</button>
+      <button class="tab" onclick="switchLeaderboard('weekly_accuracy')">发音达人</button>
+      <button class="tab" onclick="switchLeaderboard('monthly_vocab')">月度词汇王</button>
+      <button class="tab" onclick="switchLeaderboard('streak_master')">连胜达人</button>
+    </div>
+
+    <!-- 个人目标快捷入口 -->
+    <div class="goals-shortcut" onclick="openGoalsPanel()">
+      <span class="goals-icon">🎯</span>
+      <span class="goals-text">我的目标</span>
+      <span class="goals-badge" id="goals-badge" style="display:none;">0</span>
+    </div>
+
+    <div class="leaderboard">
+      <div class="leaderboard-header">
+        <div class="leaderboard-title" id="leaderboard-title">全球经验榜</div>
+        <div class="leaderboard-subtitle" id="leaderboard-subtitle">所有用户总经验值排行</div>
+      </div>
+
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>加载中...</p>
+      </div>
+
+      <div id="podium" class="podium" style="display:none;"></div>
+      <div id="rankings" class="rankings-list" style="display:none;"></div>
+    </div>
+  </div>
+
+  <button class="back-btn" onclick="window.location.href='learning-reports.html'" title="查看学习报告">
+    📊
+  </button>
+
+  <!-- 目标面板 -->
+  <div class="goals-panel-overlay" id="goals-panel-overlay" onclick="closeGoalsPanel(event)">
+    <div class="goals-panel" onclick="event.stopPropagation()">
+      <div class="goals-panel-header">
+        <div class="goals-panel-title">🎯 我的目标</div>
+        <button class="goals-panel-close" onclick="closeGoalsPanel()">&times;</button>
+      </div>
+      <div class="goals-panel-content">
+        <!-- 统计 -->
+        <div class="goals-stats" id="goals-stats">
+          <div class="goals-stat">
+            <div class="goals-stat-value" id="stat-active">0</div>
+            <div class="goals-stat-label">进行中</div>
+          </div>
+          <div class="goals-stat">
+            <div class="goals-stat-value" id="stat-completed">0</div>
+            <div class="goals-stat-label">已完成</div>
+          </div>
+          <div class="goals-stat">
+            <div class="goals-stat-value" id="stat-rate">0%</div>
+            <div class="goals-stat-label">完成率</div>
+          </div>
+        </div>
+
+        <!-- 当前目标 -->
+        <div class="goals-section">
+          <div class="goals-section-title">当前目标</div>
+          <div id="active-goals">
+            <p style="color: #999; text-align: center; padding: 20px;">暂无进行中的目标</p>
+          </div>
+        </div>
+
+        <!-- 设置新目标 -->
+        <div class="goals-section">
+          <div class="goals-section-title">设置新目标</div>
+          <div id="goal-presets">
+            <p style="color: #999; text-align: center; padding: 20px;">加载预设目标中...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentLeaderboard = 'global_xp';
+    let currentUserId = null;
+
+    const leaderboardConfig = {
+      'global_xp': {
+        title: '全球经验榜',
+        subtitle: '所有用户总经验值排行',
+        unit: 'XP'
+      },
+      'weekly_study': {
+        title: '本周学霸榜',
+        subtitle: '本周学习时长排行',
+        unit: '分钟'
+      },
+      'weekly_accuracy': {
+        title: '本周发音达人榜',
+        subtitle: '本周发音准确度排行（至少5次练习）',
+        unit: '%'
+      },
+      'monthly_vocab': {
+        title: '月度词汇王',
+        subtitle: '本月学习词汇数量排行',
+        unit: '个单词'
+      },
+      'streak_master': {
+        title: '连胜达人榜',
+        subtitle: '学习连胜天数排行',
+        unit: '天'
+      }
+    };
+
+    // 获取Token（兼容 localStorage / sessionStorage 与两种 key）
+    function getToken() {
+      return localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token')
+        || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    }
+
+    // 检查登录状态
+    function checkAuth() {
+      const token = getToken();
+      if (!token) {
+        window.location.href = 'index.html';
+        return false;
+      }
+      return true;
+    }
+
+    // 切换排行榜
+    function switchLeaderboard(name) {
+      // 更新tab状态
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // 加载排行榜
+      currentLeaderboard = name;
+      loadLeaderboard(name);
+    }
+
+    // 加载排行榜
+    async function loadLeaderboard(name) {
+      if (!checkAuth()) return;
+
+      const config = leaderboardConfig[name];
+      document.getElementById('leaderboard-title').textContent = config.title;
+      document.getElementById('leaderboard-subtitle').textContent = config.subtitle;
+
+      showLoading(true);
+
+      try {
+        const response = await fetch(`/api/retention/leaderboard/${name}?limit=50`, {
+          headers: {
+            'Authorization': `Bearer ${getToken()}`
+          }
+        });
+
+        if (!response.ok) throw new Error('加载排行榜失败');
+
+        const rankings = await response.json();
+        displayRankings(rankings, config.unit);
+      } catch (error) {
+        console.error('Error loading leaderboard:', error);
+        alert('加载排行榜失败：' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // 显示排行榜
+    function displayRankings(rankings, unit) {
+      if (!rankings || rankings.length === 0) {
+        document.getElementById('podium').style.display = 'none';
+        document.getElementById('rankings').innerHTML = '<p style="text-align:center;padding:40px;color:#999;">暂无排名数据</p>';
+        document.getElementById('rankings').style.display = 'block';
+        return;
+      }
+
+      // 显示前三名领奖台
+      const top3 = rankings.slice(0, 3);
+      displayPodium(top3, unit);
+
+      // 显示其余排名
+      const rest = rankings.slice(3);
+      displayRankingsList(rest, unit);
+
+      document.getElementById('podium').style.display = 'flex';
+      document.getElementById('rankings').style.display = 'block';
+    }
+
+    // 显示领奖台
+    function displayPodium(top3, unit) {
+      const podium = document.getElementById('podium');
+
+      const positions = ['second', 'first', 'third'];
+      const medals = ['🥈', '🥇', '🥉'];
+
+      podium.innerHTML = top3.map((user, index) => `
+        <div class="podium-place ${positions[index]}">
+          <div class="podium-avatar">
+            ${user.username ? user.username[0].toUpperCase() : '?'}
+            <div class="podium-medal">${medals[index]}</div>
+          </div>
+          <div class="podium-name">${user.username || '未知用户'}</div>
+          <div class="podium-score">${formatScore(user.score)} ${unit}</div>
+        </div>
+      `).join('');
+    }
+
+    // 显示排名列表
+    function displayRankingsList(rankings, unit) {
+      const container = document.getElementById('rankings');
+
+      container.innerHTML = rankings.map(user => {
+        const changeIcon = user.rank_change > 0 ? '↑' : (user.rank_change < 0 ? '↓' : '—');
+        const changeClass = user.rank_change > 0 ? 'up' : (user.rank_change < 0 ? 'down' : '');
+
+        return `
+          <div class="ranking-item">
+            <div class="rank-number">#${user.rank}</div>
+            <div class="rank-avatar">${user.username ? user.username[0].toUpperCase() : '?'}</div>
+            <div class="rank-info">
+              <div class="rank-name">${user.username || '未知用户'}</div>
+              <div class="rank-level">Lv. ${user.level || 1}</div>
+            </div>
+            <div class="rank-score">${formatScore(user.score)} ${unit}</div>
+            <div class="rank-change ${changeClass}">
+              ${changeIcon} ${user.rank_change !== 0 ? Math.abs(user.rank_change) : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 格式化分数
+    function formatScore(score) {
+      if (score >= 1000000) {
+        return (score / 1000000).toFixed(1) + 'M';
+      } else if (score >= 1000) {
+        return (score / 1000).toFixed(1) + 'K';
+      }
+      return Math.round(score);
+    }
+
+    // 显示/隐藏加载状态
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+      if (show) {
+        document.getElementById('podium').style.display = 'none';
+        document.getElementById('rankings').style.display = 'none';
+      }
+    }
+
+    // 页面加载时加载默认排行榜
+    window.addEventListener('load', () => {
+      if (!checkAuth()) return;
+      loadLeaderboard(currentLeaderboard);
+      loadGoalsStats();
+    });
+
+    // ============================================================================
+    // 个人目标功能
+    // ============================================================================
+
+    // 打开目标面板
+    function openGoalsPanel() {
+      document.getElementById('goals-panel-overlay').classList.add('show');
+      loadActiveGoals();
+      loadGoalPresets();
+    }
+
+    // 关闭目标面板
+    function closeGoalsPanel(event) {
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('goals-panel-overlay').classList.remove('show');
+    }
+
+    // 加载目标统计
+    async function loadGoalsStats() {
+      try {
+        const response = await fetch('/api/retention/goals/stats', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (!response.ok) return;
+
+        const stats = await response.json();
+        document.getElementById('stat-active').textContent = stats.active_count || 0;
+        document.getElementById('stat-completed').textContent = stats.completed_count || 0;
+        document.getElementById('stat-rate').textContent = (stats.completion_rate || 0) + '%';
+
+        // 显示进行中目标数量徽章
+        const badge = document.getElementById('goals-badge');
+        if (stats.active_count > 0) {
+          badge.textContent = stats.active_count;
+          badge.style.display = 'inline';
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error loading goals stats:', err);
+      }
+    }
+
+    // 加载当前目标
+    async function loadActiveGoals() {
+      const container = document.getElementById('active-goals');
+
+      try {
+        const response = await fetch('/api/retention/goals?status=active', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (!response.ok) throw new Error('加载失败');
+
+        const goals = await response.json();
+
+        if (!goals || goals.length === 0) {
+          container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无进行中的目标，设置一个开始挑战吧！</p>';
+          return;
+        }
+
+        container.innerHTML = goals.map(goal => {
+          const progressPercent = Math.min(100, goal.progress_percent || 0);
+          const currentDisplay = goal.goal_type === 'accuracy'
+            ? goal.current_value.toFixed(1) + '%'
+            : Math.round(goal.current_value);
+          const targetDisplay = goal.goal_type === 'accuracy'
+            ? goal.target_value + '%'
+            : goal.target_value + '次';
+
+          return `
+            <div class="goal-card">
+              <div class="goal-card-header">
+                <div class="goal-card-title">${getGoalTypeLabel(goal.goal_type)} ${goal.time_range === 'daily' ? '今日' : goal.time_range === 'weekly' ? '本周' : '本月'}目标</div>
+                <div class="goal-card-badge ${progressPercent >= 100 ? 'easy' : 'medium'}">${progressPercent >= 100 ? '已达成' : '进行中'}</div>
+              </div>
+              <div class="goal-progress">
+                <div class="goal-progress-bar" style="width: ${progressPercent}%"></div>
+              </div>
+              <div class="goal-progress-text">
+                <span>当前: ${currentDisplay}</span>
+                <span>目标: ${targetDisplay}</span>
+              </div>
+              <div class="goal-reward">
+                ${goal.reward_xp > 0 ? `<div class="goal-reward-item">⭐ ${goal.reward_xp} XP</div>` : ''}
+                ${goal.reward_coins > 0 ? `<div class="goal-reward-item">🪙 ${goal.reward_coins} 金币</div>` : ''}
+                ${goal.reward_badge ? `<div class="goal-reward-item">🏅 ${goal.reward_badge}</div>` : ''}
+              </div>
+              <div class="goal-actions">
+                <button class="goal-btn goal-btn-danger" onclick="cancelGoal(${goal.id})">取消目标</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error loading active goals:', err);
+        container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">加载失败</p>';
+      }
+    }
+
+    // 加载预设目标
+    async function loadGoalPresets() {
+      const container = document.getElementById('goal-presets');
+
+      try {
+        const response = await fetch('/api/retention/goals/presets', {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (!response.ok) throw new Error('加载失败');
+
+        const presets = await response.json();
+
+        if (!presets || presets.length === 0) {
+          container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无可用的预设目标</p>';
+          return;
+        }
+
+        container.innerHTML = presets.map(preset => {
+          const disabled = preset.has_active_goal;
+          return `
+            <div class="preset-card ${disabled ? 'disabled' : ''}" onclick="${disabled ? '' : `createGoalFromPreset('${preset.preset_key}')`}">
+              <div class="goal-card-header">
+                <div class="goal-card-title">${preset.display_name}</div>
+                <div class="goal-card-badge ${preset.difficulty}">${getDifficultyLabel(preset.difficulty)}</div>
+              </div>
+              <div class="goal-reward">
+                ${preset.reward_xp > 0 ? `<div class="goal-reward-item">⭐ ${preset.reward_xp} XP</div>` : ''}
+                ${preset.reward_coins > 0 ? `<div class="goal-reward-item">🪙 ${preset.reward_coins} 金币</div>` : ''}
+                ${preset.reward_badge ? `<div class="goal-reward-item">🏅 ${preset.reward_badge}</div>` : ''}
+              </div>
+              ${disabled ? '<p style="font-size: 12px; color: #999; margin-top: 8px;">已有相同类型的进行中目标</p>' : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error loading goal presets:', err);
+        container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">加载失败</p>';
+      }
+    }
+
+    // 从预设创建目标
+    async function createGoalFromPreset(presetKey) {
+      try {
+        const response = await fetch('/api/retention/goals', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${getToken()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ presetKey })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || '创建失败');
+        }
+
+        alert('目标创建成功！加油完成它吧！');
+        loadActiveGoals();
+        loadGoalPresets();
+        loadGoalsStats();
+      } catch (err) {
+        console.error('Error creating goal:', err);
+        alert('创建目标失败: ' + err.message);
+      }
+    }
+
+    // 取消目标
+    async function cancelGoal(goalId) {
+      if (!confirm('确定要取消这个目标吗？')) return;
+
+      try {
+        const response = await fetch(`/api/retention/goals/${goalId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+
+        if (!response.ok) throw new Error('取消失败');
+
+        loadActiveGoals();
+        loadGoalPresets();
+        loadGoalsStats();
+      } catch (err) {
+        console.error('Error canceling goal:', err);
+        alert('取消目标失败: ' + err.message);
+      }
+    }
+
+    // 获取目标类型标签
+    function getGoalTypeLabel(type) {
+      const labels = {
+        'accuracy': '准确度',
+        'practice_count': '练习次数',
+        'study_minutes': '学习时长'
+      };
+      return labels[type] || type;
+    }
+
+    // 获取难度标签
+    function getDifficultyLabel(difficulty) {
+      const labels = {
+        'easy': '简单',
+        'medium': '中等',
+        'hard': '困难'
+      };
+      return labels[difficulty] || difficulty;
+    }
+  </script>
+</body>
+</html>

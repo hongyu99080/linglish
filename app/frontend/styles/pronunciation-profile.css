@@ -1,0 +1,266 @@
+.pronunciation-profile-card {
+  margin: 16px 0;
+  padding: 20px;
+  border: var(--lx-border-bold, 2px solid #e2e8f0);
+  border-bottom-width: 5px;
+  border-radius: var(--lx-radius-lg, 16px);
+  background: var(--lx-surface, #fff);
+  box-shadow: var(--lx-shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06));
+  color: var(--lx-ink-900, #0f172a);
+  text-align: left;
+}
+
+.pronunciation-profile-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 12px;
+}
+
+.pronunciation-profile-kicker {
+  margin: 0;
+  color: var(--lx-primary, #0f766e);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.pronunciation-profile-status {
+  align-self: start;
+  padding: 4px 9px;
+  border: 1px solid var(--lx-teal-300, #5eead4);
+  border-radius: var(--lx-radius-pill, 999px);
+  background: var(--lx-teal-50, #f0fdfa);
+  color: var(--lx-primary-strong, #0b5f59);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.pronunciation-profile-status[data-status="collecting"] {
+  border-color: var(--lx-sky, #0ea5e9);
+  background: var(--lx-sky-soft, #e0f2fe);
+  color: var(--lx-sky-strong, #0284c7);
+}
+
+.pronunciation-profile-card h2,
+.pronunciation-profile-card h3,
+.pronunciation-profile-card p {
+  margin-top: 0;
+}
+
+.pronunciation-profile-card h2 {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+  font-family: var(--lx-font-display, Georgia, serif);
+  font-size: clamp(1.28rem, 2vw, 1.58rem);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.pronunciation-profile-summary {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+  color: var(--lx-ink-500, #64748b);
+  line-height: 1.65;
+}
+
+.pronunciation-profile-focus {
+  margin-top: 18px;
+  padding: 16px;
+  border: 2px solid transparent;
+  border-bottom-width: 5px;
+  border-radius: var(--lx-radius-md, 12px);
+  background:
+    linear-gradient(var(--lx-surface-warm, #f0fdfa), var(--lx-surface-warm, #f0fdfa)) padding-box,
+    linear-gradient(110deg, var(--lx-primary, #0f766e), var(--lx-sky, #0ea5e9), var(--lx-mint, #2dd4bf)) border-box;
+  box-shadow: var(--lx-shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.05));
+}
+
+.pronunciation-profile-focus--quiet {
+  border: 2px solid var(--lx-line, #e2e8f0);
+  border-bottom-width: 5px;
+  background: var(--lx-surface-warm, #f0fdfa);
+}
+
+.pronunciation-profile-focus-note {
+  margin-bottom: 7px;
+  color: var(--lx-primary, #0f766e);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.pronunciation-profile-focus-note span {
+  margin-left: 5px;
+  color: var(--lx-sky-strong, #0284c7);
+}
+
+.pronunciation-profile-focus h3 {
+  margin-bottom: 6px;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.pronunciation-profile-focus p {
+  margin-bottom: 14px;
+  color: var(--lx-ink-500, #64748b);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.pronunciation-profile-focus-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  min-height: 44px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--lx-radius-sm, 8px);
+  background: var(--lx-primary, #0f766e);
+  box-shadow: 0 3px 0 var(--lx-primary-strong, #0b5f59);
+  color: #fff;
+  font-weight: 850;
+  text-decoration: none;
+  transition: transform var(--lx-dur-fast, 150ms) var(--lx-ease, ease), box-shadow var(--lx-dur-fast, 150ms) var(--lx-ease, ease);
+}
+
+.pronunciation-profile-focus-cta:hover {
+  background: var(--lx-primary-strong, #0b5f59);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.pronunciation-profile-focus-cta:active {
+  box-shadow: 0 1px 0 var(--lx-primary-strong, #0b5f59);
+  transform: translateY(2px);
+}
+
+.pronunciation-profile-focus-cta:focus-visible {
+  outline: 3px solid var(--lx-sky, #0ea5e9);
+  outline-offset: 3px;
+}
+
+.pronunciation-profile-lanes {
+  margin-top: 20px;
+}
+
+.pronunciation-profile-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+
+.pronunciation-profile-section-heading h3 {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.pronunciation-profile-section-heading span {
+  color: var(--lx-ink-500, #64748b);
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+.pronunciation-profile-lanes ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.pronunciation-profile-lane {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--lx-line, #e2e8f0);
+  border-bottom: 3px solid var(--lx-line, #e2e8f0);
+  border-radius: var(--lx-radius-sm, 8px);
+  background: var(--lx-paper, #f8fafc);
+}
+
+.pronunciation-profile-lane-label,
+.pronunciation-profile-lane-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pronunciation-profile-lane-label > span {
+  min-width: 0;
+  color: var(--lx-ink-700, #334155);
+  font-size: 0.84rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.pronunciation-profile-lane-label small {
+  flex: 0 0 auto;
+  color: var(--lx-sky-strong, #0284c7);
+  font-size: 0.64rem;
+  font-weight: 750;
+}
+
+.pronunciation-profile-lane-value {
+  min-height: 28px;
+  margin-top: 8px;
+}
+
+.pronunciation-profile-lane-score {
+  color: var(--lx-primary, #0f766e);
+  font-family: var(--lx-font-display, Georgia, serif);
+  font-size: 1.32rem;
+  font-weight: 900;
+}
+
+.pronunciation-profile-lane-state {
+  color: var(--lx-ink-500, #64748b);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.pronunciation-profile-lane-meter {
+  display: block;
+  height: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: var(--lx-radius-pill, 999px);
+  background: var(--lx-line, #e2e8f0);
+}
+
+.pronunciation-profile-lane-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lx-grad-fresh, linear-gradient(135deg, #0d9488, #2dd4bf));
+}
+
+.pronunciation-profile-disclaimer {
+  margin: 14px 0 0;
+  color: var(--lx-ink-400, #94a3b8);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 520px) {
+  .pronunciation-profile-card {
+    padding: 15px;
+  }
+
+  .pronunciation-profile-lanes ul {
+    grid-template-columns: 1fr;
+  }
+
+  .pronunciation-profile-lane {
+    padding: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pronunciation-profile-focus-cta {
+    transition: none;
+  }
+}

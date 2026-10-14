@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Linglish speech bubble icon">
+  <defs>
+    <!-- Extra-bright blue gradient for better small-size legibility -->
+    <linearGradient id="g" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#93C5FD"/>
+      <stop offset="55%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+
+    <clipPath id="bubbleClip">
+      <rect x="6" y="6" width="52" height="38" rx="18" ry="18"/>
+      <path d="M40 44 Q37 52 35 58 Q43 52 52 46 Q45 46 40 44 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Soft shadow to stand out on dark tabs -->
+  <g opacity="0.16" transform="translate(0,1.2)">
+    <rect x="6" y="6" width="52" height="38" rx="18" ry="18" fill="#000"/>
+    <path d="M40 44 Q37 52 35 58 Q43 52 52 46 Q45 46 40 44 Z" fill="#000"/>
+  </g>
+
+  <!-- Speech bubble body (fuller, minimal padding) -->
+  <g>
+    <rect x="6" y="6" width="52" height="38" rx="18" ry="18" fill="url(#g)"/>
+    <path d="M40 44 Q37 52 35 58 Q43 52 52 46 Q45 46 40 44 Z" fill="url(#g)"/>
+  </g>
+
+  <!-- Glossy highlight, larger and brighter -->
+  <g clip-path="url(#bubbleClip)" opacity="0.45">
+    <ellipse cx="24" cy="15" rx="24" ry="14" fill="#FFF"/>
+  </g>
+
+  <!-- Monogram L: thicker and larger with subtle shadow for contrast -->
+  <g>
+    <g opacity="0.22" fill="#000">
+      <rect x="21" y="17" width="12" height="23" rx="7"/>
+      <rect x="21" y="36" width="23" height="10" rx="5.5"/>
+    </g>
+    <g fill="#FFFFFF">
+      <rect x="20" y="16" width="12" height="23" rx="7"/>
+      <rect x="20" y="35" width="23" height="10" rx="5.5"/>
+    </g>
+  </g>
+
+  <!-- Crisp light edge for small-size clarity -->
+  <g opacity="0.35" fill="none">
+    <rect x="6" y="6" width="52" height="38" rx="18" ry="18" stroke="#FFFFFF" stroke-width="0.8"/>
+  </g>
+</svg>
+

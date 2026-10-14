@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>管理后台 - 使用统计</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .container { max-width: 1200px; margin: 1rem auto; padding: 1rem; }
+      .card { background:#fff; border-radius:8px; padding:1rem; box-shadow:0 2px 6px rgba(0,0,0,0.08); margin-bottom: 1rem; }
+      .grid { display:grid; grid-template-columns: repeat(3,1fr); gap:12px; }
+      .stat { background:#f7f9fc; border-radius:6px; padding:1rem; text-align:center; }
+      .stat .num { font-size:1.4rem; font-weight:700; }
+      table { width:100%; border-collapse:collapse; }
+      th,td { padding:8px; border-bottom:1px solid #eee; font-size:14px; }
+      th { background:#fafbfc; text-align:left; }
+      .muted { color:#777; font-size:12px; }
+      .link { color:#007bff; cursor:pointer; }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <h1>Linglish 管理后台</h1>
+        <p>使用统计</p>
+      </div>
+      <div>
+        <a href="./admin-users.html" style="color:#fff; text-decoration:none;">👤 用户管理</a>
+        <span class="muted" style="margin:0 8px;">|</span>
+        <a href="./index.html" style="color:#fff; text-decoration:none;" title="返回应用">←</a>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="card">
+        <div class="grid">
+          <div class="stat"><div>视频观看</div><div class="num" id="stat-video">-</div></div>
+          <div class="stat"><div>单词学习</div><div class="num" id="stat-vocab">-</div></div>
+          <div class="stat"><div>练习/实战</div><div class="num" id="stat-practice">-</div></div>
+          <div class="stat"><div>发音平均分</div><div class="num" id="p-avg-ov">-</div></div>
+          <div class="stat"><div>评测次数</div><div class="num" id="p-count-ov">-</div></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
+          <div class="muted" id="stat-note">统计加载中…</div>
+          <div class="muted">发音区间
+            <select id="p-days-ov" style="margin-left:6px; padding:2px 6px;">
+              <option value="7">7天</option>
+              <option value="14" selected>14天</option>
+              <option value="30">30天</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>Top 视频（按观看时长）</strong>
+        <table>
+          <thead>
+            <tr>
+              <th>视频ID</th>
+              <th>总观看时长</th>
+              <th>观看人数</th>
+              <th>明细</th>
+            </tr>
+          </thead>
+          <tbody id="top-videos">
+            <tr><td colspan="4" class="muted">加载中…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" id="video-breakdown-card" style="display:none;">
+        <strong>视频 <span id="vb-video-id"></span> 用户观看明细</strong>
+        <table>
+          <thead>
+            <tr><th>用户ID</th><th>观看时长</th></tr>
+          </thead>
+          <tbody id="video-breakdown"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <strong>发音评测统计</strong>
+        <div class="grid" style="margin-top:8px; grid-template-columns: repeat(2,1fr);">
+          <div class="stat"><div>平均分</div><div class="num" id="p-avg">-</div></div>
+          <div class="stat"><div>评测次数</div><div class="num" id="p-count">-</div></div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="muted">近14天平均分趋势</div>
+          <div id="p-chart" style="height:120px; display:flex; align-items:flex-end; gap:4px; border-left:1px solid #eee; border-bottom:1px solid #eee; padding:6px;"></div>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="muted">问题音素 Top10</div>
+          <div id="p-phonemes"></div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const token = localStorage.getItem('linglish_token') || sessionStorage.getItem('linglish_token') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token) { alert('请先登录'); location.href = './index.html'; }
+
+      async function api(path, options={}) {
+        const res = await fetch(path, { ...options, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json', ...(options.headers||{}) } });
+        const data = await res.json().catch(()=>({}));
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            // Clear token and redirect to login page
+            try {
+              localStorage.removeItem('linglish_token');
+              localStorage.removeItem('authToken');
+              sessionStorage.removeItem('linglish_token');
+              sessionStorage.removeItem('authToken');
+            } catch (e) {}
+
+            // Only redirect if we haven't already started redirecting
+            if (!window.__redirecting) {
+              window.__redirecting = true;
+              window.location.href = './index.html';
+            }
+            return;
+          }
+          throw new Error(data.message || res.statusText);
+        }
+        return data;
+      }
+
+      function fmtMin(s) { return (s/60).toFixed(1) + ' 分钟'; }
+
+      async function loadSummary() {
+        const data = await api('/admin/usage/summary');
+        const c = data.categories || { video_watch_seconds:0, vocab_study_seconds:0, practice_seconds:0 };
+        document.getElementById('stat-video').textContent = fmtMin(c.video_watch_seconds||0);
+        document.getElementById('stat-vocab').textContent = fmtMin(c.vocab_study_seconds||0);
+        document.getElementById('stat-practice').textContent = fmtMin(c.practice_seconds||0);
+        document.getElementById('stat-note').textContent = '统计按近全部数据实时聚合（秒级上报，15秒视频分片）。';
+
+        const tbody = document.getElementById('top-videos');
+        const rows = (data.top_videos || []).map(v => `
+          <tr>
+            <td>${v.video_resource_id}</td>
+            <td>${fmtMin(v.seconds)}</td>
+            <td>${v.users}</td>
+            <td><span class="link" onclick="showVideoBreakdown(${v.video_resource_id})">查看</span></td>
+          </tr>
+        `).join('');
+        tbody.innerHTML = rows || '<tr><td colspan="4" class="muted">暂无数据</td></tr>';
+      }
+
+      async function showVideoBreakdown(id) {
+        document.getElementById('video-breakdown-card').style.display = '';
+        document.getElementById('vb-video-id').textContent = id;
+        const data = await api(`/admin/videos/${id}/usage`);
+        const rows = (data.items || []).map(r => `<tr><td>${r.user_id}</td><td>${fmtMin(r.seconds)}</td></tr>`).join('');
+        document.getElementById('video-breakdown').innerHTML = rows || '<tr><td colspan="2" class="muted">暂无数据</td></tr>';
+      }
+
+      async function loadPronOverview() {
+        const daysSel = document.getElementById('p-days-ov');
+        const days = daysSel ? Number(daysSel.value) : 14;
+        try {
+          const p = await api(`/admin/usage/pronunciation?days=${days}`);
+          const s = p.summary || { avg_overall: 0, count: 0 };
+          document.getElementById('p-avg-ov').textContent = Math.round(s.avg_overall || 0);
+          document.getElementById('p-count-ov').textContent = s.count || 0;
+        } catch (_) {}
+      }
+
+      (function(){
+        const sel = document.getElementById('p-days-ov');
+        if (sel) sel.addEventListener('change', loadPronOverview);
+      })();
+
+      async function loadPronunciation() {
+        const p = await api('/admin/usage/pronunciation?days=14');
+        const s = p.summary || { avg_overall: 0, count: 0 };
+        document.getElementById('p-avg').textContent = Math.round(s.avg_overall || 0);
+        document.getElementById('p-count').textContent = s.count || 0;
+
+        // trend chart (simple bars)
+        const chart = document.getElementById('p-chart');
+        chart.innerHTML = '';
+        const daily = p.daily || [];
+        const maxVal = 100;
+        daily.forEach(d => {
+          const val = Math.max(0, Math.min(maxVal, Number(d.avg_overall||0)));
+          const bar = document.createElement('div');
+          bar.style.cssText = `width:18px;height:${val}px;background:#2b6cb0;`; 
+          bar.title = `${d.day}: ${val}`;
+          chart.appendChild(bar);
+        });
+
+        // top phonemes
+        const ph = document.getElementById('p-phonemes');
+        const items = p.top_phonemes || [];
+        const maxIssues = Math.max(1, ...items.map(x=>x.issues||0));
+        ph.innerHTML = items.map(x => {
+          const w = Math.round((x.issues / maxIssues) * 100);
+          return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
+            <div style="width:60px; font-family:monospace;">/${x.phoneme || '-'} /</div>
+            <div style="flex:1; background:#f0f4ff; border-radius:4px; overflow:hidden; height:16px;">
+              <div style=\"width:${w}%; background:#6b8cff; height:100%;\"></div>
+            </div>
+            <div class=\"muted\" style=\"width:40px; text-align:right;\">${x.issues}</div>
+          </div>`;
+        }).join('') || '<div class="muted">暂无数据</div>';
+      }
+
+      loadSummary().then(() => { loadPronOverview(); return loadPronunciation(); });
+    </script>
+  </body>
+  </html>

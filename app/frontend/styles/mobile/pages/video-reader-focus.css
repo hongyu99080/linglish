@@ -1,0 +1,689 @@
+/*
+ * Mobile video reader focus layer.
+ * Keeps the existing playback/subtitle DOM and gives it an app-like learning flow.
+ */
+
+.mobile-reader-header {
+  display: none;
+}
+
+.mobile-library-backdrop {
+  display: none;
+}
+
+html[data-learning-focus="first-lesson"] #video-upload,
+html[data-learning-focus="first-lesson"] #tag-filter-section,
+html[data-learning-focus="first-lesson"] #upload-toggle-btn {
+  display: none !important;
+}
+
+html[data-learning-focus="first-lesson"] #first-lesson-progress {
+  display: block;
+  margin: 0.4rem auto;
+  color: #0f766e;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+@media (max-width: 768px), (max-height: 500px) and (hover: none) and (pointer: coarse) {
+  :root {
+    --vrf-ink: #14213d;
+    --vrf-muted: #64748b;
+    --vrf-teal: #0f766e;
+    --vrf-mint: #2dd4bf;
+    --vrf-sky: #0ea5e9;
+    --vrf-canvas: #edf7f7;
+    --vrf-line: #d7e8e7;
+    --vrf-card: #ffffff;
+    --vrf-header-height: 52px;
+  }
+
+  html,
+  body.video-reader-mobile-focus {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body.video-reader-mobile-focus {
+    margin: 0;
+    color: var(--vrf-ink);
+    background:
+      radial-gradient(circle at 92% 4%, rgba(14, 165, 233, 0.12), transparent 32%),
+      var(--vrf-canvas);
+    background-attachment: scroll;
+    font-family: "Avenir Next", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overscroll-behavior-x: none;
+  }
+
+  body.video-reader-mobile-focus *,
+  body.video-reader-mobile-focus *::before,
+  body.video-reader-mobile-focus *::after {
+    box-sizing: border-box;
+  }
+
+  body.video-reader-mobile-focus .mobile-reader-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: calc(var(--vrf-header-height) + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 10px 0;
+    background: rgba(247, 253, 252, 0.94);
+    border-bottom: 1px solid rgba(15, 118, 110, 0.13);
+    box-shadow: 0 4px 18px rgba(15, 55, 62, 0.07);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  body.video-reader-mobile-focus .mobile-reader-home {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-height: 44px;
+    color: var(--vrf-ink);
+    font-size: 30px;
+    font-weight: 500;
+    line-height: 1;
+    text-decoration: none;
+    border-radius: 14px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body.video-reader-mobile-focus .mobile-reader-heading {
+    min-width: 0;
+    padding: 4px 8px;
+    line-height: 1.05;
+  }
+
+  body.video-reader-mobile-focus .mobile-reader-heading strong,
+  body.video-reader-mobile-focus .mobile-reader-heading span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.video-reader-mobile-focus .mobile-reader-heading strong {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  body.video-reader-mobile-focus .mobile-reader-heading span {
+    margin-top: 4px;
+    color: var(--vrf-muted);
+    font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  body.video-reader-mobile-focus .toggle-sidebar-btn {
+    position: relative;
+    inset: auto;
+    z-index: 1300;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 78px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 12px;
+    border: 1px solid rgba(15, 118, 110, 0.22);
+    border-radius: 14px;
+    color: var(--vrf-teal);
+    background: #ffffff;
+    box-shadow: 0 3px 0 rgba(15, 118, 110, 0.18);
+    font-size: 13px;
+    font-weight: 800;
+    transform: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body.video-reader-mobile-focus .toggle-sidebar-btn:active {
+    box-shadow: none;
+    transform: translateY(3px);
+  }
+
+  body.video-reader-mobile-focus .video-lab-container,
+  body.video-reader-mobile-focus .video-main,
+  body.video-reader-mobile-focus .video-stage,
+  body.video-reader-mobile-focus .video-player-area {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    overflow-x: hidden;
+  }
+
+  body.video-reader-mobile-focus .video-lab-container {
+    display: block;
+    min-height: calc(100svh - var(--vrf-header-height));
+    overflow-y: visible;
+    background: transparent;
+  }
+
+  body.video-reader-mobile-focus .video-main {
+    display: block;
+    padding: 0;
+    overflow-y: visible;
+  }
+
+  body.video-reader-mobile-focus .video-toolbar {
+    display: none !important;
+  }
+
+  body.video-reader-mobile-focus .video-stage {
+    display: block;
+    margin: 0;
+    padding: 0;
+    overflow-y: visible;
+  }
+
+  body.video-reader-mobile-focus .video-player-area {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0 0 calc(18px + env(safe-area-inset-bottom));
+    overflow-y: visible;
+  }
+
+  body.video-reader-mobile-focus .video-wrapper {
+    position: relative;
+    order: 1;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    aspect-ratio: 16 / 9;
+    flex: 0 0 auto;
+    margin: 0;
+    border: 0;
+    border-radius: 0 0 18px 18px;
+    background: #050807;
+    box-shadow: 0 14px 30px rgba(15, 55, 62, 0.16);
+    overflow: hidden;
+  }
+
+  body.video-reader-mobile-focus .video-wrapper::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 3px;
+    z-index: 12;
+    pointer-events: none;
+    background: linear-gradient(90deg, var(--vrf-sky), var(--vrf-mint), var(--vrf-teal));
+  }
+
+  body.video-reader-mobile-focus #video-player,
+  body.video-reader-mobile-focus #youtube-player-wrapper,
+  body.video-reader-mobile-focus #youtube-player {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+  }
+
+  body.video-reader-mobile-focus #video-player {
+    object-fit: contain;
+    background: #050807;
+  }
+
+  body.video-reader-mobile-focus #play-overlay {
+    display: none !important;
+  }
+
+  body.video-reader-mobile-focus .mobile-back-btn {
+    display: none !important;
+  }
+
+  body.video-reader-mobile-focus .speed-control-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  body.video-reader-mobile-focus .speed-toggle-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 11px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 14px;
+    color: #ffffff;
+    background: rgba(4, 22, 25, 0.65);
+    font-size: 13px;
+    font-weight: 800;
+    backdrop-filter: blur(8px);
+  }
+
+  body.video-reader-mobile-focus .speed-floating-menu {
+    display: none;
+    grid-template-columns: repeat(2, minmax(44px, auto));
+    gap: 5px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    background: rgba(4, 22, 25, 0.82);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(10px);
+  }
+
+  body.video-reader-mobile-focus .speed-floating-menu.open {
+    display: grid;
+  }
+
+  body.video-reader-mobile-focus .speed-floating-menu .speed-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.86);
+    background: transparent;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  body.video-reader-mobile-focus .speed-floating-menu .speed-btn.active {
+    color: var(--vrf-teal);
+    background: #ffffff;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-view {
+    order: 2;
+    display: flex !important;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 10px;
+    width: calc(100% - 20px);
+    height: clamp(220px, 34svh, 300px);
+    min-height: 220px;
+    margin: 12px 10px 0;
+    padding: 12px;
+    overflow: hidden;
+    border: 1px solid var(--vrf-line);
+    border-radius: 18px 18px 8px 8px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 10px 24px rgba(15, 55, 62, 0.08);
+  }
+
+  body.video-reader-mobile-focus .mobile-view-toggle {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex: 0 0 auto;
+    gap: 5px;
+    padding: 4px;
+    border: 1px solid rgba(14, 165, 233, 0.12);
+    border-radius: 14px;
+    background: #eef9fb;
+  }
+
+  body.video-reader-mobile-focus .mobile-view-btn {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 11px;
+    color: #486477;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 750;
+    white-space: nowrap;
+  }
+
+  body.video-reader-mobile-focus .mobile-view-btn.active {
+    color: var(--vrf-teal);
+    background: #ffffff;
+    box-shadow: 0 3px 10px rgba(15, 118, 110, 0.12);
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-list-wrapper {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-nav {
+    display: none !important;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0 0 6px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    list-style: none;
+    scroll-padding: 8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-item {
+    position: relative;
+    flex: 0 0 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 11px 12px 11px 15px;
+    overflow-wrap: anywhere;
+    border: 1px solid #e5efef;
+    border-radius: 13px;
+    color: #405467;
+    background: #f8fbfb;
+    box-shadow: none;
+    font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.48;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-item.active {
+    padding-left: 18px;
+    border-color: rgba(15, 118, 110, 0.28);
+    color: var(--vrf-ink);
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 118, 110, 0.11);
+    font-size: 20px;
+    font-weight: 750;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-item.active::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 6px;
+    width: 4px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--vrf-sky), var(--vrf-mint));
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-item .mobile-segment-time {
+    display: inline-flex;
+    margin: 0 0 6px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    color: var(--vrf-muted);
+    background: #edf4f5;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-item .mobile-segment-text {
+    display: block;
+    min-width: 0;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-item .mobile-segment-translation {
+    display: block;
+    margin-top: 7px;
+    padding-top: 7px;
+    border-top: 1px solid #e8f0f0;
+    color: var(--vrf-muted);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-item.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    color: var(--vrf-muted);
+    background: transparent;
+    text-align: center;
+  }
+
+  body.video-reader-mobile-focus .mobile-player-controls {
+    order: 3;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 9px 10px;
+    width: calc(100% - 20px);
+    margin: 0 10px;
+    padding: 11px 12px 12px;
+    border: 1px solid var(--vrf-line);
+    border-top: 0;
+    border-radius: 0 0 18px 18px;
+    background: #ffffff;
+    box-shadow: 0 12px 24px rgba(15, 55, 62, 0.08);
+  }
+
+  body.video-reader-mobile-focus .mobile-speed-controls {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  body.video-reader-mobile-focus .mobile-speed-btn,
+  body.video-reader-mobile-focus .mobile-replay-btn {
+    min-width: 0;
+    min-height: 44px;
+    border: 1px solid #dce9e8;
+    border-radius: 12px;
+    color: #486477;
+    background: #f7fbfb;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  body.video-reader-mobile-focus .mobile-speed-btn.active {
+    border-color: transparent;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--vrf-sky), var(--vrf-teal));
+    box-shadow: 0 5px 12px rgba(14, 165, 233, 0.2);
+  }
+
+  body.video-reader-mobile-focus .mobile-progress-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    color: var(--vrf-muted);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  body.video-reader-mobile-focus #mobile-progress {
+    width: 100%;
+    min-width: 0;
+    height: 6px;
+    margin: 0;
+    accent-color: var(--vrf-teal);
+  }
+
+  body.video-reader-mobile-focus .mobile-replay-btn {
+    align-self: center;
+    padding: 0;
+    color: var(--vrf-teal);
+    font-size: 21px;
+  }
+
+  body.video-reader-mobile-focus .transcript-panel {
+    display: none !important;
+  }
+
+  body.video-reader-mobile-focus .practice-panel {
+    order: 4;
+    width: calc(100% - 20px);
+    max-height: none;
+    margin: 12px 10px 0;
+  }
+
+  body.video-reader-mobile-focus .right-sidebar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 1150;
+    width: 100%;
+    max-width: 100%;
+    height: min(68svh, 560px);
+    max-height: min(68svh, 560px);
+    padding: 14px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border: 1px solid var(--vrf-line);
+    border-radius: 22px 22px 0 0;
+    background: #ffffff;
+    box-shadow: 0 -18px 50px rgba(15, 35, 45, 0.22);
+    transform: translateY(110%);
+    transition: transform 220ms ease;
+  }
+
+  body.video-reader-mobile-focus .right-sidebar.visible {
+    transform: translateY(0);
+  }
+
+  body.video-reader-mobile-focus .video-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1200;
+    display: block;
+    width: min(88vw, 360px);
+    max-width: 360px;
+    height: 100svh;
+    padding: calc(18px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 0;
+    border-right: 1px solid rgba(15, 118, 110, 0.16);
+    border-radius: 0 22px 22px 0;
+    background: #f8fdfc;
+    box-shadow: 18px 0 44px rgba(15, 35, 45, 0.22);
+    transform: translateX(0);
+    transition: transform 220ms ease;
+  }
+
+  body.video-reader-mobile-focus .video-sidebar.hidden {
+    display: block;
+    z-index: 1200;
+    transform: translateX(-105%);
+  }
+
+  body.video-reader-mobile-focus .mobile-library-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: rgba(8, 28, 35, 0.48);
+    transition: opacity 220ms ease;
+  }
+
+  body.video-reader-mobile-focus.mobile-library-open {
+    overflow: hidden;
+  }
+
+  body.video-reader-mobile-focus.mobile-library-open .mobile-library-backdrop {
+    pointer-events: auto;
+    opacity: 1;
+  }
+
+  body.video-reader-mobile-focus .video-sidebar h2 {
+    margin: 0 80px 16px 0;
+    color: var(--vrf-ink);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    font-size: 20px;
+  }
+
+  body.video-reader-mobile-focus .stats-panel {
+    margin-bottom: 14px;
+  }
+
+  body.video-reader-mobile-focus .bottom-nav {
+    display: none !important;
+  }
+
+  body.video-reader-mobile-focus .vocabulary-view {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body.video-reader-mobile-focus button,
+  body.video-reader-mobile-focus a {
+    touch-action: manipulation;
+  }
+
+  body.video-reader-mobile-focus button:focus-visible,
+  body.video-reader-mobile-focus a:focus-visible,
+  body.video-reader-mobile-focus input:focus-visible {
+    outline: 3px solid rgba(14, 165, 233, 0.38);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 360px) {
+  body.video-reader-mobile-focus .mobile-reader-heading span {
+    display: none;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-view {
+    height: clamp(210px, 32svh, 250px);
+    min-height: 210px;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-item.active {
+    font-size: 18px;
+  }
+
+  body.video-reader-mobile-focus .toggle-sidebar-btn {
+    min-width: 72px;
+    padding: 0 9px;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) and (hover: none) {
+  body.video-reader-mobile-focus .video-wrapper {
+    max-height: 72svh;
+  }
+
+  body.video-reader-mobile-focus .mobile-transcript-view {
+    height: 260px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.video-reader-mobile-focus *,
+  body.video-reader-mobile-focus *::before,
+  body.video-reader-mobile-focus *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

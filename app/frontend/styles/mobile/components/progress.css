@@ -1,0 +1,297 @@
+/* Progress Components - Progress Bars, Trackers, Stats */
+
+/* Progress Tracker */
+.progress-tracker {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.progress-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-icon {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f5f5f7;
+}
+
+.progress-icon.fire {
+  background: #fff5f0;
+}
+
+.progress-icon.coins {
+  background: #fff0f5;
+}
+
+.progress-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e74c3c;
+}
+
+.progress-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Video Progress */
+.video-progress {
+  margin-top: 8px;
+}
+
+.progress-bar-mini {
+  width: 100%;
+  height: 4px;
+  background: #f0f0f5;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.progress-fill-mini {
+  height: 100%;
+  background: linear-gradient(90deg, #0d9488 0%, #2dd4bf 100%);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.progress-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Scenario Progress */
+.scenario-progress {
+  margin-top: 12px;
+}
+
+.progress-bar-scenario {
+  width: 100%;
+  height: 6px;
+  background: #f0f0f5;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progress-fill-scenario {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b6b 0%, #ee5a6f 100%);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.progress-label-scenario {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Goal Progress Bar */
+.goal-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(14, 165, 233, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0d9488 0%, #2dd4bf 100%);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+/* Challenge Progress Bar */
+.challenge-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.challenge-progress-fill {
+  height: 100%;
+  background: #ffd700;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+/* Page Indicator */
+.page-indicator {
+  background: #ffd700;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 24px auto;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.page-number {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-label {
+  font-size: 10px;
+  text-align: center;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 16px;
+}
+
+.page-info {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Pagination Game */
+.pagination-game {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 16px;
+}
+
+.page-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  transition: all 0.2s;
+}
+
+.dot.active {
+  background: #ffd700;
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* Weekly Calendar */
+.weekly-calendar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  min-height: 128px;
+}
+
+.day-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-item.active .day-label {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.day-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.day-bar {
+  width: 100%;
+  height: 80px;
+  background: #f0f0f5;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.day-fill {
+  width: 100%;
+  background: linear-gradient(180deg, #0d9488 0%, #2dd4bf 100%);
+  border-radius: 8px 8px 0 0;
+  transition: height 0.3s;
+}
+
+.day-minutes {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Weekly Summary */
+.weekly-summary {
+  text-align: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.weekly-summary strong {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+/* Stats Preview */
+.stats-preview {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.stat-mini {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stat-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-icon-mini {
+  font-size: 18px;
+}
+
+.stat-text-mini {
+  font-size: 13px;
+  font-weight: 600;
+}

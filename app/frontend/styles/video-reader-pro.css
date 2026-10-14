@@ -1,0 +1,1340 @@
+/* =====================================================================
+   Linglish · Video Reader Pro Controls
+   - Visible playback bar (speed / loop / sentence nav / auto-pause)
+   - Keyboard shortcut help overlay (trigger: ? or H)
+   - Polished empty/loading skeleton states
+   Designed to feel intentional alongside YouTube / LingQ / Speak.
+   ===================================================================== */
+
+/* -------- Tokens (reuse repo accents, fall back if missing) ---------- */
+:root {
+  --vrp-bg:            var(--surface, rgba(255,255,255,0.04));
+  --vrp-bg-strong:     var(--modal-bg, rgba(15,23,42,0.92));
+  --vrp-border:        var(--border, rgba(148,163,184,0.18));
+  --vrp-text:          var(--text, #e2e8f0);
+  --vrp-text-muted:    var(--text-muted, rgba(226,232,240,0.62));
+  --vrp-accent:        var(--brand, #6366f1);
+  --vrp-accent-strong: var(--brand-strong, #4f46e5);
+  --vrp-success:       #10b981;
+  --vrp-warn:          #f59e0b;
+  --vrp-shadow:        0 18px 38px rgba(15,23,42,0.32), 0 1px 0 rgba(255,255,255,0.04) inset;
+  --vrp-radius:        14px;
+  --vrp-radius-sm:     10px;
+  --vrp-ease:          cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* =====================================================================
+   1) Pro playback bar  (mounted just below the player overlay area)
+   ===================================================================== */
+.vrp-control-dock {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.15rem 0.2rem 0.25rem;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 28px -20px rgba(15,23,42,0.7);
+  container-type: inline-size;
+}
+
+.vrp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.55rem 0.75rem;
+  margin-top: 0;
+  background: linear-gradient(180deg, rgba(99,102,241,0.06), rgba(15,23,42,0.04));
+  border: 1px solid var(--vrp-border);
+  border-radius: var(--vrp-radius);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vrp-shadow);
+  font-size: 0.82rem;
+  color: var(--vrp-text);
+}
+
+.vrp-bar__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.35rem;
+  background: rgba(15,23,42,0.18);
+  border: 1px solid rgba(148,163,184,0.10);
+  border-radius: 999px;
+}
+
+@container (max-width: 720px) {
+  .vrp-bar {
+    flex-wrap: nowrap;
+    min-height: 48px;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .vrp-bar > .vrp-bar__group:nth-of-type(2),
+  .vrp-bar > #vrp-loop,
+  .vrp-bar > #vrp-autopause,
+  .vrp-bar > #vrp-pip,
+  .vrp-bar > #vrp-ab-pill,
+  .vrp-bar > #vrp-bookmark,
+  .vrp-bar > #vrp-studied,
+  .vrp-bar > #vrp-segpos {
+    display: none !important;
+  }
+
+  .vrp-bar > .vrp-bar__group:first-child {
+    flex: 0 0 auto;
+  }
+
+  .vrp-bar__spacer {
+    display: block;
+  }
+}
+
+body.focus-mode .vrp-bar > .vrp-bar__group:nth-of-type(2),
+body.focus-mode .vrp-bar > #vrp-loop,
+body.focus-mode .vrp-bar > #vrp-autopause,
+body.focus-mode .vrp-bar > #vrp-pip,
+body.focus-mode .vrp-bar > #vrp-ab-pill,
+body.focus-mode .vrp-bar > #vrp-bookmark,
+body.focus-mode .vrp-bar > #vrp-studied,
+body.focus-mode .vrp-bar > #vrp-segpos {
+  display: none !important;
+}
+
+body.focus-mode .vrp-bar {
+  flex-wrap: nowrap;
+  min-height: 48px;
+}
+
+@container (max-width: 460px) {
+  .vrp-bar > .vrp-time,
+  .vrp-bar > .vrp-help-btn {
+    display: none;
+  }
+
+  .vrp-bar > .vrp-bar__group:first-child {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .vrp-bar > .vrp-bar__group:first-child .vrp-btn {
+    flex: 1 1 0;
+  }
+}
+
+.vrp-bar__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vrp-text-muted);
+  margin: 0 0.1rem 0 0.25rem;
+}
+
+/* Segmented speed control ------------------------------------------- */
+.vrp-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(15,23,42,0.22);
+  border: 1px solid rgba(148,163,184,0.12);
+  border-radius: 999px;
+  padding: 2px;
+}
+.vrp-speed__btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--vrp-text-muted);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.18s var(--vrp-ease), color 0.18s var(--vrp-ease), transform 0.18s var(--vrp-ease);
+}
+.vrp-speed__btn:hover {
+  color: var(--vrp-text);
+  background: rgba(99,102,241,0.12);
+}
+.vrp-speed__btn[aria-pressed="true"] {
+  background: linear-gradient(135deg, var(--vrp-accent), var(--vrp-accent-strong));
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+}
+
+/* Sentence navigation buttons --------------------------------------- */
+.vrp-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255,255,255,0.04);
+  color: var(--vrp-text);
+  border: 1px solid rgba(148,163,184,0.16);
+  border-radius: 999px;
+  padding: 0.32rem 0.7rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s var(--vrp-ease), background 0.18s var(--vrp-ease), border-color 0.18s var(--vrp-ease);
+}
+.vrp-btn:hover { background: rgba(99,102,241,0.14); border-color: rgba(99,102,241,0.45); }
+.vrp-btn:active { transform: translateY(1px); }
+.vrp-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+.vrp-btn__icon { width: 14px; height: 14px; flex: 0 0 auto; }
+
+/* Toggle pills (loop / auto-pause) ---------------------------------- */
+.vrp-toggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.7rem;
+  background: rgba(255,255,255,0.04);
+  color: var(--vrp-text-muted);
+  border: 1px solid rgba(148,163,184,0.16);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.18s var(--vrp-ease);
+}
+.vrp-toggle:hover { color: var(--vrp-text); border-color: rgba(99,102,241,0.45); }
+.vrp-toggle[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(135deg, var(--vrp-accent), var(--vrp-accent-strong));
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+}
+.vrp-toggle[aria-pressed="true"] .vrp-toggle__dot { background: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.6); }
+.vrp-toggle__dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--vrp-text-muted);
+  transition: background 0.18s var(--vrp-ease), box-shadow 0.18s var(--vrp-ease);
+}
+
+.vrp-bar__spacer { flex: 1 1 auto; }
+
+/* "?" help button -------------------------------------------------- */
+.vrp-help-btn {
+  appearance: none;
+  width: 28px; height: 28px;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  color: var(--vrp-text);
+  border: 1px solid rgba(148,163,184,0.18);
+  font: 600 0.85rem/1 ui-sans-serif, system-ui;
+  cursor: pointer;
+  transition: all 0.18s var(--vrp-ease);
+}
+.vrp-help-btn:hover {
+  background: var(--vrp-accent);
+  color: #fff;
+  border-color: transparent;
+  transform: rotate(8deg) scale(1.05);
+}
+
+/* =====================================================================
+   2) Keyboard shortcut help overlay
+   ===================================================================== */
+.vrp-help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  background: rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.22s var(--vrp-ease), visibility 0.22s var(--vrp-ease);
+}
+.vrp-help-overlay.show { opacity: 1; visibility: visible; }
+
+.vrp-help-card {
+  width: min(720px, 92vw);
+  max-height: 86vh;
+  overflow: auto;
+  background: var(--vrp-bg-strong);
+  color: var(--vrp-text);
+  border: 1px solid var(--vrp-border);
+  border-radius: 22px;
+  padding: 1.6rem 1.6rem 1.4rem;
+  box-shadow: 0 30px 80px rgba(2,6,23,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  transform: translateY(8px) scale(0.98);
+  transition: transform 0.28s var(--vrp-ease);
+}
+.vrp-help-overlay.show .vrp-help-card { transform: none; }
+
+.vrp-help-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.2rem;
+}
+.vrp-help-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  display: flex; align-items: center; gap: 0.55rem;
+}
+.vrp-help-title__badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  background: linear-gradient(135deg, var(--vrp-accent), var(--vrp-accent-strong));
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.vrp-help-close {
+  appearance: none;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  color: var(--vrp-text);
+  border: 1px solid var(--vrp-border);
+  font: 600 1rem/1 system-ui;
+  cursor: pointer;
+  transition: all 0.18s var(--vrp-ease);
+}
+.vrp-help-close:hover { background: rgba(239,68,68,0.18); color: #fecaca; border-color: rgba(239,68,68,0.4); }
+
+.vrp-help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.1rem;
+}
+.vrp-help-section {
+  background: rgba(15,23,42,0.35);
+  border: 1px solid var(--vrp-border);
+  border-radius: var(--vrp-radius);
+  padding: 0.85rem 0.95rem;
+}
+.vrp-help-section__title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--vrp-text-muted);
+  margin-bottom: 0.65rem;
+  display: flex; align-items: center; gap: 0.35rem;
+}
+.vrp-help-section__title::before {
+  content: '';
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--vrp-accent);
+  box-shadow: 0 0 10px var(--vrp-accent);
+}
+.vrp-help-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed rgba(148,163,184,0.12);
+  font-size: 0.85rem;
+}
+.vrp-help-row:last-child { border-bottom: none; }
+.vrp-help-row__label { color: var(--vrp-text); }
+.vrp-help-keys { display: inline-flex; align-items: center; gap: 0.3rem; }
+.vrp-kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px;
+  padding: 0 6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid rgba(148,163,184,0.28);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  font: 600 0.7rem/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--vrp-text);
+  letter-spacing: 0.02em;
+}
+.vrp-kbd--wide { padding: 0 10px; }
+.vrp-help-foot {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--vrp-border);
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--vrp-text-muted);
+}
+
+/* =====================================================================
+   3) Floating "speed change" toast (when adjusting via keyboard)
+   ===================================================================== */
+.vrp-toast {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translate(-50%, -8px);
+  background: rgba(2, 6, 23, 0.82);
+  color: #fff;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s var(--vrp-ease), transform 0.22s var(--vrp-ease);
+  z-index: 1200;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 30px rgba(2,6,23,0.4);
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.vrp-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.vrp-toast__icon { width: 14px; height: 14px; }
+
+/* =====================================================================
+   4) Polished empty/loading shimmer for transcript & sidebar
+   ===================================================================== */
+.vrp-skeleton {
+  background:
+    linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent),
+    rgba(148,163,184,0.08);
+  background-size: 200% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  animation: vrpShimmer 1.4s linear infinite;
+}
+@keyframes vrpShimmer {
+  0% { background-position: -50% 0, 0 0; }
+  100% { background-position: 150% 0, 0 0; }
+}
+.vrp-skeleton-row {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px dashed rgba(148,163,184,0.10);
+}
+.vrp-skeleton-row .vrp-skeleton.h-3 { height: 10px; width: 30%; }
+.vrp-skeleton-row .vrp-skeleton.h-4 { height: 14px; width: 92%; }
+.vrp-skeleton-row .vrp-skeleton.h-4--short { height: 14px; width: 64%; }
+
+/* Refreshed empty state for "select a video" -------------------------- */
+.vrp-empty-art {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.85rem;
+  padding: 2.4rem 1.5rem;
+  text-align: center;
+  color: var(--vrp-text-muted);
+}
+.vrp-empty-art__glyph {
+  width: 64px; height: 64px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(99,102,241,0.32), rgba(99,102,241,0));
+  color: #fff;
+  font-size: 1.6rem;
+  position: relative;
+  animation: vrpFloat 3.2s ease-in-out infinite;
+}
+.vrp-empty-art__glyph::after {
+  content: '';
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  border: 1px dashed rgba(99,102,241,0.45);
+  animation: vrpSpin 14s linear infinite;
+}
+@keyframes vrpFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes vrpSpin { to { transform: rotate(360deg); } }
+.vrp-empty-art__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--vrp-text);
+}
+.vrp-empty-art__hint {
+  font-size: 0.84rem;
+  max-width: 28ch;
+  line-height: 1.5;
+}
+
+/* =====================================================================
+   5) "Sentence highlight pulse" when navigating via keyboard
+   ===================================================================== */
+@keyframes vrpSegPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.55); }
+  100% { box-shadow: 0 0 0 10px rgba(99,102,241,0); }
+}
+.seg.vrp-pulse {
+  animation: vrpSegPulse 0.8s var(--vrp-ease) 1;
+}
+
+/* =====================================================================
+   6) Light theme overrides (when the page is in light mode)
+   ===================================================================== */
+@media (prefers-color-scheme: light) {
+  :root {
+    --vrp-bg-strong: rgba(255,255,255,0.96);
+    --vrp-text: #0f172a;
+    --vrp-text-muted: #64748b;
+    --vrp-border: rgba(15,23,42,0.10);
+    --vrp-shadow: 0 18px 38px rgba(15,23,42,0.10), 0 1px 0 rgba(255,255,255,0.65) inset;
+  }
+  .vrp-bar { background: linear-gradient(180deg, rgba(99,102,241,0.07), rgba(255,255,255,0.6)); }
+  .vrp-bar__group, .vrp-speed { background: rgba(15,23,42,0.04); }
+  .vrp-help-card { background: #fff; }
+  .vrp-toast { background: rgba(15,23,42,0.92); }
+}
+
+/* =====================================================================
+   7) Responsive — stack the bar nicely on narrow widths
+   ===================================================================== */
+@media (max-width: 900px) {
+  .vrp-bar { gap: 0.4rem; padding: 0.45rem 0.55rem; }
+  .vrp-bar__label { display: none; }
+  .vrp-speed__btn { padding: 0.22rem 0.42rem; font-size: 0.72rem; }
+  .vrp-segpos__num { display: none; }
+  .vrp-segpos__track { width: 80px; }
+  .vrp-studied { padding: 0.18rem 0.4rem; font-size: 0.68rem; }
+}
+
+/* =====================================================================
+   8a) Studied-sentences badge (left of mini progress strip)
+   ===================================================================== */
+.vrp-studied {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.18);
+  border: 1px solid rgba(148,163,184,0.10);
+  color: var(--vrp-text-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.22s var(--vrp-ease);
+}
+.vrp-studied__icon {
+  display: inline-grid; place-items: center;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: rgba(16,185,129,0.18);
+  color: var(--vrp-success);
+  font-size: 9px; font-weight: 800;
+  line-height: 1;
+  border: 1px solid rgba(16,185,129,0.35);
+}
+.vrp-studied__num { color: var(--vrp-text); }
+.vrp-studied__num span:first-child { color: var(--vrp-success); }
+.vrp-studied--done {
+  color: #ecfdf5;
+  background: linear-gradient(135deg, rgba(16,185,129,0.45), rgba(4,120,87,0.55));
+  border-color: rgba(16,185,129,0.55);
+  box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+}
+.vrp-studied--done .vrp-studied__icon { background: rgba(255,255,255,0.18); color: #ecfdf5; border-color: rgba(255,255,255,0.45); }
+.vrp-studied--done .vrp-studied__num,
+.vrp-studied--done .vrp-studied__num span:first-child { color: #ecfdf5; }
+
+/* =====================================================================
+   8a-pop) Studied-badge mini popover (reset confirm)
+   ===================================================================== */
+.vrp-studied-pop {
+  position: fixed;
+  z-index: 2300;
+  min-width: 220px;
+  background: var(--vrp-bg-strong);
+  color: var(--vrp-text);
+  border: 1px solid var(--vrp-border);
+  border-radius: 12px;
+  box-shadow: 0 18px 38px rgba(2,6,23,0.42), 0 1px 0 rgba(255,255,255,0.04) inset;
+  padding: 0.85rem 0.95rem 0.7rem;
+  font-size: 0.84rem;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.18s var(--vrp-ease), transform 0.18s var(--vrp-ease);
+}
+.vrp-studied-pop.show { opacity: 1; transform: none; }
+.vrp-studied-pop__head { font-weight: 700; margin-bottom: 0.2rem; font-size: 0.92rem; }
+.vrp-studied-pop__head b { color: var(--vrp-success); }
+.vrp-studied-pop__body { color: var(--vrp-text-muted); font-size: 0.78rem; margin-bottom: 0.65rem; }
+.vrp-studied-pop__row { display: flex; gap: 0.4rem; justify-content: flex-end; }
+.vrp-studied-pop__btn {
+  appearance: none;
+  border: 1px solid var(--vrp-border);
+  background: rgba(255,255,255,0.04);
+  color: var(--vrp-text);
+  border-radius: 999px;
+  padding: 0.32rem 0.85rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s var(--vrp-ease);
+}
+.vrp-studied-pop__btn--ghost:hover { background: rgba(99,102,241,0.10); border-color: rgba(99,102,241,0.45); }
+.vrp-studied-pop__btn--danger {
+  color: #fee2e2;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(239,68,68,0.32);
+}
+.vrp-studied-pop__btn--danger:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(239,68,68,0.42); }
+
+/* =====================================================================
+   8b) Visited-sentence marker on transcript .seg
+   ===================================================================== */
+.seg.vrp-visited {
+  position: relative;
+}
+.seg.vrp-visited::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--vrp-success);
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.18), 0 0 6px rgba(16,185,129,0.35);
+  pointer-events: none;
+  opacity: 0.78;
+  transition: opacity 0.22s var(--vrp-ease);
+}
+.seg.vrp-visited:hover::after { opacity: 1; }
+
+/* =====================================================================
+   8) Mini sentence-progress strip (right side of the bar)
+   ===================================================================== */
+.vrp-segpos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.18);
+  border: 1px solid rgba(148,163,184,0.10);
+  color: var(--vrp-text-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.vrp-segpos__num { color: var(--vrp-text); }
+.vrp-segpos__num span { color: var(--vrp-accent); }
+.vrp-segpos__track {
+  position: relative;
+  width: 130px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.18);
+  overflow: hidden;
+}
+.vrp-segpos__fill {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--vrp-accent), var(--vrp-accent-strong));
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(99,102,241,0.55);
+  transition: width 0.18s linear;
+}
+
+/* =====================================================================
+   7b) Mini scrubber rail (full-width, sentence-tick aware)
+   ===================================================================== */
+.vrp-scrub {
+  position: relative;
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 8px 8px 6px;
+  display: flex;
+  align-items: stretch;
+}
+.vrp-scrub:focus-visible {
+  outline: 2px solid var(--vrp-accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.vrp-scrub__track {
+  position: relative;
+  flex: 1 1 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.18);
+  cursor: pointer;
+  transition: height 0.16s ease, background 0.18s ease;
+  overflow: visible;
+}
+.vrp-scrub:hover .vrp-scrub__track,
+.vrp-scrub__track.vrp-scrub--just-seeked { height: 12px; background: rgba(148,163,184,0.26); }
+
+.vrp-scrub__buffer {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+}
+.vrp-scrub__fill {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--vrp-accent), var(--vrp-accent-strong));
+  box-shadow: 0 0 12px rgba(99,102,241,0.45);
+  transition: width 0.18s linear;
+}
+.vrp-scrub__ticks { position: absolute; inset: 0; pointer-events: none; }
+.vrp-scrub__tick {
+  position: absolute;
+  top: -2px; bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(255,255,255,0.32);
+  border-radius: 1px;
+  transition: background 0.18s ease, box-shadow 0.18s ease, top 0.18s ease, bottom 0.18s ease, width 0.18s ease;
+}
+.vrp-scrub__tick--active {
+  background: var(--vrp-accent);
+  width: 3px;
+  top: -5px; bottom: -5px;
+  margin-left: -1.5px;
+  box-shadow: 0 0 8px rgba(99,102,241,0.7);
+}
+.vrp-scrub__bookmarks { position: absolute; inset: 0; pointer-events: none; }
+.vrp-scrub__bm {
+  position: absolute;
+  top: -7px;
+  width: 10px; height: 10px;
+  margin-left: -5px;
+  background: #fbbf24;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(251,191,36,0.7);
+  border: 2px solid rgba(15,23,42,0.85);
+}
+.vrp-scrub__head {
+  position: absolute;
+  top: 50%;
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.55), 0 0 0 4px rgba(99,102,241,0.18);
+  pointer-events: none;
+  transition: left 0.18s linear, transform 0.16s ease;
+  transform: scale(0.7);
+}
+.vrp-scrub:hover .vrp-scrub__head { transform: scale(1); }
+
+.vrp-scrub__hover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(15,23,42,0.95);
+  color: #f1f5f9;
+  font: 600 11px/1.2 ui-monospace, "SF Mono", Menlo, monospace;
+  white-space: nowrap;
+  pointer-events: none;
+  border: 1px solid rgba(148,163,184,0.25);
+  box-shadow: 0 6px 16px -8px rgba(0,0,0,0.6);
+}
+.vrp-scrub__hover::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 100%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(15,23,42,0.95);
+}
+
+/* =====================================================================
+   7c) Subtitle text scale (xs/sm/md/lg/xl) — affects dock + transcript
+   ===================================================================== */
+body[data-vrp-sub="xs"] #active-subtitle { font-size: 0.85em !important; }
+body[data-vrp-sub="sm"] #active-subtitle { font-size: 1em !important; }
+body[data-vrp-sub="md"] #active-subtitle { font-size: 1.18em !important; }
+body[data-vrp-sub="lg"] #active-subtitle { font-size: 1.38em !important; line-height: 1.45 !important; }
+body[data-vrp-sub="xl"] #active-subtitle { font-size: 1.62em !important; line-height: 1.4 !important; }
+
+body[data-vrp-sub="lg"] #transcript-list .seg .text { font-size: 1.1em !important; line-height: 1.55 !important; }
+body[data-vrp-sub="xl"] #transcript-list .seg .text { font-size: 1.22em !important; line-height: 1.55 !important; }
+body[data-vrp-sub="xs"] #transcript-list .seg .text { font-size: 0.9em !important; }
+
+/* =====================================================================
+   7d) Dictation mode — blur EN until reveal
+   ===================================================================== */
+body.vrp-dictation #active-subtitle .text,
+body.vrp-dictation #active-subtitle:not(.vrp-revealed) {
+  filter: blur(7px);
+  transition: filter 0.18s ease;
+  cursor: pointer;
+}
+body.vrp-dictation #active-subtitle.vrp-revealed,
+body.vrp-dictation #active-subtitle.vrp-revealed .text { filter: none; }
+
+body.vrp-dictation #transcript-list .seg .text { filter: blur(5px); transition: filter 0.18s ease; cursor: pointer; }
+body.vrp-dictation #transcript-list .seg.vrp-revealed .text { filter: none; }
+body.vrp-dictation #transcript-list .seg .translation,
+body.vrp-dictation #active-subtitle .translation { filter: none !important; }
+
+body.vrp-dictation #active-subtitle::before {
+  content: "🎧 听写模式 · 点击字幕显示英文 · D 退出";
+  display: block;
+  font: 600 11.5px/1.4 ui-sans-serif, system-ui;
+  color: #facc15;
+  background: rgba(250,204,21,0.12);
+  border: 1px solid rgba(250,204,21,0.3);
+  border-radius: 8px;
+  padding: 4px 10px;
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.vrp-dictation #active-subtitle,
+  body.vrp-dictation #transcript-list .seg .text { transition: none !important; }
+}
+
+/* =====================================================================
+   8a) Time readout & bookmark button
+   ===================================================================== */
+.vrp-time {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0 4px;
+  font: 500 12.5px/1 ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  color: rgba(226,232,240,0.78);
+  letter-spacing: 0.3px;
+  user-select: none;
+  white-space: nowrap;
+}
+.vrp-time__cur { color: rgba(241,245,249,0.96); font-weight: 600; }
+.vrp-time__sep { opacity: 0.45; padding: 0 2px; }
+.vrp-time__tot { opacity: 0.7; }
+
+.vrp-btn--star {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 11px !important;
+}
+.vrp-bookmark__icon {
+  font-size: 16px;
+  line-height: 1;
+  color: rgba(226,232,240,0.55);
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+.vrp-bookmark__count {
+  font: 600 11.5px/1 ui-sans-serif, system-ui;
+  min-width: 14px;
+  text-align: center;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.18);
+  color: rgba(226,232,240,0.85);
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.vrp-btn--star.vrp-btn--star--active .vrp-bookmark__icon {
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251,191,36,0.55);
+}
+.vrp-btn--star.vrp-btn--star--active .vrp-bookmark__count {
+  background: linear-gradient(135deg, rgba(251,191,36,0.28), rgba(245,158,11,0.28));
+  color: #fef3c7;
+}
+.vrp-btn--star.vrp-btn--star--current .vrp-bookmark__icon {
+  color: #fde047;
+  transform: scale(1.08);
+}
+.vrp-btn--star:hover .vrp-bookmark__icon {
+  color: #fbbf24;
+  transform: scale(1.05);
+}
+
+/* Star marker on bookmarked transcript segments */
+.seg.vrp-bookmarked {
+  position: relative;
+}
+.seg.vrp-bookmarked::before {
+  content: "★";
+  position: absolute;
+  left: -16px;
+  top: 0.65em;
+  width: 14px;
+  height: 14px;
+  font-size: 12px;
+  line-height: 14px;
+  color: #fbbf24;
+  text-shadow: 0 0 6px rgba(251,191,36,0.7);
+  pointer-events: none;
+}
+
+/* Bookmark popover */
+.vrp-bm-pop {
+  position: fixed;
+  z-index: 9999;
+  width: 360px;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(15,23,42,0.97), rgba(15,23,42,0.94));
+  border: 1px solid rgba(148,163,184,0.22);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,0.6), 0 6px 18px -6px rgba(15,23,42,0.55);
+  color: #e2e8f0;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  backdrop-filter: blur(10px);
+}
+.vrp-bm-pop.show { opacity: 1; transform: translateY(0) scale(1); }
+.vrp-bm-pop__head {
+  position: relative;
+  padding: 12px 16px 10px;
+  font: 600 13px/1.4 ui-sans-serif, system-ui;
+  color: #facc15;
+  border-bottom: 1px solid rgba(148,163,184,0.15);
+  letter-spacing: 0.2px;
+}
+.vrp-bm-pop__head b { color: #fde047; font-weight: 700; }
+.vrp-bm-pop__close {
+  position: absolute;
+  right: 8px; top: 8px;
+  width: 24px; height: 24px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.15);
+  border: 0; color: rgba(226,232,240,0.7);
+  font-size: 17px; line-height: 22px; cursor: pointer;
+}
+.vrp-bm-pop__close:hover { background: rgba(244,114,182,0.32); color: #fff; }
+.vrp-bm-pop__list {
+  overflow-y: auto;
+  padding: 6px 6px 6px;
+}
+.vrp-bm-pop__empty {
+  padding: 22px 18px 24px;
+  font-size: 12.5px;
+  color: rgba(203,213,225,0.7);
+  line-height: 1.6;
+}
+.vrp-bm-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 22px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  background: transparent;
+  color: #e2e8f0;
+  text-align: left;
+  font: 500 12.5px/1.45 ui-sans-serif, system-ui;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.vrp-bm-row:hover { background: rgba(99,102,241,0.16); }
+.vrp-bm-row__t {
+  font: 600 11.5px/1 ui-monospace, "SF Mono", Menlo, monospace;
+  color: #fde047;
+  background: rgba(251,191,36,0.1);
+  padding: 4px 6px;
+  border-radius: 6px;
+  text-align: center;
+}
+.vrp-bm-row__txt {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #cbd5e1;
+}
+.vrp-bm-row__del {
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(148,163,184,0.14);
+  color: rgba(226,232,240,0.6);
+  font-size: 12px;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.vrp-bm-row__del:hover { background: rgba(244,114,182,0.42); color: #fff; }
+.vrp-bm-pop__foot {
+  padding: 8px 16px 12px;
+  font: 500 11.5px/1.4 ui-sans-serif, system-ui;
+  color: rgba(148,163,184,0.78);
+  border-top: 1px solid rgba(148,163,184,0.12);
+}
+
+/* =====================================================================
+   8b) A↔B Repeat pill (live indicator, click to clear)
+   ===================================================================== */
+.vrp-ab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px 0 8px;
+  border: 1px solid rgba(244,114,182,0.55);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(244,114,182,0.18), rgba(168,85,247,0.18));
+  color: #fce7f3;
+  font: 600 12.5px/1 ui-sans-serif, system-ui, -apple-system;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.18s ease, background 0.18s ease;
+  box-shadow: 0 4px 14px -8px rgba(244,114,182,0.55);
+}
+.vrp-ab-pill:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -8px rgba(244,114,182,0.7); }
+.vrp-ab-pill[data-state="arm"] {
+  border-color: rgba(250,204,21,0.6);
+  background: linear-gradient(135deg, rgba(250,204,21,0.18), rgba(244,114,182,0.18));
+  color: #fef3c7;
+  animation: vrp-ab-pulse 1.4s ease-in-out infinite;
+}
+.vrp-ab-pill__dot {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: #f472b6;
+  box-shadow: 0 0 8px rgba(244,114,182,0.85);
+}
+.vrp-ab-pill[data-state="arm"] .vrp-ab-pill__dot {
+  background: #facc15;
+  box-shadow: 0 0 10px rgba(250,204,21,0.85);
+}
+.vrp-ab-pill__x {
+  margin-left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 999px;
+  font-size: 14px; line-height: 14px;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.vrp-ab-pill:hover .vrp-ab-pill__x {
+  background: rgba(255,255,255,0.22);
+  color: #fff;
+}
+@keyframes vrp-ab-pulse {
+  0%, 100% { box-shadow: 0 4px 14px -8px rgba(250,204,21,0.55); }
+  50%      { box-shadow: 0 6px 22px -6px rgba(250,204,21,0.95); }
+}
+
+/* =====================================================================
+   9) Accessibility: keyboard focus rings on every interactive element
+   ===================================================================== */
+.vrp-btn:focus-visible,
+.vrp-toggle:focus-visible,
+.vrp-help-btn:focus-visible,
+.vrp-help-close:focus-visible,
+.vrp-speed__btn:focus-visible,
+.vrp-studied:focus-visible,
+.vrp-studied-pop__btn:focus-visible,
+.vrp-ab-pill:focus-visible,
+.vrp-bm-row:focus-visible,
+.vrp-bm-pop__close:focus-visible {
+  outline: 2px solid var(--vrp-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.25);
+}
+
+/* =====================================================================
+   10) Reduced motion — respect prefers-reduced-motion
+   ===================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .vrp-skeleton,
+  .vrp-empty-art__glyph,
+  .vrp-empty-art__glyph::after,
+  .seg.vrp-pulse {
+    animation: none !important;
+  }
+  .vrp-bar,
+  .vrp-btn,
+  .vrp-toggle,
+  .vrp-speed__btn,
+  .vrp-help-btn,
+  .vrp-help-overlay,
+  .vrp-help-card,
+  .vrp-help-close,
+  .vrp-toast,
+  .vrp-segpos__fill,
+  .vrp-ab-pill,
+  .vrp-bookmark__icon,
+  .vrp-bookmark__count,
+  .vrp-bm-pop,
+  .vrp-bm-row,
+  .vrp-scrub__track,
+  .vrp-scrub__fill,
+  .vrp-scrub__head {
+    transition: none !important;
+    animation: none !important;
+  }
+  .vrp-help-btn:hover { transform: none; }
+  .vrp-gjump,
+  .vrp-next-preview {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ----- Bookmarks-only filter view (Shift+S) --------------------------- */
+body.vrp-bookmarks-only #transcript-list .seg:not(.vrp-bookmarked) {
+  display: none !important;
+}
+.vrp-bm-only-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 8px 8px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(251, 146, 60, 0.18));
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: rgba(248, 250, 252, 0.95);
+  font: 600 12.5px/1.3 ui-sans-serif, system-ui, -apple-system;
+  letter-spacing: 0.01em;
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.18);
+}
+.vrp-bm-only-banner__dot {
+  font-size: 14px;
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.7);
+}
+.vrp-bm-only-banner__txt { flex: 1 1 auto; }
+.vrp-bm-only-banner__close {
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font: 600 11.5px/1.2 ui-sans-serif, system-ui, -apple-system;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.vrp-bm-only-banner__close:hover { background: rgba(15, 23, 42, 0.85); transform: translateY(-1px); }
+
+/* ----- Per-sentence repeat badge -------------------------------------- */
+#transcript-list .seg { position: relative; }
+.vrp-rep {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font: 700 10px/1 ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.04em;
+  color: #f8fafc;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.85), rgba(139, 92, 246, 0.85));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.92;
+  transform-origin: center;
+}
+.vrp-rep--bump { animation: vrp-rep-bump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes vrp-rep-bump {
+  0%   { transform: scale(0.85); }
+  60%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vrp-rep--bump { animation: none; }
+}
+
+/* ----- Cinema mode (Z) — dim everything except the player ------------- */
+body.vrp-cinema {
+  background: #000 !important;
+}
+body.vrp-cinema .reader-shell,
+body.vrp-cinema .reader-grid,
+body.vrp-cinema .main-grid,
+body.vrp-cinema main,
+body.vrp-cinema .video-reader-shell {
+  background: #000 !important;
+  transition: background 0.4s ease;
+}
+body.vrp-cinema .header,
+body.vrp-cinema header,
+body.vrp-cinema .sidebar,
+body.vrp-cinema #sidebar,
+body.vrp-cinema .vocabulary-panel,
+body.vrp-cinema .video-meta-extra,
+body.vrp-cinema .reader-toolbar,
+body.vrp-cinema .left-rail,
+body.vrp-cinema .right-rail,
+body.vrp-cinema #video-meta,
+body.vrp-cinema .ai-chat,
+body.vrp-cinema .ai-chat-container {
+  opacity: 0.18;
+  filter: saturate(0.4);
+  transition: opacity 0.45s ease, filter 0.45s ease;
+}
+body.vrp-cinema #sidebar:hover,
+body.vrp-cinema .header:hover,
+body.vrp-cinema header:hover,
+body.vrp-cinema .vocabulary-panel:hover {
+  opacity: 1;
+  filter: none;
+}
+body.vrp-cinema .player,
+body.vrp-cinema .player-wrap,
+body.vrp-cinema #active-subtitle,
+body.vrp-cinema video,
+body.vrp-cinema .vrp-next-preview {
+  opacity: 1 !important;
+  filter: none !important;
+}
+body.vrp-cinema #transcript-list {
+  opacity: 0.5;
+  transition: opacity 0.45s ease;
+}
+body.vrp-cinema #transcript-list:hover { opacity: 1; }
+body.vrp-cinema #transcript-list .seg.is-active,
+body.vrp-cinema #transcript-list .seg.active {
+  opacity: 1;
+}
+
+/* ----- Transcript search overlay (open with /) ------------------------ */
+.vrp-search {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 14px 16px 0;
+  z-index: 10010;
+  pointer-events: none;
+  transform: translateY(-110%);
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0.24, 1);
+}
+.vrp-search.show { transform: translateY(0); pointer-events: auto; }
+.vrp-search__inner {
+  width: min(620px, 92vw);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(14, 165, 233, 0.45);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(14, 165, 233, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.vrp-search__icon { font-size: 16px; opacity: 0.85; }
+.vrp-search input {
+  flex: 1 1 auto;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font: 500 14px/1.3 ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  padding: 4px 6px;
+}
+.vrp-search input::placeholder { color: rgba(248, 250, 252, 0.45); }
+.vrp-search__status {
+  font: 500 11.5px/1.3 ui-sans-serif, system-ui, -apple-system;
+  color: rgba(248, 250, 252, 0.55);
+  white-space: nowrap;
+  margin-right: 4px;
+}
+.vrp-search__close {
+  background: transparent;
+  border: none;
+  color: rgba(248, 250, 252, 0.7);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 8px;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.vrp-search__close:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+#transcript-list .seg.vrp-search-hit {
+  background: rgba(251, 191, 36, 0.12);
+  outline: 1px solid rgba(251, 191, 36, 0.35);
+  outline-offset: -1px;
+  border-radius: 6px;
+}
+#transcript-list .seg.vrp-search-current {
+  background: rgba(14, 165, 233, 0.22) !important;
+  outline: 2px solid rgba(14, 165, 233, 0.85) !important;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
+}
+
+/* ----- Vim-style g+N sentence-jump hint ------------------------------- */
+.vrp-gjump {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%) translateY(8px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  font: 600 13px/1.2 ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.02em;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(14, 165, 233, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 10001;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.vrp-gjump.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ----- Floating "next sentence" preview chip --------------------------- */
+.vrp-next-preview {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%) translateY(8px);
+  max-width: min(78%, 720px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.66);
+  color: rgba(248, 250, 252, 0.86);
+  font: 500 12.5px/1.35 ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 6;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.vrp-next-preview.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.player:hover .vrp-next-preview { opacity: 0.35; }
+@media (max-width: 720px) {
+  .vrp-next-preview { display: none; }
+}

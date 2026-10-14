@@ -1,0 +1,131 @@
+.dict-actions{margin-top:.6rem;display:flex;gap:.6rem}
+.dict-add-btn{padding:.45rem .8rem;border-radius:8px;border:1px solid #2563eb;background:#2563eb;color:#fff;font-weight:600;cursor:pointer}
+.dict-add-btn:hover{filter:brightness(1.05)}
+.dict-add-btn:active{transform:translateY(1px)}
+.dict-add-btn.added,.dict-add-btn:disabled{background:#e2e8f0;border-color:#cbd5e1;color:#475569;cursor:default}
+/* Unified highlight for learned words in transcripts */
+.word.owned{
+  opacity:1 !important;
+  filter:saturate(.95);
+  background:#FEF3C7; /* amber-100 */
+  border-bottom:1px dashed #F59E0B; /* amber-500 */
+  box-shadow: inset 0 -0.15em 0 rgba(245,158,11,.25);
+  border-radius:4px;
+  padding:0 .12em;
+}
+.word.owned:hover{background:#FDE68A}
+
+/* Dictionary status badge */
+.dict-status{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.8rem;font-weight:700;line-height:1;white-space:nowrap}
+.dict-status.learning{background:#DBEAFE;color:#1D4ED8}
+.dict-status.reviewing{background:#FEF3C7;color:#92400E}
+.dict-status.mastered{background:#D1FAE5;color:#065F46}
+.dict-status.new{background:#E5E7EB;color:#374151}
+
+/* Speaker button styles for mobile */
+.dict-speak-btn:active,
+.dict-def-speak:active{
+  transform:scale(1.15);
+  opacity:1 !important;
+  background:#2563eb !important;
+  color:#fff;
+}
+.dict-speak-btn:hover,
+.dict-def-speak:hover{
+  opacity:1 !important;
+  background:#dbeafe !important;
+  transform:scale(1.05);
+}
+
+/* Smooth transitions for all dict elements */
+.dict-def-speak,
+.dict-speak-btn{
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+}
+
+/* Better spacing for definition cards */
+.dict-card{
+  padding:1.2rem;
+  border-radius:12px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+
+/* ── Mobile Dict Tab Bar ── */
+.vr-dict-tabs{display:flex;align-items:center;gap:.3rem;padding:.5rem .75rem;border-bottom:1px solid #e2e8f0;background:#f8fafc;flex-shrink:0;}
+.vr-dict-tab{border:1px solid transparent;background:transparent;color:#64748b;padding:.32rem .8rem;border-radius:999px;cursor:pointer;font-weight:600;font-size:.82rem;transition:all .18s ease;white-space:nowrap;-webkit-tap-highlight-color:transparent;}
+.vr-dict-tab.active{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);color:#fff;}
+.vr-dict-tab:not(.active):active{background:#e0e7ff;color:#4f46e5;}
+
+/* ── DeepAnalysis shared card styles (da-*) ── */
+@keyframes daShimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+.da-loading{padding:1.4rem 1.1rem;}
+.da-shimmer{height:12px;border-radius:6px;margin:.45rem 0;background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:1200px 100%;animation:daShimmer 1.5s infinite linear;}
+.da-loading-hint{text-align:center;margin-top:1rem;font-size:.84rem;color:#94a3b8;}
+.da-card{background:#fff;}
+.da-hero{padding:.85rem 1.1rem .75rem;border-bottom:1px solid #e2e8f0;background:linear-gradient(135deg,rgba(99,102,241,.07) 0%,rgba(139,92,246,.04) 100%);}
+.da-hero-word{font-size:1.45rem;font-weight:800;color:#0f172a;letter-spacing:-.03em;line-height:1.15;}
+.da-hero-badge{display:inline-block;margin-top:.25rem;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#4f46e5;background:rgba(99,102,241,.1);border-radius:999px;padding:.14rem .6rem;}
+.da-section{padding:.85rem 1.1rem;border-bottom:1px solid #e2e8f0;}
+.da-section:last-child{border-bottom:none;}
+.da-section-label{display:flex;align-items:center;gap:.35rem;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#94a3b8;margin-bottom:.65rem;}
+.da-section-label span{font-size:.82rem;}
+.da-dna{display:flex;align-items:flex-start;flex-wrap:wrap;gap:.3rem;margin-bottom:.55rem;}
+.da-chip{display:inline-flex;flex-direction:column;align-items:center;border-radius:9px;padding:.3rem .65rem .38rem;font-weight:800;font-size:.88rem;line-height:1.2;color:#fff;text-align:center;box-shadow:0 2px 7px rgba(0,0,0,.16);}
+.da-chip small{font-size:.58rem;font-weight:500;opacity:.8;text-transform:uppercase;letter-spacing:.04em;margin-top:1px;}
+.da-plus{align-self:center;font-size:1rem;font-weight:700;color:#94a3b8;padding:0 .08rem;}
+.da-arrow{align-self:center;font-size:.9rem;color:#94a3b8;padding:0 .1rem;}
+.da-result{align-self:center;font-weight:800;font-size:.9rem;color:#0f172a;padding:.28rem .55rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;}
+.da-cog-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;margin:.4rem 0 .25rem;}
+.da-cognates{display:flex;flex-wrap:wrap;gap:.3rem;}
+.da-cognate{padding:.2rem .7rem;background:rgba(99,102,241,.09);border:1px solid rgba(99,102,241,.2);color:#4f46e5;border-radius:999px;font-size:.78rem;font-weight:600;}
+.da-evolution{margin-top:.6rem;padding:.55rem .75rem;border-left:3px solid rgba(99,102,241,.4);background:rgba(99,102,241,.05);border-radius:0 7px 7px 0;font-size:.82rem;color:#475569;line-height:1.65;}
+.da-anchor{border-radius:11px;padding:.9rem 1rem;background:linear-gradient(135deg,rgba(245,158,11,.13) 0%,rgba(234,88,12,.07) 100%);border:1px solid rgba(245,158,11,.27);}
+.da-anchor-formula{font-size:1.05rem;font-weight:900;color:#d97706;letter-spacing:.05em;margin-bottom:.38rem;}
+.da-anchor-meta{font-size:.85rem;color:#475569;line-height:1.7;}
+.da-cf-list{display:flex;flex-direction:column;gap:.6rem;}
+.da-cf-card{border:1px solid #e2e8f0;border-radius:9px;overflow:hidden;}
+.da-cf-head{display:flex;align-items:center;gap:.45rem;padding:.45rem .8rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;}
+.da-cf-word{font-weight:800;font-size:.95rem;color:#4f46e5;}
+.da-cf-vs{font-size:.68rem;font-weight:600;color:#94a3b8;background:#e2e8f0;border-radius:4px;padding:.08rem .38rem;}
+.da-cf-body{display:grid;grid-template-columns:1fr 1fr;}
+.da-cf-col{padding:.55rem .8rem;font-size:.78rem;line-height:1.6;color:#475569;}
+.da-cf-col:first-child{border-right:1px solid #e2e8f0;}
+.da-cf-label{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem;}
+.da-cf-sim{color:#059669;}
+.da-cf-diff{color:#dc2626;}
+.da-quote{border-radius:11px;padding:1rem 1.1rem .9rem;background:linear-gradient(135deg,#1e1b4b 0%,#1e293b 100%);position:relative;overflow:hidden;}
+.da-quote::before{content:'\201C';position:absolute;top:-.5rem;left:.5rem;font-size:4.5rem;color:rgba(255,255,255,.07);font-family:Georgia,serif;line-height:1;pointer-events:none;}
+.da-quote-en{font-style:italic;font-size:.86rem;line-height:1.75;color:rgba(255,255,255,.9);position:relative;}
+.da-quote-zh{font-size:.78rem;color:rgba(255,255,255,.45);margin-top:.45rem;padding-top:.4rem;border-top:1px solid rgba(255,255,255,.1);position:relative;}
+.da-mermaid-wrap{overflow-x:auto;margin-top:.4rem;border-radius:7px;}
+.da-mermaid-wrap svg{max-width:100%;}
+
+/* ── GPT-4 Dict — epub book style (da-bk-*) ── */
+.da-bk-wrap{background:#1e1e22;color:#e2e2e5;font-family:-apple-system,'PingFang SC','Helvetica Neue',sans-serif;}
+.da-bk-header{padding:1.2rem 1.2rem .7rem;border-bottom:1px solid rgba(255,255,255,.08);}
+.da-bk-title{font-size:1.9rem;font-weight:900;color:#fff;letter-spacing:-.03em;line-height:1.1;margin-bottom:.3rem;}
+.da-bk-badge{display:inline-block;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.38);background:rgba(255,255,255,.07);border-radius:4px;padding:.12rem .55rem;}
+.da-bk-content{column-count:1;}
+.da-bk-section{padding:.85rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.06);}
+.da-bk-section:last-child{border-bottom:none;}
+.da-bk-section-title{display:flex;align-items:center;gap:.38rem;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid rgba(255,255,255,.06);}
+.da-bk-section-icon{font-size:.82rem;}
+.da-bk-body{font-size:.85rem;line-height:1.75;color:rgba(255,255,255,.72);}
+.da-bk-para{margin:.2rem 0;}
+.da-bk-item{padding:.15rem 0 .15rem .85rem;position:relative;color:rgba(255,255,255,.7);}
+.da-bk-item::before{content:'';position:absolute;left:.05rem;top:.65em;width:.26rem;height:.26rem;background:rgba(99,102,241,.5);border-radius:50%;}
+.da-bk-item:has(>strong:first-child)::before{display:none;}
+/* Example sentence cards */
+.da-bk-eg{background:rgba(255,255,255,.04);border-radius:8px;padding:.55rem .8rem .5rem;margin:.28rem 0;border-left:2px solid rgba(99,102,241,.4);}
+.da-bk-eg-num{font-size:.6rem;font-weight:800;letter-spacing:.06em;color:rgba(99,102,241,.65);margin-bottom:.15rem;}
+.da-bk-eg-en{font-size:.87rem;color:rgba(255,255,255,.88);line-height:1.5;font-style:italic;}
+.da-bk-eg-zh{font-size:.78rem;color:rgba(255,255,255,.42);margin-top:.2rem;line-height:1.4;}
+@media(min-width:600px){
+  .da-bk-content{column-count:2;column-gap:0;}
+  .da-bk-section{break-inside:avoid;}
+}
+
+/* In overlay (#detail-deep-card), the word is already shown in the card header above —
+   hide the redundant da-hero-word and tighten padding */
+#detail-deep-card .da-hero-word{display:none;}
+#detail-deep-card .da-hero{padding:.4rem 1.1rem .35rem;}

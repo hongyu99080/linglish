@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理后台 - 团队线索</title>
+  <link rel="stylesheet" href="./admin-styles.css" />
+  <script src="./admin-common.js"></script>
+  <style>
+    .lead-toolbar {
+      display: grid;
+      grid-template-columns: minmax(180px, 220px) minmax(240px, 1fr) auto;
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .lead-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .lead-summary-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .lead-summary-label {
+      color: var(--gray-500);
+      font-size: 0.8125rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .lead-summary-value {
+      color: var(--gray-900);
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .lead-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .lead-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .lead-card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .lead-org {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .lead-meta {
+      color: var(--gray-500);
+      font-size: 0.8125rem;
+      margin-top: 0.25rem;
+    }
+
+    .lead-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .lead-detail {
+      background: var(--gray-50);
+      border-radius: 8px;
+      padding: 0.75rem;
+      min-width: 0;
+    }
+
+    .lead-detail-label {
+      color: var(--gray-500);
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .lead-detail-value {
+      color: var(--gray-800);
+      font-size: 0.875rem;
+      overflow-wrap: anywhere;
+    }
+
+    .lead-use-case {
+      border-left: 3px solid var(--primary-color);
+      background: var(--gray-50);
+      border-radius: 8px;
+      color: var(--gray-700);
+      margin-bottom: 1rem;
+      padding: 0.85rem 1rem;
+      white-space: pre-wrap;
+    }
+
+    .lead-actions {
+      display: grid;
+      grid-template-columns: minmax(160px, 220px) 1fr auto;
+      gap: 0.75rem;
+      align-items: end;
+    }
+
+    .lead-notes {
+      min-height: 74px;
+      resize: vertical;
+    }
+
+    .lead-muted {
+      color: var(--gray-500);
+      font-size: 0.8125rem;
+    }
+
+    @media (max-width: 980px) {
+      .lead-toolbar,
+      .lead-actions,
+      .lead-detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .lead-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .lead-summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .lead-card-header {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-content">
+    <div class="lead-summary-grid">
+      <div class="lead-summary-card">
+        <div class="lead-summary-label">本页线索</div>
+        <div class="lead-summary-value" id="summary-total">-</div>
+      </div>
+      <div class="lead-summary-card">
+        <div class="lead-summary-label">待跟进</div>
+        <div class="lead-summary-value" id="summary-new">-</div>
+      </div>
+      <div class="lead-summary-card">
+        <div class="lead-summary-label">已联系 / 合格</div>
+        <div class="lead-summary-value" id="summary-active">-</div>
+      </div>
+      <div class="lead-summary-card">
+        <div class="lead-summary-label">成交</div>
+        <div class="lead-summary-value" id="summary-won">-</div>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2 class="admin-card-title">🏫 团队线索池</h2>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="admin-btn admin-btn-sm admin-btn-secondary" id="export-leads-btn">
+            <span>📊</span>
+            <span>导出CSV</span>
+          </button>
+          <button class="admin-btn admin-btn-sm admin-btn-primary" id="refresh-leads-btn">
+            <span>🔄</span>
+            <span>刷新</span>
+          </button>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div class="lead-toolbar">
+          <div class="admin-form-group" style="margin-bottom: 0;">
+            <label class="admin-form-label" for="filter-status">线索状态</label>
+            <select id="filter-status" class="admin-form-input">
+              <option value="">全部状态</option>
+              <option value="new">待跟进</option>
+              <option value="contacted">已联系</option>
+              <option value="qualified">合格</option>
+              <option value="won">成交</option>
+              <option value="lost">无效</option>
+            </select>
+          </div>
+          <div class="admin-form-group" style="margin-bottom: 0;">
+            <label class="admin-form-label" for="filter-search">搜索</label>
+            <input id="filter-search" class="admin-form-input" type="search" placeholder="机构、姓名、邮箱、角色、需求" />
+          </div>
+          <div class="lead-muted" id="lead-count">加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="lead-list" class="lead-list"></div>
+  </div>
+
+  <script>
+    initAdminPage('团队线索');
+
+    const STATUS_OPTIONS = ['new', 'contacted', 'qualified', 'won', 'lost'];
+    const STATUS_META = {
+      new: { label: '待跟进', badge: 'admin-badge-warning' },
+      contacted: { label: '已联系', badge: 'admin-badge-primary' },
+      qualified: { label: '合格', badge: 'admin-badge-success' },
+      won: { label: '成交', badge: 'admin-badge-success' },
+      lost: { label: '无效', badge: 'admin-badge-secondary' }
+    };
+
+    let allLeads = [];
+    let filteredLeads = [];
+    let searchTimer = null;
+
+    function statusMeta(status) {
+      return STATUS_META[status] || STATUS_META.new;
+    }
+
+    function formatExactDate(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '-';
+      return date.toLocaleString('zh-CN');
+    }
+
+    function renderStatusBadge(status) {
+      const meta = statusMeta(status);
+      return `<span class="admin-badge ${meta.badge}">${meta.label}</span>`;
+    }
+
+    function renderStatusSelect(id, status) {
+      const value = STATUS_OPTIONS.includes(status) ? status : 'new';
+      const options = STATUS_OPTIONS.map(option => {
+        const selected = option === value ? 'selected' : '';
+        return `<option value="${option}" ${selected}>${statusMeta(option).label}</option>`;
+      }).join('');
+      return `
+        <select class="admin-form-input" data-lead-status="${id}">
+          ${options}
+        </select>
+      `;
+    }
+
+    function leadSearchText(lead) {
+      return [
+        lead.organization,
+        lead.name,
+        lead.email,
+        lead.role,
+        lead.team_size,
+        lead.use_case,
+        lead.source,
+        lead.intent,
+        lead.notes
+      ].filter(Boolean).join(' ').toLowerCase();
+    }
+
+    async function loadTeamLeads() {
+      const listEl = document.getElementById('lead-list');
+      const status = document.getElementById('filter-status').value;
+      const query = status ? `?status=${encodeURIComponent(status)}&limit=200` : '?limit=200';
+
+      listEl.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-body">
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-text long"></div>
+            <div class="skeleton skeleton-text medium"></div>
+          </div>
+        </div>
+      `;
+
+      try {
+        const response = await AdminAPI.get(`/admin/team-leads${query}`);
+        allLeads = response.items || [];
+        applyFilters();
+      } catch (error) {
+        console.error('加载团队线索失败:', error);
+        listEl.innerHTML = `
+          <div class="admin-empty-state">
+            <div class="admin-empty-icon">❌</div>
+            <p class="admin-empty-text">加载失败: ${AdminUtils.escapeHtml(error.message)}</p>
+          </div>
+        `;
+      }
+    }
+
+    function applyFilters() {
+      const term = document.getElementById('filter-search').value.trim().toLowerCase();
+      filteredLeads = term
+        ? allLeads.filter(lead => leadSearchText(lead).includes(term))
+        : [...allLeads];
+      updateSummary();
+      renderLeads();
+    }
+
+    function updateSummary() {
+      const counts = filteredLeads.reduce((acc, lead) => {
+        const status = STATUS_OPTIONS.includes(lead.status) ? lead.status : 'new';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+      document.getElementById('summary-total').textContent = filteredLeads.length;
+      document.getElementById('summary-new').textContent = counts.new || 0;
+      document.getElementById('summary-active').textContent = (counts.contacted || 0) + (counts.qualified || 0);
+      document.getElementById('summary-won').textContent = counts.won || 0;
+      document.getElementById('lead-count').textContent = `共 ${allLeads.length} 条，显示 ${filteredLeads.length} 条`;
+    }
+
+    function renderLeads() {
+      const listEl = document.getElementById('lead-list');
+      if (!filteredLeads.length) {
+        listEl.innerHTML = `
+          <div class="admin-empty-state">
+            <div class="admin-empty-icon">📭</div>
+            <p class="admin-empty-text">暂无团队线索</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = filteredLeads.map(lead => {
+        const id = Number(lead.id);
+        const organization = AdminUtils.escapeHtml(lead.organization || '未填写机构');
+        const name = AdminUtils.escapeHtml(lead.name || '-');
+        const email = AdminUtils.escapeHtml(lead.email || '-');
+        const role = AdminUtils.escapeHtml(lead.role || '-');
+        const teamSize = AdminUtils.escapeHtml(lead.team_size || '-');
+        const source = AdminUtils.escapeHtml(lead.source || 'pricing');
+        const intent = AdminUtils.escapeHtml(lead.intent || 'team');
+        const useCase = AdminUtils.escapeHtml(lead.use_case || '未填写具体需求');
+        const notes = AdminUtils.escapeHtml(lead.notes || '');
+
+        return `
+          <article class="lead-card" data-lead-id="${id}">
+            <div class="lead-card-header">
+              <div>
+                <div class="lead-org">${organization}</div>
+                <div class="lead-meta">#${id} · ${formatExactDate(lead.created_at)} · ${AdminUtils.escapeHtml(AdminUtils.formatDate(lead.created_at))}</div>
+              </div>
+              ${renderStatusBadge(lead.status)}
+            </div>
+
+            <div class="lead-detail-grid">
+              <div class="lead-detail">
+                <div class="lead-detail-label">联系人</div>
+                <div class="lead-detail-value">${name}</div>
+              </div>
+              <div class="lead-detail">
+                <div class="lead-detail-label">邮箱</div>
+                <div class="lead-detail-value"><a href="mailto:${email}">${email}</a></div>
+              </div>
+              <div class="lead-detail">
+                <div class="lead-detail-label">角色</div>
+                <div class="lead-detail-value">${role}</div>
+              </div>
+              <div class="lead-detail">
+                <div class="lead-detail-label">规模</div>
+                <div class="lead-detail-value">${teamSize}</div>
+              </div>
+            </div>
+
+            <div class="lead-use-case">${useCase}</div>
+
+            <div class="lead-detail-grid">
+              <div class="lead-detail">
+                <div class="lead-detail-label">来源</div>
+                <div class="lead-detail-value">${source}</div>
+              </div>
+              <div class="lead-detail">
+                <div class="lead-detail-label">意图</div>
+                <div class="lead-detail-value">${intent}</div>
+              </div>
+              <div class="lead-detail">
+                <div class="lead-detail-label">更新时间</div>
+                <div class="lead-detail-value">${formatExactDate(lead.updated_at)}</div>
+              </div>
+              <div class="lead-detail">
+                <div class="lead-detail-label">访客ID</div>
+                <div class="lead-detail-value">${AdminUtils.escapeHtml(lead.visitor_id || '-')}</div>
+              </div>
+            </div>
+
+            <div class="lead-actions">
+              <div>
+                <label class="admin-form-label" for="lead-status-${id}">状态</label>
+                ${renderStatusSelect(id, lead.status).replace('data-lead-status', `id="lead-status-${id}" data-lead-status`)}
+              </div>
+              <div>
+                <label class="admin-form-label" for="lead-notes-${id}">跟进备注</label>
+                <textarea id="lead-notes-${id}" class="admin-form-input lead-notes" data-lead-notes="${id}" placeholder="记录下一步动作、报价、决策人、风险点">${notes}</textarea>
+              </div>
+              <button class="admin-btn admin-btn-primary" data-update-lead="${id}">
+                <span>✓</span>
+                <span>保存</span>
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    async function updateLead(id, button) {
+      const statusEl = document.querySelector(`[data-lead-status="${id}"]`);
+      const notesEl = document.querySelector(`[data-lead-notes="${id}"]`);
+      if (!statusEl || !notesEl) return;
+
+      const originalText = button ? button.innerHTML : '';
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="admin-loading"></span><span>保存中</span>';
+      }
+
+      try {
+        const response = await AdminAPI.patch(`/admin/team-leads/${id}`, {
+          status: statusEl.value,
+          notes: notesEl.value
+        });
+        const updated = response.item;
+        allLeads = allLeads.map(item => Number(item.id) === Number(id) ? updated : item);
+        AdminUtils.showToast('线索已更新', 'success');
+        applyFilters();
+      } catch (error) {
+        console.error('更新团队线索失败:', error);
+        AdminUtils.showToast('更新失败: ' + error.message, 'error');
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = originalText;
+        }
+      }
+    }
+
+    function exportLeads() {
+      const rows = filteredLeads.map(lead => ({
+        ID: lead.id,
+        机构: lead.organization || '',
+        联系人: lead.name || '',
+        邮箱: lead.email || '',
+        角色: lead.role || '',
+        规模: lead.team_size || '',
+        状态: statusMeta(lead.status).label,
+        来源: lead.source || '',
+        意图: lead.intent || '',
+        需求: lead.use_case || '',
+        备注: lead.notes || '',
+        创建时间: formatExactDate(lead.created_at),
+        更新时间: formatExactDate(lead.updated_at)
+      }));
+      const date = new Date().toISOString().slice(0, 10);
+      AdminUtils.exportToCSV(rows, `linglish-team-leads-${date}.csv`);
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(applyFilters, 250);
+    }
+
+    document.getElementById('filter-status').addEventListener('change', loadTeamLeads);
+    document.getElementById('filter-search').addEventListener('input', debounceSearch);
+    document.getElementById('refresh-leads-btn').addEventListener('click', loadTeamLeads);
+    document.getElementById('export-leads-btn').addEventListener('click', exportLeads);
+    document.getElementById('lead-list').addEventListener('click', event => {
+      const button = event.target.closest('[data-update-lead]');
+      if (!button) return;
+      updateLead(Number(button.getAttribute('data-update-lead')), button);
+    });
+
+    loadTeamLeads();
+  </script>
+</body>
+</html>

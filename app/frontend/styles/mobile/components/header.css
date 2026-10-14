@@ -1,0 +1,257 @@
+/* Mobile Header Components */
+
+.mobile-header {
+  background: white;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.language-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.flag-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.language-info h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.change-language {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Video Library Header */
+.video-library-header {
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: white;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+}
+
+.brand-section h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.video-library-header .icon-btn {
+  color: white;
+}
+
+/* Stats Header */
+.stats-header {
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: white;
+}
+
+.stats-header h1 {
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Explore World Header */
+.explore-header {
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: white;
+}
+
+.explore-header .icon-btn {
+  color: white;
+}
+
+/* Power Station Header */
+.power-header {
+  background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+  color: #1a1a1a;
+}
+
+.power-header .icon-btn {
+  color: #1a1a1a;
+}
+
+/* Arena Header */
+.arena-header {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+}
+
+.arena-header .icon-btn {
+  color: white;
+}
+
+/* Treasure Header */
+.treasure-header {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.treasure-header .icon-btn {
+  color: white;
+}
+
+/* Vocabulary Header */
+.vocabulary-header {
+  padding: 12px 16px;
+}
+
+/* Playlist Header */
+.playlist-header {
+  padding: 12px 16px;
+}
+
+.playlist-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.playlist-info {
+  flex: 1;
+}
+
+.playlist-info h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.change-playlist {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+/* More Page Header */
+.more-header {
+  padding: 16px;
+}
+
+.more-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* Logout button in explore page */
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.logout-btn:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile User Info - Compact Design */
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+}
+
+.mobile-user-info[hidden] {
+  display: none !important;
+}
+
+.mobile-user-name {
+  display: none; /* Hide username on mobile to save space */
+}
+
+/* Mobile VIP Badge - Compact Icon-Only Design */
+.mobile-vip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-vip-badge[hidden] {
+  display: none !important;
+}
+
+.mobile-vip-badge .vip-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mobile-vip-badge .vip-text {
+  display: none; /* Hide text, show icon only */
+}
+
+.mobile-vip-badge.vip {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #7c2d12;
+}
+.mobile-vip-badge.svip {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #e0f2fe;
+}
+
+.mobile-vip-badge.family {
+  background: linear-gradient(135deg, #ec4899, #2dd4bf);
+  color: white;
+}
+
+.mobile-vip-badge:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}

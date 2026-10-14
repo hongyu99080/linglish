@@ -1,0 +1,1424 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学习报告 - Linglish</title>
+  <meta name="description" content="查看 Linglish 最近 7 天真实英语训练报告：活跃天数、训练分钟、连续训练、跟读和复习建议。">
+  <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+  <script src="./js/auth-manager.js?v=1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #64748b;
+      --paper: #f8fafc;
+      --surface: #ffffff;
+      --line: #d8e0ea;
+      --teal: #0f766e;
+      --teal-strong: #0b5f59;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --amber: #b45309;
+      --shadow: 0 18px 46px rgba(15, 23, 42, 0.1);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(15, 118, 110, 0.08), rgba(248, 250, 252, 0) 360px),
+        var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      padding: 0 clamp(18px, 5vw, 64px);
+      background: rgba(255, 255, 255, 0.9);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 850;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: var(--teal);
+      font-weight: 900;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-link {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 16px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--teal);
+      box-shadow: 0 14px 30px rgba(15, 118, 110, 0.22);
+    }
+
+    .btn-primary:hover {
+      background: var(--teal-strong);
+    }
+
+    .btn-secondary {
+      color: var(--ink);
+      background: #ffffff;
+      border-color: var(--line);
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: clamp(24px, 4vw, 48px) 0 56px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
+      gap: clamp(22px, 4vw, 42px);
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .hero-main,
+    .hero-panel,
+    .section,
+    .metric-card,
+    .insight-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .hero-main {
+      padding: clamp(24px, 4vw, 38px);
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      color: var(--teal-strong);
+      font-size: 13px;
+      font-weight: 850;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 12px 0 14px;
+      font-size: clamp(38px, 6vw, 64px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 19px);
+      line-height: 1.68;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .hero-panel {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .score-box {
+      padding: 18px;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: linear-gradient(135deg, #0f766e, #2563eb);
+    }
+
+    .score-label {
+      font-size: 13px;
+      font-weight: 850;
+      opacity: 0.9;
+    }
+
+    .score-value {
+      margin-top: 6px;
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .score-copy {
+      margin-top: 10px;
+      color: rgba(255, 255, 255, 0.84);
+      font-size: 14px;
+    }
+
+    .mini-grid,
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric-card {
+      padding: 16px;
+    }
+
+    .metric-card strong {
+      display: block;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .metric-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 20px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .section-subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(320px, 1.08fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .chart-box {
+      min-height: 310px;
+    }
+
+    .weekly-bars {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+      align-items: end;
+      min-height: 190px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fafc;
+    }
+
+    .weekly-day {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      min-width: 0;
+    }
+
+    .weekly-bar {
+      display: flex;
+      align-items: end;
+      width: 100%;
+      height: 118px;
+      padding: 4px;
+      border-radius: var(--radius);
+      background: #e2e8f0;
+    }
+
+    .weekly-bar span {
+      display: block;
+      width: 100%;
+      min-height: 8px;
+      border-radius: 6px;
+      background: var(--teal);
+    }
+
+    .weekly-day.inactive .weekly-bar span {
+      background: #cbd5e1;
+    }
+
+    .weekly-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .insight-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .insight-card {
+      display: grid;
+      gap: 8px;
+      padding: 16px;
+      box-shadow: none;
+    }
+
+    .insight-card strong {
+      font-size: 16px;
+    }
+
+    .insight-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .insight-action {
+      justify-self: start;
+      margin-top: 2px;
+      color: var(--teal-strong);
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .share-growth {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.74fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .share-preview {
+      width: 100%;
+      min-height: 170px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fafc;
+      color: var(--ink);
+      font: inherit;
+      line-height: 1.65;
+      resize: vertical;
+    }
+
+    .share-side {
+      display: grid;
+      gap: 12px;
+    }
+
+    .share-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .share-stat {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+
+    .share-stat strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .share-stat span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .share-link-box {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid rgba(37, 99, 235, 0.18);
+      border-radius: var(--radius);
+      background: #eff6ff;
+    }
+
+    .share-link-box label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .share-link {
+      overflow: hidden;
+      padding: 10px 12px;
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 750;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .share-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .commitment-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .commitment-card {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fafc;
+    }
+
+    .commitment-status {
+      padding: 16px;
+      border: 1px solid rgba(15, 118, 110, 0.18);
+      border-radius: var(--radius);
+      background: #f0fdfa;
+    }
+
+    .commitment-status strong {
+      display: block;
+      font-size: 18px;
+    }
+
+    .commitment-status span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .commitment-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .commitment-option {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 850;
+    }
+
+    .commitment-option.active {
+      color: #ffffff;
+      border-color: var(--teal);
+      background: var(--teal);
+    }
+
+    .commitment-row {
+      display: grid;
+      gap: 6px;
+    }
+
+    .commitment-row label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .commitment-row input {
+      width: 100%;
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .commitment-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .commitment-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .empty {
+      padding: 22px;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: #ffffff;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: var(--ink);
+      box-shadow: var(--shadow);
+      font-size: 14px;
+      font-weight: 750;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .report-grid,
+      .metrics-grid,
+      .share-growth,
+      .commitment-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mini-grid,
+      .share-stat-grid,
+      .commitment-options {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .nav-actions .nav-link {
+        display: none;
+      }
+    }
+
+    @media print {
+      .topbar,
+      .hero-actions,
+      .section-head .btn,
+      .toast {
+        display: none !important;
+      }
+
+      body {
+        background: #ffffff;
+      }
+
+      .page {
+        width: 100%;
+        padding: 0;
+      }
+
+      .section,
+      .hero-main,
+      .hero-panel {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./today.html" aria-label="Linglish 今日训练">
+      <span class="brand-mark">L</span>
+      <span>Linglish</span>
+    </a>
+    <nav class="nav-actions">
+      <a class="nav-link" href="./today.html" data-track="nav_today">今日训练</a>
+      <a class="nav-link" href="./video-vocabulary-desktop.html" data-track="nav_vocab">词汇复习</a>
+      <a class="nav-link" href="./pricing.html" data-track="nav_pricing">会员方案</a>
+      <a class="btn btn-secondary" href="./today.html" data-track="back_today">返回训练</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-main">
+        <div class="eyebrow">Weekly Learning Report</div>
+        <h1 id="hero-title">最近 7 天的训练报告。</h1>
+        <p class="hero-copy" id="hero-copy">把每天的输入、跟读、复习和连续训练汇总成一页报告，方便你复盘，也方便继续下一轮训练。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="./today.html?from=weekly_report" data-track="primary_today">继续今日训练</a>
+          <button class="btn btn-secondary" id="share-report" type="button" data-track="share_report">分享摘要</button>
+          <button class="btn btn-secondary" id="print-report" type="button" data-track="print_report">打印 / 保存 PDF</button>
+        </div>
+      </div>
+
+      <aside class="hero-panel">
+        <div class="score-box">
+          <div class="score-label">本周活跃</div>
+          <div class="score-value" id="active-days">0/7</div>
+          <div class="score-copy" id="active-copy">登录后显示最近 7 天训练节奏。</div>
+        </div>
+        <div class="mini-grid">
+          <div class="metric-card">
+            <strong id="weekly-minutes">0</strong>
+            <span>训练分钟</span>
+          </div>
+          <div class="metric-card">
+            <strong id="practice-sessions">0</strong>
+            <span>跟读次数</span>
+          </div>
+          <div class="metric-card">
+            <strong id="current-streak">0</strong>
+            <span>连续天数</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section" id="login-section" hidden>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">登录后查看个人报告</h2>
+          <p class="section-subtitle">报告需要读取你的训练进度、跟读记录和复习数据。</p>
+        </div>
+        <a class="btn btn-primary" href="./desktop-auth.html?next=./learning-reports.html">登录 / 注册</a>
+      </div>
+    </section>
+
+    <section class="section" id="share-section" hidden>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">分享本周进展</h2>
+          <p class="section-subtitle">把报告转成一段可复制摘要，带朋友进入同一套 Today 训练闭环。</p>
+        </div>
+        <a class="btn btn-secondary" id="share-pricing-link" href="./pricing.html?from=weekly_report_share&intent=share_growth#plans" data-track="share_pricing_link">用会员提高反馈频率</a>
+      </div>
+      <div class="share-growth">
+        <textarea class="share-preview" id="share-summary" readonly aria-label="周报分享摘要">报告加载后生成分享摘要。</textarea>
+        <div class="share-side">
+          <div class="share-stat-grid">
+            <div class="share-stat">
+              <strong id="share-active-days">0/7</strong>
+              <span>活跃天数</span>
+            </div>
+            <div class="share-stat">
+              <strong id="share-minutes">0</strong>
+              <span>训练分钟</span>
+            </div>
+            <div class="share-stat">
+              <strong id="share-streak">0</strong>
+              <span>连续天数</span>
+            </div>
+          </div>
+          <div class="share-link-box">
+            <label for="share-invite-link">邀请链接</label>
+            <div class="share-link" id="share-invite-link">https://example.com/today.html?from=weekly_report_share</div>
+          </div>
+          <div class="share-actions">
+            <button class="btn btn-primary" id="copy-share-summary" type="button" data-track="copy_share_summary">复制摘要</button>
+            <button class="btn btn-secondary" id="copy-invite-link" type="button" data-track="copy_invite_link">复制邀请链接</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="report-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">7 天训练节奏</h2>
+          <p class="section-subtitle" id="weekly-recommendation">正在加载本周建议。</p>
+        </div>
+        <a class="btn btn-secondary" href="./video-vocabulary-desktop.html?from=weekly_report" data-track="review_words">复习词句</a>
+      </div>
+      <div class="report-grid">
+        <div class="weekly-bars" id="weekly-bars">
+          <div class="empty">正在加载...</div>
+        </div>
+        <div class="chart-box">
+          <canvas id="weekly-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="metrics-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">关键指标</h2>
+          <p class="section-subtitle">用最少指标判断本周是否形成稳定训练闭环。</p>
+        </div>
+        <button class="btn btn-secondary" id="generate-weekly" type="button" data-track="generate_legacy_weekly">生成历史周报</button>
+      </div>
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="metric-card"><strong>-</strong><span>加载中</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="insights-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">下一步建议</h2>
+          <p class="section-subtitle">报告会把本周表现转化成今天可以执行的训练动作。</p>
+        </div>
+        <a class="btn btn-primary" href="./practice-session-desktop.html?from=weekly_report&mode=shadowing" data-track="practice_from_report">进入跟读</a>
+      </div>
+      <div class="insight-list" id="insight-list">
+        <div class="empty">正在生成建议...</div>
+      </div>
+    </section>
+
+    <section class="section" id="commitment-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">下次训练承诺</h2>
+          <p class="section-subtitle">把复盘转成下一次行动，减少“看完报告就离开”。</p>
+        </div>
+        <a class="btn btn-primary" href="./today.html?from=commitment" data-track="commitment_start_now">现在开始</a>
+      </div>
+      <div class="commitment-grid">
+        <div class="commitment-status">
+          <strong id="commitment-title">还没有设置下次训练</strong>
+          <span id="commitment-copy">选择一个稳定时间，Linglish 会在本设备保留你的训练承诺。</span>
+        </div>
+        <div class="commitment-card">
+          <div class="commitment-options" id="commitment-options">
+            <button class="commitment-option active" type="button" data-offset="1">明天</button>
+            <button class="commitment-option" type="button" data-offset="2">后天</button>
+            <button class="commitment-option" type="button" data-offset="7">下周</button>
+          </div>
+          <div class="commitment-row">
+            <label for="commitment-time">训练时间</label>
+            <input id="commitment-time" type="time" value="20:30">
+          </div>
+          <div class="commitment-actions">
+            <button class="btn btn-primary" id="save-commitment" type="button" data-track="save_commitment">保存承诺</button>
+            <button class="btn btn-secondary" id="enable-notification" type="button" data-track="enable_notification">开启浏览器提醒</button>
+            <button class="btn btn-secondary" id="download-calendar" type="button" data-track="download_calendar">下载日历</button>
+          </div>
+          <div class="commitment-note">浏览器提醒只在当前设备生效；日历文件可导入 Apple/Google/Outlook Calendar。</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_BASE = (() => {
+      if (window.API_BASE) return window.API_BASE;
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        return location.port === '4000' ? '' : 'http://localhost:4000';
+      }
+      return '';
+    })();
+
+    const state = {
+      token: null,
+      user: null,
+      weekly: null,
+      streak: null,
+      progress: null,
+      chart: null,
+      commitmentOffset: 1,
+    };
+
+    const COMMITMENT_KEY = 'linglish_next_training_commitment';
+
+    function getToken() {
+      try {
+        if (window.AuthManager && typeof window.AuthManager.getToken === 'function') {
+          return window.AuthManager.getToken();
+        }
+      } catch (_) {}
+      try {
+        return localStorage.getItem('linglish_token') || localStorage.getItem('authToken') ||
+          sessionStorage.getItem('linglish_token') || sessionStorage.getItem('authToken') || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function headers() {
+      return state.token ? { Authorization: `Bearer ${state.token}` } : {};
+    }
+
+    async function getJson(path) {
+      const res = await fetch(`${API_BASE}${path}`, { headers: headers() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.message || `HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function formatWeekday(dateKey) {
+      const date = new Date(`${dateKey}T00:00:00`);
+      const labels = ['日', '一', '二', '三', '四', '五', '六'];
+      if (Number.isNaN(date.getTime())) return '--';
+      return labels[date.getDay()];
+    }
+
+    function formatCommitmentDate(iso) {
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return '时间待设置';
+      const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getDay()];
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mi = String(date.getMinutes()).padStart(2, '0');
+      return `${mm}/${dd} ${weekday} ${hh}:${mi}`;
+    }
+
+    function getPublicOrigin() {
+      if (/^https?:$/i.test(location.protocol)) return location.origin;
+      return 'https://example.com';
+    }
+
+    function getShareInviteUrl() {
+      const url = new URL('/today.html', getPublicOrigin());
+      url.searchParams.set('from', 'weekly_report_share');
+      url.searchParams.set('intent', 'try_today_loop');
+      return url.toString();
+    }
+
+    function getSavedCommitment() {
+      try {
+        const raw = localStorage.getItem(COMMITMENT_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function getCommitmentTimeInput() {
+      return document.getElementById('commitment-time');
+    }
+
+    function buildCommitmentDate(offsetDays, timeValue) {
+      const [hour, minute] = String(timeValue || '20:30').split(':').map(Number);
+      const date = new Date();
+      date.setDate(date.getDate() + Number(offsetDays || 1));
+      date.setHours(Number.isFinite(hour) ? hour : 20, Number.isFinite(minute) ? minute : 30, 0, 0);
+      return date;
+    }
+
+    function renderCommitment() {
+      const saved = getSavedCommitment();
+      const titleEl = document.getElementById('commitment-title');
+      const copyEl = document.getElementById('commitment-copy');
+      const timeInput = getCommitmentTimeInput();
+      if (timeInput) {
+        try {
+          const reminder = JSON.parse(localStorage.getItem('linglish_reminder_settings') || '{}');
+          timeInput.value = saved?.time || reminder.time || '20:30';
+        } catch (_) {
+          timeInput.value = saved?.time || '20:30';
+        }
+      }
+      if (!titleEl || !copyEl) return;
+      if (!saved?.scheduledAt) {
+        titleEl.textContent = '还没有设置下次训练';
+        copyEl.textContent = '选择一个稳定时间，Linglish 会在本设备保留你的训练承诺。';
+        return;
+      }
+      titleEl.textContent = `下次训练：${formatCommitmentDate(saved.scheduledAt)}`;
+      copyEl.textContent = saved.notificationEnabled
+        ? '浏览器提醒已开启；到点时如果页面仍在浏览器环境中，会提醒你回到训练。'
+        : '已保存到本设备。你也可以开启浏览器提醒或下载日历。';
+    }
+
+    function postEvent(eventName, properties = {}) {
+      try {
+        if (!state.token) return;
+        fetch(`${API_BASE}/events`, {
+          method: 'POST',
+          headers: {
+            ...headers(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            event_name: eventName,
+            properties: {
+              page: 'learning-reports',
+              active_days: Number(state.weekly?.totals?.activeDays || 0),
+              weekly_minutes: Number(state.weekly?.totals?.estimatedMinutes || 0),
+              current_streak: Number(state.streak?.currentStreak || 0),
+              ...properties,
+            },
+          }),
+          keepalive: true,
+        }).catch(() => {});
+      } catch (_) {}
+    }
+
+    function bindTracking() {
+      document.addEventListener('click', (event) => {
+        const target = event.target && event.target.closest ? event.target.closest('[data-track]') : null;
+        if (!target) return;
+        postEvent('click', {
+          name: target.dataset.track,
+          label: target.innerText || target.getAttribute('aria-label') || target.dataset.track,
+          href: target.getAttribute('href') || null,
+        });
+      }, true);
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return 'clipboard';
+      }
+      window.prompt('复制内容', text);
+      return 'prompt';
+    }
+
+    function buildShareSummary() {
+      const totals = state.weekly?.totals || {};
+      const activeDays = Number(totals.activeDays || 0);
+      const minutes = Number(totals.estimatedMinutes || 0);
+      const practiceSessions = Number(totals.practiceSessions || 0);
+      const practiceLines = Number(totals.practiceLines || 0);
+      const streak = Number(state.streak?.currentStreak || 0);
+      const recommendation = state.weekly?.recommendation || '每天完成一条真实英语训练闭环。';
+      const inviteUrl = getShareInviteUrl();
+      return [
+        `我在 Linglish 完成了最近 7 天英语训练复盘：`,
+        `- 活跃 ${activeDays}/7 天，训练 ${minutes} 分钟`,
+        `- 跟读 ${practiceSessions} 次，输出 ${practiceLines} 句`,
+        `- 当前连续训练 ${streak} 天`,
+        `下一步：${recommendation}`,
+        `你也可以从 Today 训练开始：${inviteUrl}`,
+      ].join('\n');
+    }
+
+    function renderSharePanel() {
+      const totals = state.weekly?.totals || {};
+      setText('share-active-days', `${Number(totals.activeDays || 0)}/7`);
+      setText('share-minutes', Number(totals.estimatedMinutes || 0));
+      setText('share-streak', Number(state.streak?.currentStreak || 0));
+      setText('share-invite-link', getShareInviteUrl());
+      const summary = document.getElementById('share-summary');
+      if (summary) summary.value = buildShareSummary();
+    }
+
+    function renderHero() {
+      const weekly = state.weekly || {};
+      const totals = weekly.totals || {};
+      const activeDays = Number(totals.activeDays || 0);
+      const minutes = Number(totals.estimatedMinutes || 0);
+      const practiceSessions = Number(totals.practiceSessions || 0);
+      const streak = Number(state.streak?.currentStreak || 0);
+      const username = state.user?.username || (state.user?.email || '').split('@')[0] || '你';
+
+      setText('hero-title', `${username}，这是你的 7 天训练报告。`);
+      setText('active-days', `${activeDays}/7`);
+      setText('active-copy', activeDays >= 5
+        ? '本周训练节奏稳定，适合提高输出强度。'
+        : '先把连续 3 天轻量训练建立起来。');
+      setText('weekly-minutes', minutes);
+      setText('practice-sessions', practiceSessions);
+      setText('current-streak', streak);
+      setText('weekly-recommendation', weekly.recommendation || '完成今日训练后，这里会给出下一步建议。');
+    }
+
+    function renderBars() {
+      const wrap = document.getElementById('weekly-bars');
+      if (!wrap) return;
+      const days = state.weekly?.days || [];
+      if (!days.length) {
+        wrap.innerHTML = '<div class="empty">暂无最近 7 天训练数据。</div>';
+        return;
+      }
+      wrap.innerHTML = days.map((day) => {
+        const steps = Math.max(0, Math.min(3, Number(day.completedSteps || 0)));
+        const height = Math.max(8, Math.round((steps / 3) * 100));
+        return `
+          <div class="weekly-day${day.active ? '' : ' inactive'}" title="${escapeHtml(day.date || '')}">
+            <div class="weekly-bar"><span style="height:${height}%"></span></div>
+            <div class="weekly-label">周${escapeHtml(formatWeekday(day.date))}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('weekly-chart');
+      if (!ctx || typeof Chart === 'undefined') return;
+      const days = state.weekly?.days || [];
+      const items = days.length ? days : [{ date: new Date().toISOString(), estimatedMinutes: 0, completedSteps: 0 }];
+      const labels = items.map((item) => {
+        const date = new Date(`${item.date}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? '--' : `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+
+      if (state.chart) state.chart.destroy();
+      state.chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '训练分钟',
+              data: items.map(item => Number(item.estimatedMinutes || 0)),
+              backgroundColor: 'rgba(15, 118, 110, 0.76)',
+              yAxisID: 'y',
+            },
+            {
+              label: '完成步骤',
+              data: items.map(item => Number(item.completedSteps || 0)),
+              type: 'line',
+              borderColor: 'rgb(37, 99, 235)',
+              backgroundColor: 'rgba(37, 99, 235, 0.16)',
+              tension: 0.35,
+              yAxisID: 'y1',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: true, position: 'bottom' } },
+          scales: {
+            y: { beginAtZero: true, title: { display: true, text: '分钟' } },
+            y1: {
+              beginAtZero: true,
+              max: 3,
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              ticks: { precision: 0 },
+              title: { display: true, text: '步骤' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderMetrics() {
+      const wrap = document.getElementById('metrics-grid');
+      if (!wrap) return;
+      const totals = state.weekly?.totals || {};
+      const progress = state.progress || {};
+      const metrics = [
+        ['活跃率', `${Number(totals.completionRate || 0)}%`, '最近 7 天至少完成任一步的比例'],
+        ['跟读句数', Number(totals.practiceLines || 0), '输出训练的实际句子数'],
+        ['今日完成', `${Number(progress.completed || 0)}/${Number(progress.total || 3)}`, '今日闭环完成进度'],
+        ['历史最长', `${Number(state.streak?.longestStreak || 0)} 天`, '连续训练最佳记录'],
+      ];
+      wrap.innerHTML = metrics.map(([label, value, hint]) => `
+        <div class="metric-card">
+          <strong>${escapeHtml(value)}</strong>
+          <span>${escapeHtml(label)} · ${escapeHtml(hint)}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderInsights() {
+      const wrap = document.getElementById('insight-list');
+      if (!wrap) return;
+      const totals = state.weekly?.totals || {};
+      const activeDays = Number(totals.activeDays || 0);
+      const practiceSessions = Number(totals.practiceSessions || 0);
+      const reviewSeconds = Number(totals.vocabSeconds || 0);
+      const hasTrainedToday = Boolean(state.streak?.hasTrainedToday);
+      const insights = [
+        {
+          title: '本周主线',
+          copy: state.weekly?.recommendation || '先保持轻量训练，把每天任意一步完成起来。',
+        },
+        {
+          title: '今天的动作',
+          copy: hasTrainedToday
+            ? '今天已经点亮连续训练。可以继续复习词句，巩固今天的输入。'
+            : '今天还没有点亮训练。先完成 1 分钟视频观看或一次跟读。',
+        },
+        {
+          title: '训练侧重点',
+          copy: practiceSessions < 2
+            ? '输出偏少。建议本周补到至少 2 次跟读，让输入转成可说出口的表达。'
+            : (reviewSeconds < 90 ? '复习偏少。每天 3 分钟词句复现，会显著降低遗忘。' : '输入、输出和复习都已覆盖，下一步提高 AI 反馈频率。'),
+        },
+      ];
+      if (activeDays >= 5) {
+        insights.push({
+          title: '升级建议',
+          copy: '你已经有稳定节奏，升级后更适合高频使用 AI 口语打分和深度单词解析。',
+          href: './pricing.html?from=weekly_report&intent=high_frequency#plans',
+          action: '查看会员方案',
+          track: 'report_upgrade_pricing',
+        });
+      }
+      wrap.innerHTML = insights.map(item => `
+        <div class="insight-card">
+          <strong>${escapeHtml(item.title)}</strong>
+          <p>${escapeHtml(item.copy)}</p>
+          ${item.href ? `<a class="insight-action" href="${escapeHtml(item.href)}" data-track="${escapeHtml(item.track || 'insight_action')}">${escapeHtml(item.action || '继续')}</a>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderAll() {
+      renderHero();
+      renderSharePanel();
+      renderBars();
+      renderChart();
+      renderMetrics();
+      renderInsights();
+      renderCommitment();
+    }
+
+    function setReportVisible(visible) {
+      const ids = ['share-section', 'report-section', 'metrics-section', 'insights-section', 'commitment-section'];
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = !visible;
+      });
+    }
+
+    function selectCommitmentOffset(offset) {
+      state.commitmentOffset = Number(offset) || 1;
+      document.querySelectorAll('.commitment-option').forEach((button) => {
+        button.classList.toggle('active', Number(button.dataset.offset) === state.commitmentOffset);
+      });
+    }
+
+    function saveCommitment(options = {}) {
+      const timeInput = getCommitmentTimeInput();
+      const time = timeInput?.value || '20:30';
+      const scheduledAt = buildCommitmentDate(state.commitmentOffset, time);
+      const commitment = {
+        scheduledAt: scheduledAt.toISOString(),
+        time,
+        offsetDays: state.commitmentOffset,
+        source: 'learning-report',
+        notificationEnabled: options.notificationEnabled === true || getSavedCommitment()?.notificationEnabled === true,
+        savedAt: new Date().toISOString(),
+      };
+      try {
+        localStorage.setItem(COMMITMENT_KEY, JSON.stringify(commitment));
+        localStorage.setItem('linglish_reminder_settings', JSON.stringify({
+          time,
+          push: commitment.notificationEnabled,
+          email: '',
+          source: 'learning-report',
+        }));
+      } catch (_) {}
+      renderCommitment();
+      postEvent('learning_report_commitment_saved', {
+        scheduled_at: commitment.scheduledAt,
+        offset_days: commitment.offsetDays,
+        notification_enabled: commitment.notificationEnabled,
+      });
+      showToast('已保存下次训练承诺');
+      return commitment;
+    }
+
+    async function enableNotificationReminder() {
+      if (!('Notification' in window)) {
+        showToast('当前浏览器不支持通知');
+        return;
+      }
+      let permission = Notification.permission;
+      if (permission === 'default') {
+        permission = await Notification.requestPermission();
+      }
+      if (permission !== 'granted') {
+        showToast('未获得通知权限');
+        return;
+      }
+      const commitment = saveCommitment({ notificationEnabled: true });
+      try {
+        new Notification('Linglish 学习提醒已开启', {
+          body: `下次训练：${formatCommitmentDate(commitment.scheduledAt)}`,
+        });
+      } catch (_) {}
+    }
+
+    function downloadCalendar() {
+      const commitment = getSavedCommitment() || saveCommitment();
+      const start = new Date(commitment.scheduledAt);
+      const end = new Date(start.getTime() + 15 * 60 * 1000);
+      const stamp = (date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+      const body = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Linglish//Learning Commitment//CN',
+        'BEGIN:VEVENT',
+        `UID:linglish-${stamp(start)}@linglish`,
+        `DTSTAMP:${stamp(new Date())}`,
+        `DTSTART:${stamp(start)}`,
+        `DTEND:${stamp(end)}`,
+        'SUMMARY:Linglish 15 分钟英语训练',
+        'DESCRIPTION:打开 Linglish 今日训练，完成视频、跟读或复习任意一步。',
+        'URL:https://example.com/today.html',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
+      const blob = new Blob([body], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'linglish-training.ics';
+      link.click();
+      URL.revokeObjectURL(url);
+      postEvent('learning_report_calendar_downloaded', { scheduled_at: commitment.scheduledAt });
+    }
+
+    async function loadReport() {
+      state.token = getToken();
+      bindTracking();
+
+      if (!state.token) {
+        document.getElementById('login-section').hidden = false;
+        setReportVisible(false);
+        return;
+      }
+
+      try {
+        const [user, weeklyRes, streakRes, progressRes] = await Promise.all([
+          getJson('/users/me').catch(() => null),
+          getJson('/api/learning/weekly-report'),
+          getJson('/api/learning/today-streak').catch(() => null),
+          getJson('/api/learning/today-progress').catch(() => null),
+        ]);
+        state.user = user || {};
+        state.weekly = weeklyRes.data || weeklyRes;
+        state.streak = streakRes?.data || streakRes || {};
+        state.progress = progressRes?.data || progressRes || {};
+        document.getElementById('login-section').hidden = true;
+        setReportVisible(true);
+        renderAll();
+        postEvent('learning_report_view', { status: 'loaded' });
+      } catch (err) {
+        if (err.status === 401 || err.status === 403) {
+          document.getElementById('login-section').hidden = false;
+          setReportVisible(false);
+          return;
+        }
+        console.error('[Reports] load failed:', err);
+        document.getElementById('weekly-bars').innerHTML = '<div class="empty">报告暂时无法加载，请稍后重试。</div>';
+        showToast('报告加载失败');
+      }
+    }
+
+    async function generateLegacyWeeklyReport() {
+      if (!state.token) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/retention/reports/weekly`, {
+          method: 'POST',
+          headers: {
+            ...headers(),
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) throw new Error('生成失败');
+        showToast('历史周报已生成');
+        postEvent('learning_report_generated', { type: 'weekly' });
+      } catch (err) {
+        showToast(err.message || '生成失败');
+      }
+    }
+
+    async function shareReport() {
+      const text = buildShareSummary();
+      const inviteUrl = getShareInviteUrl();
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: 'Linglish 学习报告', text, url: inviteUrl });
+          postEvent('learning_report_shared', { share_channel: 'native', invite_url: inviteUrl });
+        } else {
+          const channel = await copyText(text);
+          showToast('报告摘要已复制');
+          postEvent('learning_report_shared', { share_channel: channel, invite_url: inviteUrl });
+        }
+      } catch (_) {}
+    }
+
+    async function copyShareSummary() {
+      try {
+        const summary = buildShareSummary();
+        const channel = await copyText(summary);
+        showToast('报告摘要已复制');
+        postEvent('learning_report_share_summary_copied', {
+          share_channel: channel,
+          summary_length: summary.length,
+        });
+      } catch (_) {
+        showToast('复制失败，请手动选择摘要');
+      }
+    }
+
+    async function copyInviteLink() {
+      try {
+        const inviteUrl = getShareInviteUrl();
+        const channel = await copyText(inviteUrl);
+        showToast('邀请链接已复制');
+        postEvent('learning_report_invite_link_copied', {
+          share_channel: channel,
+          invite_url: inviteUrl,
+        });
+      } catch (_) {
+        showToast('复制失败，请手动复制链接');
+      }
+    }
+
+    function scheduleCommitmentCheck() {
+      window.setInterval(() => {
+        const commitment = getSavedCommitment();
+        if (!commitment?.notificationEnabled || !commitment.scheduledAt) return;
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const scheduled = new Date(commitment.scheduledAt);
+        if (Number.isNaN(scheduled.getTime())) return;
+        const now = Date.now();
+        const delta = scheduled.getTime() - now;
+        const firedKey = `linglish_commitment_fired_${commitment.scheduledAt}`;
+        if (delta <= 0 && delta > -10 * 60 * 1000 && localStorage.getItem(firedKey) !== '1') {
+          try {
+            new Notification('Linglish 训练时间到了', {
+              body: '回到 Today，完成任意一步即可延续训练节奏。',
+            });
+            localStorage.setItem(firedKey, '1');
+          } catch (_) {}
+        }
+      }, 60 * 1000);
+    }
+
+    document.querySelectorAll('.commitment-option').forEach((button) => {
+      button.addEventListener('click', () => selectCommitmentOffset(button.dataset.offset));
+    });
+
+    document.getElementById('share-report')?.addEventListener('click', shareReport);
+    document.getElementById('copy-share-summary')?.addEventListener('click', copyShareSummary);
+    document.getElementById('copy-invite-link')?.addEventListener('click', copyInviteLink);
+    document.getElementById('print-report')?.addEventListener('click', () => {
+      postEvent('learning_report_print');
+      window.print();
+    });
+    document.getElementById('generate-weekly')?.addEventListener('click', generateLegacyWeeklyReport);
+    document.getElementById('save-commitment')?.addEventListener('click', () => saveCommitment());
+    document.getElementById('enable-notification')?.addEventListener('click', enableNotificationReminder);
+    document.getElementById('download-calendar')?.addEventListener('click', downloadCalendar);
+
+    renderCommitment();
+    scheduleCommitmentCheck();
+    loadReport();
+  </script>
+</body>
+</html>

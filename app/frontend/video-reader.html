@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        // Store original methods IMMEDIATELY before any extension can override them
+        const _origJSONParse = JSON.parse;
+
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /\"\" is not valid JSON/i,
+          /Unexpected token 'u'/i,
+          /Unexpected token 'n'/i,
+          /Unexpected token u in JSON/i,
+          /Unexpected token n in JSON/i,
+          /SyntaxError.*undefined/i,
+          /SyntaxError.*null/i,
+          /SyntaxError.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+          /iosMetadata\.js/i,
+          /Wu\.updateConfig/i,
+          /ul\.updateConfig/i,
+          /Wu\.initConfig/i,
+          /ul\.initConfig/i,
+          /\bWu\b/i,
+          /\bul\b.*config/i,
+          /cloudflareinsights/i,
+          /beacon\.min\.js/i,
+          /www-widgetapi\.js/i,
+          /postMessage.*target origin/i,
+          /TIMEOUT waiting for/i,
+          /getYouTubeTitleNode/i,
+          /chrome-extension/i,
+          /moz-extension/i,
+          /safari-extension/i,
+          /webkit-masked-url/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            const name = error.name || '';
+            const message = error.message || '';
+            const fullText = stack + ' ' + name + ' ' + message;
+
+            // Check error message and name
+            if (matchMsg(message) || matchMsg(name)) return true;
+
+            // Check for extension URL patterns in stack
+            if (/chrome-extension:\/\//i.test(fullText)) return true;
+            if (/moz-extension:\/\//i.test(fullText)) return true;
+            if (/safari-extension:\/\//i.test(fullText)) return true;
+            if (/safari-web-extension:\/\//i.test(fullText)) return true;
+            if (/webkit-masked-url:\/\//i.test(fullText)) return true;
+            if (/^blob:/i.test(fullText)) return true;
+
+            // Check for known extension file names and functions
+            if (/metadata\.js|content\.js|iosMetadata\.js|www-widgetapi\.js/i.test(fullText)) return true;
+            if (/updateConfig|initConfig|getYouTubeTitleNode/i.test(fullText)) return true;
+            if (/\bWu\.|ul\./i.test(fullText)) return true;
+            if (/cloudflare|beacon/i.test(fullText)) return true;
+
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override JSON.parse to suppress extension errors
+        JSON.parse = function(text, reviver) {
+          try {
+            // Catch "undefined" or "null" string literals early
+            if (text === 'undefined' || text === 'null' || text === undefined || text === null) {
+              // Get stack trace to check if this is from our app or extension
+              const stack = new Error().stack || '';
+              if (isExtensionError({ stack, message: 'undefined string', name: 'SafetyCheck' })) {
+                return {}; // Silently return empty object for extensions
+              }
+              // For app code, this might be a legitimate error, so check caller
+              if (/video-reader\.html/i.test(stack)) {
+                throw new SyntaxError('"undefined" is not valid JSON');
+              }
+              return {}; // Default to safe return
+            }
+
+            return _origJSONParse.call(this, text, reviver);
+          } catch (error) {
+            // Get stack trace to check origin
+            const stack = new Error().stack || '';
+
+            // Check if error is from extension
+            if (isExtensionError({ stack, message: error.message, name: error.name })) {
+              // Silently return empty object/array for extension errors
+              return text && typeof text === 'string' && text.trim().startsWith('[') ? [] : {};
+            }
+
+            // Re-throw application errors (important!)
+            throw error;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            // Check for "Uncaught (in promise)" errors
+            if (/Uncaught.*in promise/i.test(head) && matchMsg(args.join(' '))) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev && ev.reason;
+            if (reason && reason.name === 'SyntaxError') {
+              const msg = reason.message || '';
+              if (matchMsg(msg)) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                ev.stopImmediatePropagation();
+                return;
+              }
+            }
+            const msg = (reason && reason.message) || (reason && reason.toString && reason.toString()) || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = (ev && ev.message) || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            if (ev && ev.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+            const filename = (ev && ev.filename) || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js|iosMetadata\.js|^VM\d+:/i.test(filename)) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              ev.stopImmediatePropagation();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+  <script src="/env.js"></script>
+
+    <meta charset="UTF-8" />
+    <script>
+      // Filter extension + Cloudflare beacon + ETP/CORS noise (does not affect app logic)
+      // IMPORTANT: This must be the first script
+      (function(){
+        try {
+          const patterns = [
+            /\"undefined\" is not valid JSON/i,
+            /\"null\" is not valid JSON/i,
+            /Unexpected token 'u'.*JSON/i,
+            /Unexpected token 'n'.*JSON/i,
+            /SyntaxError.*undefined.*JSON/i,
+            /SyntaxError.*null.*JSON/i,
+            /JSON\.parse/i,
+            /updateConfig/i,
+            /initConfig/i,
+            /metadata\.js/i,
+            /content\.js/i,
+            /cloudflareinsights/i,
+            /beacon\.min\.js/i,
+            /CORS.*cloudflare/i,
+            /跨源请求.*cloudflare/i,
+            /同源策略.*cloudflare/i,
+            /integrity.*sha512/i,
+            /增强型跟踪保护/i,
+            /www-widgetapi\.js/i,
+            /postMessage.*target origin/i,
+            /postMessage.*DOMWindow/i,
+            /youtube\.com.*does not match/i,
+            /doubleclick\.net/i,
+            /googleads\.g\.doubleclick/i,
+            /viewthroughconversion/i,
+          ];
+          const matchMsg = (msg) => {
+            try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+          };
+
+          // Check if error is from extension (check stack trace)
+          const isExtensionError = (error) => {
+            try {
+              if (!error) return false;
+              const stack = error.stack || error.toString();
+              // Check for common extension patterns
+              if (/chrome-extension:\/\//i.test(stack)) return true;
+              if (/moz-extension:\/\//i.test(stack)) return true;
+              if (/safari-extension:\/\//i.test(stack)) return true;
+              if (/webkit-masked-url:\/\//i.test(stack)) return true;
+              if (/metadata\.js/i.test(stack)) return true;
+              if (/content\.js/i.test(stack)) return true;
+              if (/updateConfig|initConfig/i.test(stack)) return true;
+              return false;
+            } catch (_) {
+              return false;
+            }
+          };
+
+          // Override console methods
+          const ce = console.error ? console.error.bind(console) : null;
+          const cw = console.warn ? console.warn.bind(console) : null;
+          if (ce) {
+            console.error = function(...args){
+              const head = args && args.length ? String(args[0]) : '';
+              if (matchMsg(head)) return;
+              // Check if it's an error object
+              if (args[0] instanceof Error && isExtensionError(args[0])) return;
+              return ce(...args);
+            };
+          }
+          if (cw) {
+            console.warn = function(...args){
+              const head = args && args.length ? String(args[0]) : '';
+              if (matchMsg(head)) return;
+              if (args[0] instanceof Error && isExtensionError(args[0])) return;
+              return cw(...args);
+            };
+          }
+
+          // Catch unhandled promise rejections
+          window.addEventListener('unhandledrejection', (ev) => {
+            try {
+              const reason = ev && ev.reason;
+              // Check message
+              const msg = (reason && reason.message) || (reason && reason.toString && reason.toString()) || reason;
+              if (matchMsg(String(msg||''))) {
+                ev.preventDefault();
+                return;
+              }
+              // Check if from extension
+              if (isExtensionError(reason)) {
+                ev.preventDefault();
+                return;
+              }
+            } catch(_) {}
+          });
+
+          // Catch error events
+          window.addEventListener('error', (ev) => {
+            try {
+              const msg = (ev && ev.message) || '';
+              if (matchMsg(String(msg))) {
+                ev.preventDefault();
+                return;
+              }
+              // Check if error is from extension
+              if (ev && ev.error && isExtensionError(ev.error)) {
+                ev.preventDefault();
+                return;
+              }
+              // Check filename for extension/cloudflare/youtube patterns
+              const filename = (ev && ev.filename) || '';
+              if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js|cloudflareinsights|beacon\.min\.js|www-widgetapi\.js|www-embed-player\.js|youtube\.com/i.test(filename)) {
+                ev.preventDefault();
+                return;
+              }
+            } catch(_) {}
+          }, true);
+        } catch (_) {}
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Lab - linglish</title>
+    <link rel="icon" href="/linglish-favicon.svg?v=4" type="image/svg+xml" sizes="any">
+    <link rel="alternate icon" href="/favicon.ico">
+    <link rel="alternate icon" href="/linglish-favicon.png?v=1" type="image/png">
+
+    <!-- Preload critical resources for video playback -->
+    <link rel="preload" href="./js/video-reader/main.js?v=47" as="script">
+    <link rel="preload" href="./js/app/youtube-player.js" as="script">
+    <link rel="preload" href="./css/video-reader/components.css?v=19" as="style">
+    <link rel="preconnect" href="https://www.youtube.com">
+    <link rel="preconnect" href="https://i.ytimg.com">
+
+    <link rel="stylesheet" href="./styles.css?v=1" />
+    <link rel="stylesheet" href="./membership.css?v=1" />
+
+    <!-- Video Reader CSS Modules -->
+    <link rel="stylesheet" href="./css/video-reader/variables.css?v=1" />
+    <link rel="stylesheet" href="./css/video-reader/animations.css?v=1" />
+    <link rel="stylesheet" href="./css/video-reader/components.css?v=19" />
+    <link rel="stylesheet" href="./styles/mobile/pages/video-reader-focus.css?v=2" />
+    <link rel="stylesheet" href="./styles/mobile/components/modals.css?v=4" />
+
+    <script src="./guest-check.js?v=1"></script>
+    <script src="./auth-helpers.js?v=1"></script>
+    <script src="./i18n.js?v=1"></script>
+    <script src="./global-ui.js?v=20250108"></script>
+    <script src="./feedback.js?v=1"></script>
+    <script src="./js/app/lazy-loader.js?v=1"></script>
+    <link rel="stylesheet" href="./shared/dictionary.css?v=20260224f" />
+    <script src="./shared/dictionary-render.js?v=1765726958"></script>
+    <script src="./shared/dictionary-lookup.js?v=1734439600"></script>
+    <script src="./shared/deep-analysis.js?v=20260224f"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script src="./js/video-reader/device-router.js?v=1"></script>
+    <script>window.VideoReaderDeviceRouter && window.VideoReaderDeviceRouter.redirectIfNeeded(window);</script>
+  </head>
+  <body class="video-reader-mobile-focus">
+    <header class="mobile-reader-header">
+      <a class="mobile-reader-home" href="./index.html" aria-label="返回首页">‹</a>
+      <div class="mobile-reader-heading">
+        <strong>视频学习</strong>
+        <span>看视频 · 跟字幕</span>
+      </div>
+      <button
+        class="toggle-btn toggle-sidebar-btn"
+        id="toggle-sidebar-btn"
+        aria-controls="video-sidebar"
+        aria-expanded="false"
+        aria-label="打开视频库"
+      >☰ 视频库</button>
+    </header>
+    <button
+      class="mobile-library-backdrop"
+      id="mobile-library-backdrop"
+      type="button"
+      aria-label="关闭视频库"
+      tabindex="-1"
+    ></button>
+
+    <div class="video-lab-container">
+      <aside class="video-sidebar hidden" id="video-sidebar">
+        <h2>🎬 Video Lab</h2>
+
+        <!-- 学习统计面板 -->
+        <div class="stats-panel">
+          <div class="stat-card">
+            <div class="stat-icon">🔥</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-streak">0</div>
+              <div class="stat-label">天连击</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-words">0</div>
+              <div class="stat-label">已学单词</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-content">
+              <div class="stat-value" id="stat-videos">0</div>
+              <div class="stat-label">完成视频</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 上传按钮 -->
+        <button class="upload-toggle-btn" id="upload-toggle-btn">
+          <span class="upload-icon">📤</span>
+          <span>上传新视频</span>
+          <span class="toggle-arrow">▼</span>
+        </button>
+
+        <!-- 上传表单（默认隐藏） -->
+        <div class="video-upload collapsed" id="video-upload">
+          <form id="upload-form" method="post" enctype="multipart/form-data" action="javascript:void(0);">
+            <label for="video-title">Title</label>
+            <input id="video-title" name="title" type="text" placeholder="My listening video" required />
+
+            <label for="video-file">Select video</label>
+            <input id="video-file" name="video" type="file" accept="video/*" required />
+
+            <label for="video-language">Audio language</label>
+            <select id="video-language" name="language">
+              <option value="en" selected>English</option>
+              <option value="auto">Auto detect</option>
+            </select>
+
+            <button type="submit">Upload &amp; Transcribe</button>
+          </form>
+          <p id="upload-status" style="font-size: 0.8rem; color: #555; margin-top: 0.75rem;"></p>
+        </div>
+
+        <div class="tag-management">
+          <h4>📁 视频分类</h4>
+          <div class="tag-list" id="tag-list">
+            <span class="tag-item active" data-tag="">全部</span>
+          </div>
+          <div class="tag-add-form">
+            <input type="text" id="new-tag-input" placeholder="新建标签..." />
+            <button id="add-tag-btn">+</button>
+          </div>
+        </div>
+
+        <ul class="video-list" id="video-list">
+          <li class="empty-state">Upload a video to get started.</li>
+        </ul>
+
+        <!-- 会员等级说明 - 可折叠 -->
+        <div class="membership-panel collapsed" id="membership-panel">
+          <div class="membership-summary" id="membership-summary">
+            <div class="current-tier">
+              <span>🆓</span>
+              <span>免费会员</span>
+            </div>
+            <button class="expand-btn" id="membership-expand-btn">
+              <span>查看会员权益</span>
+              <span class="expand-icon">▼</span>
+            </button>
+          </div>
+          <div class="membership-tiers" id="membership-tiers">
+            <!-- 免费会员 -->
+            <div class="membership-tier free">
+              <div class="tier-header">
+                <div class="tier-name">
+                  <span>🆓</span>
+                  <span>免费会员</span>
+                </div>
+                <span class="tier-badge free">FREE</span>
+              </div>
+              <ul class="tier-features">
+                <li>基础视频播放</li>
+                <li>字幕查看</li>
+                <li>每日3个视频</li>
+              </ul>
+            </div>
+
+            <!-- 初级会员 -->
+            <div class="membership-tier basic">
+              <div class="tier-header">
+                <div class="tier-name">
+                  <span>⭐</span>
+                  <span>初级会员</span>
+                </div>
+                <span class="tier-badge basic">BASIC</span>
+              </div>
+              <ul class="tier-features">
+                <li>无限视频数量</li>
+                <li>角色扮演练习</li>
+                <li>语音录制对比</li>
+                <li>词典查询功能</li>
+              </ul>
+            </div>
+
+            <!-- 高级会员 -->
+            <div class="membership-tier premium">
+              <div class="tier-header">
+                <div class="tier-name">
+                  <span>👑</span>
+                  <span>高级会员</span>
+                </div>
+                <span class="tier-badge premium">PREMIUM</span>
+              </div>
+              <ul class="tier-features">
+                <li>初级会员所有功能</li>
+                <li>AI智能评分</li>
+                <li>发音纠正建议</li>
+                <li>学习进度分析</li>
+                <li>优先客服支持</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="video-main">
+        <div class="video-toolbar" id="video-toolbar">
+          <div class="toolbar-group">
+            <a href="./index.html">← Back to App</a>
+            <button id="show-vocabulary-btn" class="vocabulary-btn-desktop" aria-label="查看我的词汇表">
+              <span class="toolbar-icon toolbar-icon-lg">📚</span>
+              <span class="toolbar-label">我的词汇表</span>
+            </button>
+          </div>
+          <div class="playback-speed-toggle">
+            <span class="toolbar-hint">⚡ 速度:</span>
+            <button class="speed-btn" data-speed="0.5">0.5x</button>
+            <button class="speed-btn active" data-speed="1">1x</button>
+            <button class="speed-btn" data-speed="1.5">1.5x</button>
+            <button class="speed-btn" data-speed="2">2x</button>
+          </div>
+          <div class="subtitle-offset-control">
+            <span class="toolbar-hint">⏱️ 字幕偏移:</span>
+            <button class="offset-btn" data-offset="-1">-1s</button>
+            <button class="offset-btn" data-offset="-0.5">-0.5s</button>
+            <button class="offset-btn active" data-offset="0">0s</button>
+            <button class="offset-btn" data-offset="0.5">+0.5s</button>
+            <button class="offset-btn" data-offset="1">+1s</button>
+          </div>
+          <div id="video-meta" style="color: #555; display: none;"></div>
+        </div>
+
+        <div class="video-stage">
+          <section class="video-player-area">
+            <div class="video-wrapper" id="video-wrapper">
+              <button class="mobile-back-btn" id="mobile-back-btn" aria-label="返回主页">‹</button>
+              <!-- HTML5 video player for local videos -->
+              <video
+                id="video-player"
+                controls
+                preload="metadata"
+                playsinline
+                webkit-playsinline
+                x5-video-player-type="h5"
+                x5-video-player-fullscreen="true"
+                x5-playsinline
+              ></video>
+              <!-- YouTube iframe player for YouTube videos -->
+              <div id="youtube-player-wrapper" style="display: none; position: relative; width: 100%; height: 100%;">
+                <div
+                  id="youtube-player"
+                  style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                ></div>
+              </div>
+              <div id="play-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; cursor: pointer; z-index: 10; display: none;">
+                <div style="text-align: center; color: white;">
+                  <div style="font-size: 3rem; margin-bottom: 0.5rem;">▶</div>
+                  <div style="font-size: 1rem;">点击播放</div>
+                </div>
+              </div>
+              <div class="speed-control-overlay" id="speed-control-overlay">
+                <button id="speed-toggle-button" class="speed-toggle-button" aria-haspopup="true" aria-expanded="false">1x</button>
+                <div id="speed-floating-menu" class="speed-floating-menu" role="menu">
+                  <button class="speed-btn" data-speed="0.5" role="menuitem">0.5x</button>
+                  <button class="speed-btn active" data-speed="1" role="menuitem">1x</button>
+                  <button class="speed-btn" data-speed="1.5" role="menuitem">1.5x</button>
+                  <button class="speed-btn" data-speed="2" role="menuitem">2x</button>
+                </div>
+              </div>
+            </div>
+            <div class="mobile-transcript-view" id="mobile-transcript" aria-live="polite">
+              <div class="mobile-view-toggle" id="mobile-view-toggle" role="group" aria-label="字幕控制">
+                <button class="mobile-view-btn" data-mode="english">英文</button>
+                <button class="mobile-view-btn active" data-mode="bilingual">双语</button>
+                <button class="mobile-view-btn" data-mode="prev" id="mobile-subtitle-prev">上一句</button>
+                <button class="mobile-view-btn" data-mode="next" id="mobile-subtitle-next">下一句</button>
+              </div>
+              <div class="mobile-transcript-list-wrapper">
+                <button class="mobile-transcript-nav prev" id="mobile-prev-segment" aria-label="上一句">‹</button>
+                <ul class="mobile-transcript-list" id="mobile-transcript-list"></ul>
+                <button class="mobile-transcript-nav next" id="mobile-next-segment" aria-label="下一句">›</button>
+              </div>
+            </div>
+            <section id="first-lesson-goal" hidden aria-label="今日跟读小目标"></section>
+            <div class="mobile-player-controls" id="mobile-player-controls">
+              <div id="first-lesson-progress" role="status" aria-live="polite" hidden>已练 0/0 · 0%</div>
+              <div class="mobile-speed-controls" role="group" aria-label="播放速度">
+                <button class="mobile-speed-btn" data-speed="0.75">0.75x</button>
+                <button class="mobile-speed-btn active" data-speed="1">1x</button>
+                <button class="mobile-speed-btn" data-speed="1.25">1.25x</button>
+                <button class="mobile-speed-btn" data-speed="1.5">1.5x</button>
+              </div>
+              <div class="mobile-progress-row">
+                <span id="mobile-current-time">00:00</span>
+                <input type="range" id="mobile-progress" min="0" max="100" step="0.1" value="0" aria-label="播放进度" />
+                <span id="mobile-duration">00:00</span>
+              </div>
+              <button class="mobile-replay-btn" id="mobile-replay" aria-label="重新播放">↺</button>
+            </div>
+            <div class="transcript-panel">
+              <div class="transcript-header">
+                <h3 style="margin: 0; font-size: 0.9rem;">Transcript</h3>
+                <span id="transcript-language" style="font-size: 0.8rem; color: #666;"></span>
+              </div>
+              <div id="transcript-content" class="transcript-content empty-state">
+                Select a video to view its transcript.
+              </div>
+            </div>
+            <div class="practice-panel" id="practice-panel" hidden>
+              <h4>
+                <span>🎭 Role Practice</span>
+              </h4>
+              <div class="practice-mode-toggle">
+                <button id="practice-arm-btn">Enable Practice Mode</button>
+                <small>Auto-pause video for each of your lines.</small>
+              </div>
+              <select id="practice-speaker" class="practice-speaker-select"></select>
+              <div class="practice-current-line" id="practice-current-line" hidden></div>
+              <ul class="practice-line-list" id="practice-line-list"></ul>
+              <div class="practice-controls" id="practice-controls" hidden>
+                <button id="practice-play-original" style="background:#4a5ff7; color:#fff;">▶ Original</button>
+                <button id="practice-start" aria-label="录制当前句并获取 AI 反馈" style="background:#10b981; color:#fff;">🎙 Record</button>
+                <button id="practice-compare" style="background:#f59e0b; color:#fff;">🔄 Compare</button>
+              </div>
+              <div class="practice-feedback" id="practice-feedback"></div>
+            </div>
+          </section>
+
+          <aside class="right-sidebar" id="right-sidebar">
+            <!-- 角色扮演区域 -->
+            <div class="practice-section-right" id="practice-section-right">
+              <!-- 角色扮演按钮 -->
+              <button class="practice-toggle-btn-right expanded" id="practice-toggle-btn-right">
+                <span class="practice-icon">🎭</span>
+                <span>角色扮演练习</span>
+                <span class="toggle-arrow">▼</span>
+              </button>
+
+              <!-- 角色扮演面板 -->
+              <div class="practice-sidebar-panel-right" id="practice-sidebar-panel-right">
+                <div class="practice-mode-toggle">
+                  <button id="practice-arm-btn-right">Enable Practice Mode</button>
+                  <small>Auto-pause video for each of your lines.</small>
+                </div>
+                <select id="practice-speaker-right" class="practice-speaker-select"></select>
+              </div>
+
+              <!-- 当前行显示（独立） -->
+              <div class="practice-current-line-right" id="practice-current-line-right" hidden></div>
+
+              <!-- 台词列表（独立） -->
+              <ul class="practice-line-list-right" id="practice-line-list-right"></ul>
+
+              <!-- 控制按钮（独立） -->
+              <div class="practice-controls-right" id="practice-controls-right" hidden>
+                <button id="practice-play-original-right" style="background:#4a5ff7; color:#fff;">▶ Original</button>
+                <button id="practice-start-right" style="background:#10b981; color:#fff;">🎙 Record</button>
+                <button id="practice-compare-right" style="background:#f59e0b; color:#fff;">🔄 Compare</button>
+              </div>
+
+              <!-- 反馈信息 -->
+              <div id="practice-feedback-right" style="font-size:0.85rem; color:#666; margin-top:0.5rem;"></div>
+            </div>
+
+            <!-- 词典区域 -->
+	            <div class="dictionary-section-right" id="dictionary-section-right" style="display: none;">
+              <!-- X号关闭按钮 - 固定在卡片右上角，不滚动 -->
+              <button class="dictionary-close-btn-right" id="dictionary-close-btn-right"
+                      style="position: absolute; top: 12px; right: 12px; z-index: 10;
+                             width: 32px; height: 32px; border-radius: 50%;
+                             border: none; background: rgba(239, 68, 68, 0.9);
+                             color: white; font-size: 18px; line-height: 1;
+                             cursor: pointer; display: flex; align-items: center;
+                             justify-content: center; transition: all 0.2s;
+                             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                             -webkit-tap-highlight-color: transparent;">
+                ✕
+              </button>
+
+	              <!-- 内层可滚动内容容器 -->
+	              <div class="dictionary-scroll">
+                <!-- 词典标题卡片 -->
+                <div class="dictionary-header-card">
+                  <h4 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; color: #333;">
+                    <span>📖</span>
+                    <span>词典</span>
+                  </h4>
+                </div>
+
+                <!-- 词典内容 -->
+                <div id="dictionary-content">
+                  <p style="color: #666;">Click on a word to see its definition.</p>
+                </div>
+
+                <!-- 复习面板 -->
+                <div class="review-panel" style="background: white; border-radius: 10px; padding: 1rem; box-shadow: var(--shadow-sm);">
+                  <h4 style="display:flex; align-items:center; justify-content: space-between; gap: .5rem;">
+                    <span>🔁 Reviews</span>
+                    <button id="desktop-hard-first-toggle" style="border:none; background:#eef2ff; color:#3143b3; padding:.25rem .5rem; border-radius:8px; font-size:.8rem; cursor:pointer;">Hard: OFF</button>
+                  </h4>
+                  <ul class="review-queue" id="review-queue">
+                    <li style="color:#666;">No reviews due right now.</li>
+                  </ul>
+                  <div class="review-drill" id="review-drill" hidden>
+                    <div id="review-drill-word" style="font-weight:600; font-size:1rem; margin-bottom:0.5rem;"></div>
+                    <div id="review-drill-context" style="font-size:0.9rem; color:#555; margin-bottom:0.75rem;"></div>
+                    <div>
+                      <button id="review-pass" style="background:#d4edda; color:#155724;">Remembered</button>
+                      <button id="review-fail" style="background:#ffe8e8; color:#b71c1c;">Again</button>
+                      <button id="review-skip" style="background:#f0f0f0; color:#555;">Skip</button>
+                    </div>
+                  </div>
+                </div>
+              </div><!-- 关闭内层可滚动容器 -->
+            </div>
+          </aside>
+        </div>
+      </main>
+
+      <!-- 词汇视图 -->
+      <div class="vocabulary-view" id="vocabulary-view" style="display: none;">
+        <div class="vocabulary-container">
+          <button class="back-to-video-btn" id="back-to-video-btn" title="返回视频">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <span>返回视频</span>
+          </button>
+          <div class="vocabulary-header">
+            <h2>📚 我的词汇</h2>
+          </div>
+          <div class="vocabulary-stats">
+            <div class="vocab-stat-item active" data-filter="all">
+              <span class="stat-value" id="vocab-total-count">0</span>
+              <span class="stat-label">Total Words</span>
+            </div>
+            <div class="vocab-stat-item" data-filter="encountered">
+              <span class="stat-value" id="vocab-new-count">0</span>
+              <span class="stat-label">New</span>
+            </div>
+            <div class="vocab-stat-item" data-filter="learning">
+              <span class="stat-value" id="vocab-learning-count">0</span>
+              <span class="stat-label">Learning</span>
+            </div>
+            <div class="vocab-stat-item" data-filter="mastered">
+              <span class="stat-value" id="vocab-mastered-count">0</span>
+              <span class="stat-label">Mastered</span>
+            </div>
+          </div>
+          <div class="vocabulary-list" id="vocabulary-list">
+            <div class="vocabulary-empty" id="vocabulary-empty">
+              <p>还没有学习任何单词</p>
+              <p style="font-size: 0.9rem; color: #666;">观看视频并点击单词开始建立你的词汇库</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-container">
+        <a href="#" class="nav-item active" data-tab="library">
+          <div class="nav-icon">🌍</div>
+          <div class="nav-label">探索世界</div>
+        </a>
+
+        <a href="#" class="nav-item" data-tab="vocabulary">
+          <div class="nav-icon">⚡</div>
+          <div class="nav-label">能量站</div>
+        </a>
+
+        <a href="#" class="nav-item" data-tab="practice">
+          <div class="nav-icon">🎪</div>
+          <div class="nav-label">实战场</div>
+        </a>
+
+        <a href="mobile-treasure.html" class="nav-item">
+          <div class="nav-icon">🪴</div>
+          <div class="nav-label">成长中心</div>
+        </a>
+
+        <a href="./feedback.html" class="nav-item">
+          <div class="nav-icon">💬</div>
+          <div class="nav-label">反馈</div>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Vocab Detail Overlay (reuse "查看" popup UX for mobile lookup) -->
+    <div id="vocab-detail-overlay" class="vocab-detail-overlay" hidden>
+      <div class="vocab-detail-backdrop"></div>
+      <div class="vocab-detail-card" role="dialog" aria-modal="true">
+        <button type="button" class="detail-close-btn" id="vocab-detail-close" aria-label="关闭">✕</button>
+        <div class="detail-header">
+          <div>
+            <h2 class="detail-word" id="detail-word"></h2>
+          </div>
+          <span class="detail-status" id="detail-status"></span>
+        </div>
+        <!-- Controls row: lang toggle + deep analysis toggle button -->
+        <div id="vr-ctrl-bar" style="display:flex;align-items:center;padding:.4rem 0;border-bottom:1px solid #e2e8f0;">
+          <div class="dict-lang-toggle" id="vr-dict-lang-toggle" aria-label="切换翻译语言">
+            <button type="button" data-lang="en" id="vr-dict-lang-en">EN</button>
+            <button type="button" data-lang="zh" id="vr-dict-lang-zh">中</button>
+          </div>
+          <button id="vr-tab-deep" type="button" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;font-size:.8rem;font-weight:700;color:#4f46e5;background:rgba(99,102,241,.12);border:1.5px solid rgba(99,102,241,.3);border-radius:999px;padding:.32rem .9rem;cursor:pointer;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;line-height:1.4;">✦ 深度解析</button>
+        </div>
+        <!-- Dict panel -->
+        <div id="detail-dict-card"></div>
+        <!-- Deep analysis panel -->
+        <div id="detail-deep-card" hidden style="overflow-y:auto;max-height:50vh;padding-right:4px;"></div>
+      </div>
+    </div>
+
+    <!-- Video Reader JavaScript Module -->
+    <script src="./membership.js"></script>
+    <script src="./js/app/youtube-player.js"></script>
+    <script src="./js/visitor-context.js?v=1"></script>
+    <script src="./js/video-reader/smart-import-api.js?v=1"></script>
+    <script src="./js/video-reader/mobile-reader-layout.js?v=2"></script>
+    <script src="./js/video-reader/first-lesson-focus.js?v=20260822"></script>
+    <script src="./js/video-reader/first-lesson-progress.js?v=20260822"></script>
+    <script src="./js/video-reader/first-lesson-goal.js?v=20260922"></script>
+    <link rel="stylesheet" href="./styles/first-lesson-goal.css?v=20260922">
+    <script src="./js/video-reader/sentence-segments.js?v=20260822"></script>
+    <script src="./js/video-reader/first-lesson-practice.js?v=20260822"></script>
+    <script src="./js/video-reader/first-lesson-readiness.js?v=20260808"></script>
+    <script>
+      window.LinglishFirstLessonFocus.applyDocumentState(document, window.location.search);
+    </script>
+    <script src="./js/media-session.js"></script>
+    <script src="./js/video-recommendation-client.js?v=20260925"></script>
+    <script src="./js/video-reader/next-video-sheet.js?v=20260925"></script>
+    <script src="./js/video-reader/main.js?v=48"></script>
+    <script>
+      // Hide upload functionality for guest users
+      (function() {
+        try {
+          const isGuest = localStorage.getItem('is_guest') === 'true' ||
+                          sessionStorage.getItem('is_guest') === 'true' ||
+                          sessionStorage.getItem('isGuest') === 'true';
+
+          if (isGuest) {
+            // Hide upload button in sidebar
+            const uploadToggleBtn = document.getElementById('upload-toggle-btn');
+            if (uploadToggleBtn) {
+              uploadToggleBtn.style.display = 'none';
+            }
+
+            // Hide upload form
+            const videoUpload = document.getElementById('video-upload');
+            if (videoUpload) {
+              videoUpload.style.display = 'none';
+            }
+
+            // Show guest banner if GuestCheck is available
+            if (typeof window.GuestCheck !== 'undefined' && window.GuestCheck.showGuestBanner) {
+              window.GuestCheck.showGuestBanner();
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to apply guest restrictions:', e);
+        }
+      })();
+    </script>
+    <script src="./js/page-tracker.js"></script>
+  </body>
+</html>

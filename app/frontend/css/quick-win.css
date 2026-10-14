@@ -1,0 +1,578 @@
+/**
+ * Quick Win Challenge 样式
+ * 新用户即时成就体验
+ */
+
+/* 模态框容器 */
+.quick-win-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 1.5rem;
+}
+
+.quick-win-modal.active {
+    display: flex;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* 挑战面板 */
+.quick-win-panel {
+    width: min(480px, 95vw);
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 28px;
+    padding: 2rem 2.5rem;
+    box-shadow:
+        0 25px 70px rgba(15, 23, 42, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+    animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 关闭按钮 */
+.quick-win-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(148, 163, 184, 0.15);
+    color: #64748b;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quick-win-close:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    transform: rotate(90deg);
+}
+
+/* 头部 */
+.quick-win-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.quick-win-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.quick-win-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    font-family: "ZCOOL XiaoWei", "Chivo", serif;
+}
+
+.quick-win-subtitle {
+    color: #64748b;
+    font-size: 1rem;
+    margin: 0.5rem 0 0;
+}
+
+/* 进度条 */
+.quick-win-progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #1ea88a, #0ea5e9);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+/* 答题反馈 */
+.quick-win-feedback {
+    text-align: center;
+    padding: 0.8rem 1.2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    animation: feedbackPop 0.3s ease;
+}
+
+.quick-win-feedback.correct {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803d;
+}
+
+.quick-win-feedback.wrong {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+@keyframes feedbackPop {
+    0% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* 得分显示 */
+.result-score {
+    font-size: 1.3rem;
+    color: #334155;
+    margin-bottom: 1rem;
+}
+
+.result-score strong {
+    font-size: 1.8rem;
+    color: #0f172a;
+}
+
+/* 水平徽章 */
+.result-level {
+    margin-bottom: 1.5rem;
+}
+
+.level-badge {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(30, 168, 138, 0.15), rgba(30, 168, 138, 0.25));
+    color: #0ea5e9;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.level-desc {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+/* 题目区域 */
+.quick-win-content {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.quick-win-question {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* 播放按钮 */
+.play-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    border-radius: 20px;
+    border: 2px solid rgba(30, 168, 138, 0.3);
+    background: linear-gradient(135deg, rgba(30, 168, 138, 0.08), rgba(30, 168, 138, 0.15));
+    color: #0ea5e9;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.play-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(30, 168, 138, 0.25);
+    border-color: rgba(30, 168, 138, 0.5);
+}
+
+.play-btn.playing {
+    animation: playPulse 0.5s ease;
+}
+
+@keyframes playPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.play-icon {
+    font-size: 1.5rem;
+}
+
+/* 单词显示 */
+.word-display {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    padding: 0.5rem 1.5rem;
+    border-radius: 12px;
+    background: rgba(248, 250, 252, 0.8);
+    transition: all 0.3s ease;
+}
+
+.word-display.hidden {
+    filter: blur(20px);
+    opacity: 0.3;
+}
+
+/* 选项区域 */
+.quick-win-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.quick-win-option {
+    padding: 1rem 1.2rem;
+    border-radius: 16px;
+    border: 2px solid rgba(148, 163, 184, 0.25);
+    background: #ffffff;
+    color: #334155;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quick-win-option:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: rgba(30, 168, 138, 0.5);
+    box-shadow: 0 8px 20px rgba(30, 168, 138, 0.15);
+}
+
+.quick-win-option:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.quick-win-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.quick-win-option.correct {
+    border-color: #22c55e;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.2));
+    color: #15803d;
+    animation: correctPop 0.4s ease;
+}
+
+@keyframes correctPop {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.quick-win-option.wrong {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    animation: wrongShake 0.4s ease;
+}
+
+@keyframes wrongShake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20%,
+    60% {
+        transform: translateX(-5px);
+    }
+
+    40%,
+    80% {
+        transform: translateX(5px);
+    }
+}
+
+/* 提示 */
+.quick-win-hint {
+    text-align: center;
+    color: #64748b;
+    font-size: 0.9rem;
+    padding: 0.8rem;
+    border-radius: 12px;
+    background: rgba(248, 250, 252, 0.8);
+}
+
+/* 结果区域 */
+.quick-win-result {
+    text-align: center;
+    padding: 1rem 0;
+    animation: resultAppear 0.5s ease-out;
+}
+
+@keyframes resultAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.result-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: resultBounce 0.6s ease;
+}
+
+@keyframes resultBounce {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    30% {
+        transform: scale(1.2);
+    }
+
+    60% {
+        transform: scale(0.9);
+    }
+
+    80% {
+        transform: scale(1.05);
+    }
+}
+
+.result-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+}
+
+.result-reward {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.xp-reward {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    animation: rewardShine 2s infinite;
+}
+
+@keyframes rewardShine {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 4px 25px rgba(245, 158, 11, 0.6);
+    }
+}
+
+/* XP飘字 */
+.xp-float {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fbbf24;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.xp-float.animate {
+    animation: floatUp 1.5s ease-out forwards;
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-40px);
+    }
+}
+
+/* 继续按钮 */
+.quick-win-continue {
+    padding: 1rem 2.5rem;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, #1ea88a, #0ea5e9);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(30, 168, 138, 0.35);
+}
+
+.quick-win-continue:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(30, 168, 138, 0.45);
+}
+
+/* 底部 */
+.quick-win-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.quick-win-skip {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.quick-win-skip:hover {
+    color: #64748b;
+}
+
+/* 彩纸容器 */
+.confetti-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10001;
+}
+
+.confetti {
+    position: absolute;
+    top: -10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    animation: confettiFall linear forwards;
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* 响应式 */
+@media (max-width: 520px) {
+    .quick-win-panel {
+        padding: 1.5rem;
+        border-radius: 24px;
+    }
+
+    .quick-win-title {
+        font-size: 1.5rem;
+    }
+
+    .quick-win-options {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-win-option {
+        padding: 0.9rem 1rem;
+    }
+
+    .word-display {
+        font-size: 1.6rem;
+    }
+}

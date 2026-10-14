@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "title": "Morning Rituals for Confident Speaking",
+    "level": "B1",
+    "tags": ["shadowing", "fluency"],
+    "audio_url": "/static/audio/sample-shadowing.wav"
+  },
+  {
+    "id": 2,
+    "title": "Sustainable Cities Mini Talk",
+    "level": "B2",
+    "tags": ["dictogloss", "speaking"],
+    "audio_url": "/static/audio/sample-shadowing.wav"
+  }
+]

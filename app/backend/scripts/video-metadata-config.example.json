@@ -1,0 +1,49 @@
+{
+  "description": "视频元数据批量更新配置文件",
+  "defaultTags": ["我的"],
+  "defaultCategory": "daily_life",
+  "defaultDifficulty": "intermediate",
+  "defaultIsPublic": true,
+  "videos": [
+    {
+      "id": 1,
+      "title": "商务英语对话",
+      "description": "关于商务会议的英语对话",
+      "tags": ["职场", "商务"],
+      "category": "business",
+      "difficulty_level": "advanced",
+      "is_public": true
+    },
+    {
+      "id": 2,
+      "title": "购物场景对话",
+      "description": "超市购物的日常对话",
+      "tags": ["购物", "生活"],
+      "category": "daily_life",
+      "difficulty_level": "beginner",
+      "is_public": true
+    },
+    {
+      "id": 3,
+      "title": "电影片段",
+      "description": "经典电影对白片段",
+      "tags": ["影视", "娱乐"],
+      "category": "entertainment",
+      "difficulty_level": "intermediate",
+      "is_public": true
+    }
+  ],
+  "availableTags": ["我的", "职场", "购物", "生活", "影视"],
+  "availableCategories": [
+    "conversation",
+    "business",
+    "daily_life",
+    "entertainment",
+    "education",
+    "news",
+    "interview",
+    "presentation",
+    "other"
+  ],
+  "availableDifficultyLevels": ["beginner", "intermediate", "advanced"]
+}

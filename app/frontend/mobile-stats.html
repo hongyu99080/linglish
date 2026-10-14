@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Filter noisy extension JSON.parse('undefined') errors (does not affect app logic)
+    // IMPORTANT: This must be the first script to catch extension errors
+    (function(){
+      try {
+        const patterns = [
+          /\"undefined\" is not valid JSON/i,
+          /\"null\" is not valid JSON/i,
+          /Unexpected token 'u'.*JSON/i,
+          /Unexpected token 'n'.*JSON/i,
+          /SyntaxError.*undefined.*JSON/i,
+          /SyntaxError.*null.*JSON/i,
+          /JSON\.parse/i,
+          /updateConfig/i,
+          /initConfig/i,
+          /metadata\.js/i,
+          /content\.js/i,
+        ];
+        const matchMsg = (msg) => {
+          try { return patterns.some((re) => re.test(String(msg || ''))); } catch { return false; }
+        };
+
+        // Check if error is from extension (check stack trace)
+        const isExtensionError = (error) => {
+          try {
+            if (!error) return false;
+            const stack = error.stack || error.toString();
+            // Check for common extension patterns
+            if (/chrome-extension:\/\//i.test(stack)) return true;
+            if (/moz-extension:\/\//i.test(stack)) return true;
+            if (/safari-extension:\/\//i.test(stack)) return true;
+            if (/webkit-masked-url:\/\//i.test(stack)) return true;
+            if (/metadata\.js/i.test(stack)) return true;
+            if (/content\.js/i.test(stack)) return true;
+            if (/updateConfig|initConfig/i.test(stack)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Override console methods
+        const ce = console.error ? console.error.bind(console) : null;
+        const cw = console.warn ? console.warn.bind(console) : null;
+        if (ce) {
+          console.error = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            // Check if it's an error object
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return ce(...args);
+          };
+        }
+        if (cw) {
+          console.warn = function(...args){
+            const head = args && args.length ? String(args[0]) : '';
+            if (matchMsg(head)) return;
+            if (args[0] instanceof Error && isExtensionError(args[0])) return;
+            return cw(...args);
+          };
+        }
+
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (ev) => {
+          try {
+            const reason = ev?.reason;
+            // Check message
+            const msg = reason?.message || reason?.toString?.() || reason;
+            if (matchMsg(String(msg||''))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if from extension
+            if (isExtensionError(reason)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        });
+
+        // Catch error events
+        window.addEventListener('error', (ev) => {
+          try {
+            const msg = ev?.message || '';
+            if (matchMsg(String(msg))) {
+              ev.preventDefault();
+              return;
+            }
+            // Check if error is from extension
+            if (ev?.error && isExtensionError(ev.error)) {
+              ev.preventDefault();
+              return;
+            }
+            // Check filename for extension patterns
+            const filename = ev?.filename || '';
+            if (/chrome-extension|moz-extension|safari-extension|webkit-masked-url|metadata\.js|content\.js/i.test(filename)) {
+              ev.preventDefault();
+              return;
+            }
+          } catch(_) {}
+        }, true);
+      } catch (_) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>linglish - 学习仪表盘</title>
+  <link rel="stylesheet" href="./mobile-styles.css">
+  <script src="./auth-helpers.js"></script>
+  <script src="./guest-check.js"></script>
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="mobile-header stats-header">
+    <button class="back-btn" onclick="history.back()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <h1>📊 学习仪表盘</h1>
+    <div class="header-actions">
+      <button class="icon-btn share-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="18" cy="5" r="3"/>
+          <circle cx="6" cy="12" r="3"/>
+          <circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="mobile-content stats-content">
+    <!-- Hero Stats Cards -->
+    <div class="hero-stats">
+      <!-- Streak Card -->
+      <div class="stat-card-large streak-card">
+        <div class="stat-icon-large">🔥</div>
+        <div class="stat-content-large">
+          <div class="stat-number-hero">2</div>
+          <div class="stat-label-hero">连续打卡</div>
+          <p class="stat-description">继续保持！每天坚持让语言自然生长</p>
+        </div>
+      </div>
+
+      <!-- Words Learned Card -->
+      <div class="stat-card-large words-card">
+        <div class="stat-icon-large">📚</div>
+        <div class="stat-content-large">
+          <div class="stat-number-hero">1</div>
+          <div class="stat-label-hero">掌握词汇</div>
+          <p class="stat-description">词汇量稳步增长，真棒！</p>
+        </div>
+      </div>
+
+      <!-- Completed Videos Card -->
+      <div class="stat-card-large completed-card">
+        <div class="stat-icon-large">🎬</div>
+        <div class="stat-content-large">
+          <div class="stat-number-hero">0</div>
+          <div class="stat-label-hero">观看视频</div>
+          <p class="stat-description">在真实场景中沉浸式学习</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Progress -->
+    <section class="progress-section">
+      <h2 class="section-header-text">⏱️ 本周学习时长</h2>
+      <div class="weekly-calendar">
+        <div class="day-item">
+          <div class="day-label">一</div>
+          <div class="day-bar">
+            <div class="day-fill" style="height: 20%;"></div>
+          </div>
+          <div class="day-minutes">2min</div>
+        </div>
+        <div class="day-item">
+          <div class="day-label">二</div>
+          <div class="day-bar">
+            <div class="day-fill" style="height: 45%;"></div>
+          </div>
+          <div class="day-minutes">9min</div>
+        </div>
+        <div class="day-item active">
+          <div class="day-label">三</div>
+          <div class="day-bar">
+            <div class="day-fill" style="height: 30%;"></div>
+          </div>
+          <div class="day-minutes">6min</div>
+        </div>
+        <div class="day-item">
+          <div class="day-label">四</div>
+          <div class="day-bar">
+            <div class="day-fill" style="height: 0%;"></div>
+          </div>
+          <div class="day-minutes">0min</div>
+        </div>
+        <div class="day-item">
+          <div class="day-label">五</div>
+          <div class="day-bar">
+            <div class="day-fill" style="height: 0%;"></div>
+          </div>
+          <div class="day-minutes">0min</div>
+        </div>
+        <div class="day-item">
+          <div class="day-label">六</div>
+          <div class="day-bar">
+            <div class="day-fill" style="height: 0%;"></div>
+          </div>
+          <div class="day-minutes">0min</div>
+        </div>
+        <div class="day-item">
+          <div class="day-label">日</div>
+          <div class="day-bar">
+            <div class="day-fill" style="height: 0%;"></div>
+          </div>
+          <div class="day-minutes">0min</div>
+        </div>
+      </div>
+      <div class="weekly-summary">
+        <span>本周共学习 <strong>17 分钟</strong></span>
+      </div>
+    </section>
+
+    <!-- Learning Stats Grid -->
+    <section class="stats-grid-section">
+      <h2 class="section-header-text">💡 学习概览</h2>
+      <div class="stats-grid-detailed">
+        <div class="stat-item-detailed">
+          <div class="stat-icon-small">🎬</div>
+          <div class="stat-text">
+            <div class="stat-value">3</div>
+            <div class="stat-name">视频学习</div>
+          </div>
+        </div>
+
+        <div class="stat-item-detailed">
+          <div class="stat-icon-small">⏱️</div>
+          <div class="stat-text">
+            <div class="stat-value">45min</div>
+            <div class="stat-name">学习时长</div>
+          </div>
+        </div>
+
+        <div class="stat-item-detailed">
+          <div class="stat-icon-small">📚</div>
+          <div class="stat-text">
+            <div class="stat-value">1,234</div>
+            <div class="stat-name">词汇积累</div>
+          </div>
+        </div>
+
+        <div class="stat-item-detailed">
+          <div class="stat-icon-small">💯</div>
+          <div class="stat-text">
+            <div class="stat-value">85%</div>
+            <div class="stat-name">掌握程度</div>
+          </div>
+        </div>
+
+        <div class="stat-item-detailed">
+          <div class="stat-icon-small">📅</div>
+          <div class="stat-text">
+            <div class="stat-value">12</div>
+            <div class="stat-name">坚持天数</div>
+          </div>
+        </div>
+
+        <div class="stat-item-detailed">
+          <div class="stat-icon-small">🏆</div>
+          <div class="stat-text">
+            <div class="stat-value">5</div>
+            <div class="stat-name">解锁成就</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Activity -->
+    <section class="activity-section">
+      <h2 class="section-header-text">🌟 学习足迹</h2>
+      <div class="activity-list">
+        <div class="activity-item-card">
+          <div class="activity-date">今天 14:30</div>
+          <div class="activity-content-box">
+            <span class="activity-type">🎬</span>
+            <div class="activity-details">
+              <div class="activity-title">视频沉浸</div>
+              <div class="activity-desc">myfamily - 沉浸式学习 15 个表达</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="activity-item-card">
+          <div class="activity-date">昨天 19:45</div>
+          <div class="activity-content-box">
+            <span class="activity-type">⚡</span>
+            <div class="activity-details">
+              <div class="activity-title">能量补充</div>
+              <div class="activity-desc">复习 23 个词汇，掌握度 92%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="activity-item-card">
+          <div class="activity-date">2天前 16:20</div>
+          <div class="activity-content-box">
+            <span class="activity-type">🏆</span>
+            <div class="activity-details">
+              <div class="activity-title">解锁成就</div>
+              <div class="activity-desc">连续打卡 2 天！语言正在生长</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Goals Section -->
+    <section class="goals-section">
+      <h2 class="section-header-text">🎯 今日目标</h2>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-title">每日沉浸时间</div>
+          <div class="goal-status">6/20 分钟</div>
+        </div>
+        <div class="goal-progress-bar">
+          <div class="goal-progress-fill" style="width: 30%;"></div>
+        </div>
+        <div class="goal-description">再坚持 14 分钟，让语言自然生长</div>
+      </div>
+
+      <div class="goal-card">
+        <div class="goal-header">
+          <div class="goal-title">本周学习计划</div>
+          <div class="goal-status">17/100 分钟</div>
+        </div>
+        <div class="goal-progress-bar">
+          <div class="goal-progress-fill" style="width: 17%;"></div>
+        </div>
+        <div class="goal-description">进度良好！继续保持节奏</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="mobile-today.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🎯</span></div>
+      <span>今日</span>
+    </a>
+    <a href="mobile-explore.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🌍</span></div>
+      <span>探索世界</span>
+    </a>
+    <a href="mobile-power.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">⚡</span></div>
+      <span>能量站</span>
+    </a>
+    <a href="mobile-arena.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🎪</span></div>
+      <span>实战场</span>
+    </a>
+    <a href="mobile-treasure.html" class="nav-item">
+      <div class="nav-icon"><span class="nav-emoji">🪴</span></div>
+      <span>成长中心</span>
+    </a>
+    <a href="mobile-stats.html" class="nav-item active">
+      <div class="nav-icon"><span class="nav-emoji">📊</span></div>
+      <span>统计</span>
+    </a>
+  </nav>
+
+  <!-- Scripts -->
+  <script src="./gamification.js"></script>
+  <script src="./mobile-stats.js"></script>
+  <script src="./js/page-tracker.js"></script>
+</body>
+</html>

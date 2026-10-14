@@ -1,0 +1,391 @@
+/* Button Components - All Button Variants */
+
+/* Icon Button */
+.icon-btn {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.icon-btn:active {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Primary Button */
+.btn-primary {
+  background: #1a1a3a;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Text Button */
+.btn-text {
+  background: transparent;
+  border: none;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+/* Sound Button */
+.sound-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+/* Page Button */
+.page-btn {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Review Button */
+.review-btn {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  background: var(--accent-orange);
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.4);
+  z-index: 99;
+}
+
+/* Play Button Large */
+.play-btn-large {
+  background: #1a1a3a;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 24px auto;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+/* Upload Video Button */
+.upload-video-btn {
+  width: 100%;
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.upload-icon {
+  font-size: 24px;
+}
+
+.upload-icon-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Import Button */
+.import-btn {
+  flex: 1;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.import-icon {
+  font-size: 18px;
+}
+
+/* Floating Import */
+.floating-import {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Profile Edit Button */
+.profile-edit-btn {
+  background: #0d9488;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Arena Link Button */
+.arena-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(255, 154, 158, 0.25);
+}
+
+.arena-link-btn:active {
+  transform: scale(0.98);
+}
+
+/* Review Floating Button */
+.review-btn-floating {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: white;
+  border: none;
+  border-radius: 28px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 99;
+}
+
+.review-icon {
+  font-size: 20px;
+}
+
+/* Vocab Action Button */
+.vocab-action-btn {
+  background: linear-gradient(135deg, #8ec5fc 0%, #e0c3fc 100%);
+  border: none;
+  color: #2f2f4f;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(142, 197, 252, 0.35);
+}
+
+.vocab-action-btn:active {
+  transform: scale(0.97);
+}
+
+/* Page Button Game */
+.page-btn-game {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.page-btn-game:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Progress Arrow */
+.progress-arrow {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+/* Playlist Item Menu */
+.playlist-item-menu {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+}
+
+/* Add Tag Button */
+.add-tag-btn {
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: #fff;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.35);
+}
+
+.add-tag-btn:active {
+  transform: scale(0.96);
+}
+
+/* Detail Close Button - 红色醒目样式 */
+.detail-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  font-size: 20px;
+  cursor: pointer;
+  color: #ffffff;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 15px rgba(239, 68, 68, 0.6), 0 0 0 4px rgba(239, 68, 68, 0.15);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.detail-close-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5);
+}
+
+.detail-close-btn:active {
+  transform: scale(0.92);
+}
+
+/* PC端：更大的关闭按钮 */
+@media (min-width: 768px) {
+  .detail-close-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    top: 20px;
+    right: 20px;
+  }
+}
+
+/* Review Action Buttons */
+.review-action-btn {
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.review-action-btn.primary {
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: #fff;
+}
+
+.review-action-btn.danger {
+  background: linear-gradient(135deg, #ffe0e0 0%, #ffc9c9 100%);
+  color: #b71c1c;
+}
+
+.review-action-btn:disabled {
+  opacity: 0.7;
+}
+
+/* Auth Button */
+.auth-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--lx-grad-brand, linear-gradient(135deg, #0f766e 0%, #0ea5e9 100%));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.auth-btn:active {
+  transform: scale(0.98);
+}
+
+/* Guest Button */
+.guest-btn {
+  width: 100%;
+  padding: 14px;
+  background: white;
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.guest-btn:active {
+  transform: scale(0.98);
+}

@@ -1,0 +1,2221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>linglish Admin - 翻译管理</title>
+  <script>
+    // Suppress noisy Cloudflare beacon CORS/integrity errors in console
+    (function() {
+      const patterns = [/cloudflareinsights/i, /beacon\.min\.js/i, /integrity.*sha512/i];
+      const match = (msg) => patterns.some((re) => re.test(String(msg || '')));
+      const origError = console.error?.bind(console);
+      if (origError) {
+        console.error = (...args) => {
+          const head = args && args.length ? String(args[0]) : '';
+          if (match(head)) return;
+          if (args[0] instanceof Error && match(args[0].stack || args[0].message)) return;
+          return origError(...args);
+        };
+      }
+      window.addEventListener('error', (ev) => {
+        if (match(ev?.message || ev?.filename)) {
+          ev.preventDefault();
+          return;
+        }
+      }, true);
+    })();
+  </script>
+  <link rel="stylesheet" href="./admin-styles.css">
+  <script src="./admin-common.js"></script>
+  <style>
+    .admin-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    .stats-section {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #007bff;
+    }
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    .action-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #545b62;
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #218838;
+    }
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .words-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    .words-table th,
+    .words-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .words-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    .words-table tr:hover {
+      background: #f8f9fa;
+    }
+    .word-lemma {
+      font-weight: 600;
+      font-family: monospace;
+      font-size: 1.1rem;
+    }
+    .word-translation {
+      color: #6c757d;
+      font-style: italic;
+    }
+    .word-translation.missing {
+      color: #dc3545;
+    }
+    .word-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn-sm {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+    }
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #c82333;
+    }
+    .status-message {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+    }
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .status-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    .edit-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .edit-modal.show {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 2rem;
+    }
+    .pagination button {
+      padding: 0.5rem 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-content">
+    <div class="stats-section">
+      <h2>翻译统计</h2>
+      <div class="stats-cards">
+        <div class="stat-card">
+          <div class="stat-number" id="total-missing">-</div>
+          <div class="stat-label">待修复的词汇</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="total-with-en">-</div>
+          <div class="stat-label">有英文定义</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="total-with-zh">-</div>
+          <div class="stat-label">有中文翻译</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="total-exposures">-</div>
+          <div class="stat-label">总使用次数</div>
+        </div>
+        <div class="stat-card" id="blacklist-card" style="background:#fff5f5; border:1px solid #f5c6cb; cursor:pointer; transition: transform 0.2s, box-shadow 0.2s;" title="点击查看黑名单词汇列表">
+          <div class="stat-number" id="total-blacklisted" style="color:#dc3545;">-</div>
+          <div class="stat-label">黑名单词汇 🔍</div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-success" id="auto-translate-btn">
+          自动翻译当前页 (最多3次重试)
+        </button>
+        <button class="btn btn-success" id="translate-all-btn">
+          全部翻译 (全库翻译)
+        </button>
+        <button class="btn btn-success" id="prewarm-btn" title="自动预翻译高频缺失翻译的词汇">
+          预翻译高频词汇
+        </button>
+        <button class="btn btn-success" id="prewarm-transcripts-btn" title="预翻译最热视频的字幕句子">
+          预翻译热门字幕
+        </button>
+        <button class="btn btn-primary" id="export-csv-btn">
+          📥 导出待修正词汇
+        </button>
+        <button class="btn btn-primary" id="export-rich-csv-btn">
+          📥 导出词汇+释义+例句 (前200个)
+        </button>
+        <button class="btn btn-warning" id="export-missing-csv-btn">
+          📥 导出缺失翻译的高频词 (前500个)
+        </button>
+        <button class="btn btn-primary" id="export-all-words-csv-btn" title="导出全量词汇（word/音标/中文翻译），用于批量校对音标">
+          📥 导出全量词汇(音标+翻译)
+        </button>
+        <button class="btn btn-primary" id="import-csv-btn">
+          📤 导入修正后的翻译
+        </button>
+        <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+        <button class="btn btn-primary" id="import-words-csv-btn" title="导入三列表CSV/TSV：word,phonetic,zh（只更新非空字段；非空会覆盖已有；空值保留原值）">
+          📤 导入词汇(音标+翻译)
+        </button>
+        <input type="file" id="words-csv-file-input" accept=".csv,.tsv,.txt" style="display: none;">
+        <button class="btn btn-primary" id="refresh-btn">
+          刷新数据
+        </button>
+      </div>
+
+      <!-- 自定义文本翻译，用于释义/例句 -->
+      <div style="background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <label style="font-weight:600;">后台翻译（释义/例句/任意文本，结果写入全局缓存）</label>
+          <textarea id="custom-text" rows="3" style="width:100%;padding:.75rem;border:1px solid #d1d5db;border-radius:6px;resize:vertical;" placeholder="粘贴需要翻译的英文定义或句子"></textarea>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-success" id="custom-translate-btn">后台翻译并缓存</button>
+            <span id="custom-translate-status" style="color:#6b7280;font-size:.9rem;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="status-message"></div>
+
+      <div style="background:#f8f9fa;border:1px solid #e5e7eb;border-radius:8px;padding:1rem;margin:1rem 0;">
+        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem;">
+          <strong>词典质量写入</strong>
+          <label style="display:flex;align-items:center;gap:.4rem;margin:0;">
+            <input type="checkbox" id="quality-dry-run"> 仅预览（不写入）
+          </label>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.6rem;color:#495057;font-size:.9rem;">
+          <div>来源：<span id="quality-source">-</span></div>
+          <div>批次：<span id="quality-batch-id">-</span></div>
+          <div>原因：<span id="quality-reasons">-</span></div>
+          <div>冲突：<span id="quality-conflicts">-</span></div>
+        </div>
+      </div>
+
+      <!-- 翻译进度条 -->
+      <div id="translation-progress" style="display: none; margin-top: 1rem;">
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 1rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span id="progress-text">正在翻译...</span>
+            <span id="progress-percentage">0%</span>
+          </div>
+          <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden;">
+            <div id="progress-bar" style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; width: 0%; transition: width 0.3s;"></div>
+          </div>
+          <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
+            <span id="progress-stats">成功: 0 | 失败: 0 | 总计: 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-section">
+      <h2>缺失翻译的词汇列表</h2>
+      <div style="overflow-x: auto;">
+        <table class="words-table">
+          <thead>
+            <tr>
+              <th>词汇</th>
+              <th>音标</th>
+              <th>英文定义</th>
+              <th>中文翻译</th>
+              <th>使用次数</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="words-tbody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem; color: #6c757d;">
+                正在加载数据...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button class="btn btn-sm btn-secondary" id="prev-page" disabled>上一页</button>
+        <span style="padding: 0.5rem 1rem;">第 <span id="current-page">1</span> 页</span>
+        <button class="btn btn-sm btn-secondary" id="next-page">下一页</button>
+      </div>
+    </div>
+
+    <!-- 词汇管理 Section -->
+    <div class="stats-section" id="vocab-management-section">
+      <h2>📚 词汇管理</h2>
+      <p style="color:#6c757d; margin-bottom:1rem;">管理全局词汇库（words 表），支持搜索、添加、编辑、删除词汇。</p>
+
+      <div class="action-bar">
+        <input type="text" id="vocab-search-input" placeholder="搜索词汇..." style="flex:1; min-width:200px; padding:0.75rem; border:1px solid #ddd; border-radius:4px; font-size:1rem;">
+        <button class="btn btn-primary" id="vocab-search-btn">🔍 搜索</button>
+        <button class="btn btn-success" id="vocab-add-btn">➕ 添加词汇</button>
+        <button class="btn btn-secondary" id="vocab-refresh-btn">🔄 刷新</button>
+        <button class="btn btn-danger" id="vocab-clean-low-btn">🧹 清洗低质量</button>
+      </div>
+
+      <!-- 筛选条件 -->
+      <div class="action-bar" style="background:#f8f9fa; padding:1rem; border-radius:8px; margin-top:0.5rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <label style="font-weight:600; white-space:nowrap;">音标:</label>
+          <select id="vocab-filter-phonetic" style="padding:0.5rem; border:1px solid #ddd; border-radius:4px; min-width:120px;">
+            <option value="">全部</option>
+            <option value="has">有音标</option>
+            <option value="missing">无音标</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <label style="font-weight:600; white-space:nowrap;">中文翻译:</label>
+          <select id="vocab-filter-zh" style="padding:0.5rem; border:1px solid #ddd; border-radius:4px; min-width:120px;">
+            <option value="">全部</option>
+            <option value="has">有翻译</option>
+            <option value="missing">无翻译</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <label style="font-weight:600; white-space:nowrap;">状态:</label>
+          <select id="vocab-filter-status" style="padding:0.5rem; border:1px solid #ddd; border-radius:4px; min-width:120px;">
+            <option value="">正常词汇</option>
+            <option value="blacklisted">黑名单</option>
+            <option value="all">全部（含黑名单）</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="vocab-filter-btn">🔍 筛选</button>
+        <button class="btn btn-secondary" id="vocab-clear-filter-btn">清除筛选</button>
+        <button class="btn btn-success" id="vocab-export-filtered-btn">📥 导出筛选结果</button>
+      </div>
+
+      <div style="margin:1rem 0; color:#6c757d;">
+        共 <span id="vocab-total-count">0</span> 个词汇
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="words-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>词汇</th>
+              <th>词频</th>
+              <th>音标</th>
+              <th>中文翻译</th>
+              <th>词性</th>
+              <th>创建时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="vocab-tbody">
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2rem; color: #6c757d;">
+                正在加载数据...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button class="btn btn-sm btn-secondary" id="vocab-prev-page" disabled>上一页</button>
+        <span style="padding: 0.5rem 1rem;">第 <span id="vocab-current-page">1</span> 页</span>
+        <button class="btn btn-sm btn-secondary" id="vocab-next-page">下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加词汇模态框 -->
+  <div class="edit-modal" id="add-vocab-modal">
+    <div class="modal-content">
+      <h3>➕ 添加词汇</h3>
+      <form id="add-vocab-form">
+        <div class="form-group">
+          <label>词汇 *</label>
+          <input type="text" id="add-vocab-word" placeholder="输入英文单词" required>
+        </div>
+        <div class="form-group">
+          <label>音标</label>
+          <input type="text" id="add-vocab-phonetic" placeholder="如: həˈloʊ">
+        </div>
+        <div class="form-group">
+          <label>中文翻译</label>
+          <input type="text" id="add-vocab-zh" placeholder="输入中文翻译">
+        </div>
+        <div class="form-group">
+          <label>词性</label>
+          <input type="text" id="add-vocab-pos" placeholder="如: noun, verb, adj">
+        </div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancel-add-vocab-btn">取消</button>
+          <button type="submit" class="btn btn-success">添加</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 编辑词汇模态框 -->
+  <div class="edit-modal" id="edit-vocab-modal">
+    <div class="modal-content">
+      <h3>✏️ 编辑词汇</h3>
+      <form id="edit-vocab-form">
+        <input type="hidden" id="edit-vocab-id">
+        <div class="form-group">
+          <label>词汇</label>
+          <input type="text" id="edit-vocab-word" readonly style="background: #f8f9fa;">
+        </div>
+        <div class="form-group">
+          <label>音标</label>
+          <input type="text" id="edit-vocab-phonetic" placeholder="如: həˈloʊ">
+        </div>
+        <div class="form-group">
+          <label>中文翻译</label>
+          <input type="text" id="edit-vocab-zh" placeholder="输入中文翻译">
+        </div>
+        <div class="form-group">
+          <label>词性</label>
+          <input type="text" id="edit-vocab-pos" placeholder="如: noun, verb, adj">
+        </div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancel-edit-vocab-btn">取消</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 低质量词汇清洗模态框 -->
+  <div class="edit-modal" id="low-quality-modal">
+    <div class="modal-content" style="max-width: 900px; width: 96%; max-height: 82vh; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h3 style="margin:0;">🧹 低质量词汇清洗（候选列表）</h3>
+        <button type="button" class="btn btn-sm btn-secondary" id="lowq-close-btn">关闭</button>
+      </div>
+      <div style="margin-top:10px; color:#6c757d; font-size:0.95rem;">
+        规则会抓取明显噪音（重复字符/包含数字或特殊字符/过长/缺少元音等）。默认只显示“无人学习”的词，避免误删。
+      </div>
+      <div class="action-bar" style="margin-top:12px; background:#f8f9fa; padding:12px; border-radius:8px;">
+        <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input type="checkbox" id="lowq-only-unused" checked>
+          只显示无人学习（推荐）
+        </label>
+        <button class="btn btn-primary" id="lowq-refresh-btn">🔄 刷新候选</button>
+        <button class="btn btn-secondary" id="lowq-select-all-btn">全选当前页</button>
+        <button class="btn btn-danger" id="lowq-delete-btn">删除选中</button>
+        <span style="margin-left:auto; color:#6c757d;">候选：<span id="lowq-total">0</span>｜已选：<span id="lowq-selected">0</span></span>
+      </div>
+      <div style="overflow:auto; border:1px solid #eee; border-radius:8px; margin-top:12px; flex:1;">
+        <table class="words-table">
+          <thead>
+            <tr>
+              <th style="width:60px;">选择</th>
+              <th style="width:80px;">ID</th>
+              <th>词汇</th>
+              <th style="width:160px;">原因</th>
+              <th style="width:120px;">学习人数</th>
+              <th style="width:120px;">查询次数</th>
+              <th style="width:120px;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="lowq-tbody">
+            <tr><td colspan="7" style="text-align:center; padding:2rem; color:#6c757d;">点击“刷新候选”加载</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px; color:#6c757d; font-size:0.9rem;">
+        ⚠️ 删除会从 <code>words</code> 表移除，并同步删除所有用户的 <code>user_vocabulary</code> 关联记录。
+      </div>
+    </div>
+  </div>
+
+  <!-- 黑名单词汇管理模态框 -->
+  <div class="edit-modal" id="blacklist-modal">
+    <div class="modal-content" style="max-width: 900px; width: 96%; max-height: 82vh; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h3 style="margin:0;">📋 黑名单词汇列表</h3>
+        <button type="button" class="btn btn-sm btn-secondary" id="blacklist-close-btn">关闭</button>
+      </div>
+      <div style="margin-top:10px; color:#6c757d; font-size:0.95rem;">
+        黑名单中的词汇不会被视频导入流程重新添加。如需恢复误删的词汇，可以勾选后点击"恢复选中"。
+      </div>
+      <div class="action-bar" style="margin-top:12px; background:#f8f9fa; padding:12px; border-radius:8px;">
+        <input type="text" id="blacklist-search-input" placeholder="搜索词汇..." style="flex:1; min-width:150px; padding:0.5rem; border:1px solid #ddd; border-radius:4px;">
+        <button class="btn btn-primary btn-sm" id="blacklist-search-btn">🔍 搜索</button>
+        <button class="btn btn-secondary btn-sm" id="blacklist-refresh-btn">🔄 刷新</button>
+        <button class="btn btn-secondary btn-sm" id="blacklist-select-all-btn">全选当前页</button>
+        <button class="btn btn-success btn-sm" id="blacklist-recover-btn">♻️ 恢复选中</button>
+        <span style="margin-left:auto; color:#6c757d;">总计：<span id="blacklist-total">0</span>｜已选：<span id="blacklist-selected">0</span></span>
+      </div>
+      <div style="overflow:auto; border:1px solid #eee; border-radius:8px; margin-top:12px; flex:1;">
+        <table class="words-table">
+          <thead>
+            <tr>
+              <th style="width:50px;">选择</th>
+              <th style="width:70px;">ID</th>
+              <th>词汇</th>
+              <th>音标</th>
+              <th>中文翻译</th>
+              <th style="width:120px;">加入时间</th>
+              <th style="width:140px;">原因</th>
+              <th style="width:100px;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="blacklist-tbody">
+            <tr><td colspan="8" style="text-align:center; padding:2rem; color:#6c757d;">点击"刷新"加载黑名单词汇</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" style="margin-top:12px;">
+        <button class="btn btn-sm btn-secondary" id="blacklist-prev-page" disabled>上一页</button>
+        <span style="padding: 0.5rem 1rem;">第 <span id="blacklist-current-page">1</span> 页</span>
+        <button class="btn btn-sm btn-secondary" id="blacklist-next-page">下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑模态框 -->
+  <div class="edit-modal" id="edit-modal">
+    <div class="modal-content">
+      <h3>编辑翻译</h3>
+      <form id="edit-form">
+        <div class="form-group">
+          <label>词汇</label>
+          <input type="text" id="edit-lemma" readonly style="background: #f8f9fa;">
+        </div>
+        <div class="form-group">
+          <label>翻译</label>
+          <input type="text" id="edit-translation" placeholder="输入中文翻译" required>
+        </div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" id="cancel-edit-btn">取消</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script id="dictionary-quality-ui">
+    window.DictionaryQualityUI = {
+      summarize(result) {
+        const value = result || {};
+        const item = Array.isArray(value.results) ? value.results.find((entry) => entry && entry.success !== false) : null;
+        return {
+          source: value.source || item?.source || null,
+          reasons: Array.isArray(value.reasons) ? value.reasons : (Array.isArray(item?.reasons) ? item.reasons : []),
+          batchId: value.batch_id || value.batch_ids?.[0] || item?.batch_id || null,
+          dryRun: value.dry_run === true,
+          conflicts: Array.isArray(value.conflicts) ? value.conflicts : (Array.isArray(item?.conflicts) ? item.conflicts : []),
+        };
+      },
+      render(result) {
+        const summary = this.summarize(result);
+        if (typeof document === 'undefined') return summary;
+        const set = (id, value) => {
+          const element = document.getElementById(id);
+          if (element) element.textContent = value;
+        };
+        set('quality-source', summary.source || '-');
+        set('quality-batch-id', summary.batchId || '-');
+        set('quality-reasons', summary.reasons.length ? summary.reasons.join(', ') : '-');
+        set('quality-conflicts', summary.conflicts.length ? summary.conflicts.map((item) => item.field || item.reason).join(', ') : '-');
+        return summary;
+      },
+    };
+  </script>
+
+  <script>
+    // 初始化页面
+    initAdminPage('翻译管理');
+
+    const API_BASE = '';
+    let currentPage = 1;
+    const pageSize = 50;
+    let totalItems = 0;
+
+    function qualityWriteOptions(reviewed = false, source = 'manual') {
+      return {
+        dry_run: document.getElementById('quality-dry-run')?.checked === true,
+        reviewed,
+        source,
+      };
+    }
+
+    function renderQualityResult(result) {
+      window.DictionaryQualityUI?.render(result);
+      return result;
+    }
+
+    function getToken() {
+      try {
+        const fromLocal = localStorage.getItem('linglish_token') || localStorage.getItem('authToken');
+        const fromSession = sessionStorage.getItem('linglish_token') || sessionStorage.getItem('authToken');
+        if (fromLocal) return fromLocal;
+        if (fromSession) return fromSession;
+        // Fallback: try cookies
+        const cookie = document.cookie || '';
+        const kv = Object.fromEntries(cookie.split(';').map(s=>s.trim()).filter(Boolean).map(s=>{
+          const i = s.indexOf('=');
+          return i>0 ? [decodeURIComponent(s.slice(0,i)), decodeURIComponent(s.slice(i+1))] : [s,''];
+        }));
+        return kv.linglish_token || kv.authToken || kv.token || null;
+      } catch (_) { return null; }
+    }
+
+    function showStatus(message, type = 'info') {
+      const statusEl = document.getElementById('status-message');
+      statusEl.className = `status-message status-${type}`;
+      statusEl.textContent = message;
+      statusEl.style.display = 'block';
+
+      if (type === 'success' || type === 'info') {
+        setTimeout(() => {
+          statusEl.style.display = 'none';
+        }, 5000);
+      }
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '-';
+      const date = new Date(isoString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) return '今天';
+      if (diffDays === 1) return '昨天';
+      if (diffDays < 7) return `${diffDays} 天前`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)} 月前`;
+      return `${Math.floor(diffDays / 365)} 年前`;
+    }
+
+    async function loadData() {
+      try {
+        const offset = (currentPage - 1) * pageSize;
+        const data = await AdminAPI.get(`/admin/translations/missing?limit=${pageSize}&offset=${offset}`);
+
+        totalItems = data.total;
+
+        // Update stats
+        document.getElementById('total-missing').textContent = data.total;
+        document.getElementById('total-blacklisted').textContent = data.blacklisted_count || 0;
+
+        const withEn = data.items.filter(item => item.english_definition && item.english_definition !== '-').length;
+        const withZh = data.items.filter(item => item.translation && item.translation !== '[待翻译]').length;
+        const totalExposures = data.items.reduce((sum, item) => sum + Number(item.user_count || 0), 0);
+
+        document.getElementById('total-with-en').textContent = withEn;
+        document.getElementById('total-with-zh').textContent = withZh;
+        document.getElementById('total-exposures').textContent = totalExposures;
+
+        // Render table
+        const tbody = document.getElementById('words-tbody');
+        if (data.items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #28a745;">✅ 所有词汇都已翻译完成！</td></tr>';
+        } else {
+          // Escape for JavaScript string (escape single quotes and backslashes)
+          const escapeJs = (str) => String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+          tbody.innerHTML = data.items.map(item => {
+            const phonetic = item.phonetic ? `/${escapeHtml(item.phonetic)}/` : '-';
+            const enDef = item.english_definition || '-';
+            const zhTrans = item.translation === '[待翻译]' ? '' : item.translation;
+            const zhDisplay = zhTrans ? escapeHtml(zhTrans) : '<span style="color:#dc3545">[待翻译]</span>';
+
+            return `
+            <tr>
+              <td class="word-lemma"><strong>${escapeHtml(item.lemma)}</strong></td>
+              <td style="color:#6c757d; font-family:monospace;">${phonetic}</td>
+              <td style="max-width:300px; font-size:0.9em; color:#495057;">${escapeHtml(enDef).substring(0, 80)}${enDef.length > 80 ? '...' : ''}</td>
+              <td class="word-translation ${zhTrans ? '' : 'missing'}">${zhDisplay}</td>
+              <td>${item.user_count || 0} 次</td>
+              <td class="word-actions">
+                <button class="btn btn-sm btn-primary" onclick="retranslate('${escapeJs(item.lemma)}')">
+                  🔄 翻译
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="editTranslation('${escapeJs(item.lemma)}', '${escapeJs(zhTrans || '')}')">
+                  ✏️ 编辑
+                </button>
+              </td>
+            </tr>
+          `;
+          }).join('');
+        }
+
+        // Update pagination
+        document.getElementById('current-page').textContent = currentPage;
+        document.getElementById('prev-page').disabled = currentPage === 1;
+        document.getElementById('next-page').disabled = offset + pageSize >= totalItems;
+
+      } catch (error) {
+        console.error('加载数据失败:', error);
+        showStatus('加载数据失败: ' + error.message, 'error');
+      }
+    }
+
+    async function retranslate(lemma, isAutoRetry = false, retryCount = 0) {
+      const MAX_RETRIES = 3;
+
+      if (!isAutoRetry && !confirm(`确定要重新翻译 "${lemma}" 吗？`)) return;
+
+      try {
+        const retryMsg = retryCount > 0 ? ` (第 ${retryCount + 1}/${MAX_RETRIES} 次尝试)` : '';
+        showStatus(`正在翻译 "${lemma}"...${retryMsg}`, 'info');
+
+        const result = await AdminAPI.post('/admin/translations/retranslate', {
+          lemma,
+          retryCount,
+          ...qualityWriteOptions(false, 'translation_service'),
+        });
+        renderQualityResult(result);
+
+        if (result.success) {
+          showStatus(`✅ 翻译成功: "${lemma}" → "${result.translation}" (更新了 ${result.updated_count} 条记录)`, 'success');
+          await loadData();
+          return { success: true, translation: result.translation };
+        } else {
+          // 翻译失败，判断是否需要重试
+          if (isAutoRetry && retryCount < MAX_RETRIES - 1) {
+            // 自动重试：延迟后重试
+            const delay = 1000 * (retryCount + 1); // 递增延迟: 1s, 2s, 3s
+            showStatus(`⚠️ 翻译失败，${delay/1000}秒后重试... (${retryCount + 1}/${MAX_RETRIES})`, 'info');
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return await retranslate(lemma, true, retryCount + 1);
+          } else {
+            // 达到最大重试次数或手动翻译失败
+            const msg = retryCount >= MAX_RETRIES - 1
+              ? `❌ 翻译失败 (已重试 ${MAX_RETRIES} 次): ${result.message}。请手动翻译。`
+              : `⚠️ 翻译失败: ${result.message}`;
+            showStatus(msg, 'error');
+            return { success: false, needsManual: retryCount >= MAX_RETRIES - 1 };
+          }
+        }
+      } catch (error) {
+        // 网络或其他错误，判断是否需要重试
+        if (isAutoRetry && retryCount < MAX_RETRIES - 1) {
+          const delay = 1000 * (retryCount + 1);
+          showStatus(`⚠️ 请求失败，${delay/1000}秒后重试... (${retryCount + 1}/${MAX_RETRIES})`, 'info');
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return await retranslate(lemma, true, retryCount + 1);
+        } else {
+          const msg = retryCount >= MAX_RETRIES - 1
+            ? `❌ 翻译失败 (已重试 ${MAX_RETRIES} 次): ${error.message}。请手动翻译。`
+            : `翻译失败: ${error.message}`;
+          showStatus(msg, 'error');
+          return { success: false, needsManual: retryCount >= MAX_RETRIES - 1 };
+        }
+      }
+    }
+
+    async function autoTranslateCurrentPage() {
+      if (!confirm('确定要自动翻译当前页面的词汇吗？每个词汇失败后会自动重试最多3次，速度已控制。')) return;
+
+      const btn = document.getElementById('auto-translate-btn');
+      btn.disabled = true;
+      const originalText = btn.textContent;
+
+      try {
+        // 获取当前页面的所有词汇
+        const offset = (currentPage - 1) * pageSize;
+        const data = await AdminAPI.get(`/admin/translations/missing?limit=${pageSize}&offset=${offset}`);
+
+        if (data.items.length === 0) {
+          showStatus('当前页面没有需要翻译的词汇', 'info');
+          return;
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+        let manualNeededCount = 0;
+
+        for (let i = 0; i < data.items.length; i++) {
+          const item = data.items[i];
+          btn.textContent = `自动翻译中... (${i + 1}/${data.items.length})`;
+
+          // 使用带自动重试的翻译函数
+          const result = await retranslate(item.lemma, true, 0);
+
+          if (result && result.success) {
+            successCount++;
+          } else if (result && result.needsManual) {
+            manualNeededCount++;
+            failCount++;
+          } else {
+            failCount++;
+          }
+
+          // 速率控制：每个词汇之间延迟1500ms（即使失败也要延迟）
+          // Google Translate 有较严格的速率限制，需要更长的延迟
+          if (i < data.items.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          }
+        }
+
+        const summaryMsg = `✅ 自动翻译完成！成功: ${successCount}, 失败: ${failCount}` +
+          (manualNeededCount > 0 ? `, 需手动处理: ${manualNeededCount}` : '');
+        showStatus(summaryMsg, successCount > 0 ? 'success' : 'info');
+        await loadData();
+      } catch (error) {
+        showStatus('自动翻译失败: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    async function translateAll() {
+      // 获取总数
+      const data = await AdminAPI.get('/admin/translations/missing?limit=1&offset=0');
+      const totalWords = data.total;
+
+      if (totalWords === 0) {
+        showStatus('没有需要翻译的词汇', 'info');
+        return;
+      }
+
+      if (!confirm(`确定要翻译全部 ${totalWords} 个词汇吗？这可能需要较长时间。\n\n翻译将以每批50个词的速度进行，您可以随时刷新页面查看进度。`)) {
+        return;
+      }
+
+      const btn = document.getElementById('translate-all-btn');
+      const autoBtn = document.getElementById('auto-translate-btn');
+      const refreshBtn = document.getElementById('refresh-btn');
+
+      btn.disabled = true;
+      autoBtn.disabled = true;
+      const originalText = btn.textContent;
+
+      // 显示进度条
+      const progressDiv = document.getElementById('translation-progress');
+      const progressBar = document.getElementById('progress-bar');
+      const progressText = document.getElementById('progress-text');
+      const progressPercentage = document.getElementById('progress-percentage');
+      const progressStats = document.getElementById('progress-stats');
+
+      progressDiv.style.display = 'block';
+
+      let totalSuccess = 0;
+      let totalFail = 0;
+      let totalProcessed = 0;
+      const batchSize = 50;
+      let continueTranslating = true;
+
+      try {
+        showStatus(`开始全库翻译，共 ${totalWords} 个词汇...`, 'info');
+
+        while (continueTranslating) {
+          // 获取当前批次需要翻译的词汇
+          const currentData = await AdminAPI.get('/admin/translations/missing?limit=1&offset=0');
+          const remainingWords = currentData.total;
+
+          if (remainingWords === 0) {
+            showStatus('✅ 所有词汇都已翻译完成！', 'success');
+            break;
+          }
+
+          // 更新进度显示
+          const processedSoFar = totalWords - remainingWords;
+          const percentage = Math.round((processedSoFar / totalWords) * 100);
+          progressBar.style.width = percentage + '%';
+          progressPercentage.textContent = percentage + '%';
+          progressText.textContent = `正在翻译... (剩余 ${remainingWords} 个)`;
+
+          // 调用批量翻译API
+          btn.textContent = `翻译中... (${processedSoFar}/${totalWords})`;
+
+          try {
+            const result = await AdminAPI.post('/admin/translations/retranslate-batch', {
+              limit: Math.min(batchSize, remainingWords),
+              ...qualityWriteOptions(false, 'translation_service'),
+            });
+            renderQualityResult(result);
+
+            totalSuccess += result.successCount || 0;
+            totalFail += result.failCount || 0;
+            totalProcessed += result.processed || 0;
+
+            // 更新统计
+            progressStats.textContent = `成功: ${totalSuccess} | 失败: ${totalFail} | 总计: ${totalProcessed}`;
+
+            // 如果这一批全部失败，可能是API问题，询问是否继续
+            if (result.successCount === 0 && result.failCount > 0) {
+              const shouldContinue = confirm(
+                `⚠️ 当前批次 ${result.failCount} 个词汇翻译失败。\n\n可能是API限流或网络问题。\n\n是否继续尝试？`
+              );
+              if (!shouldContinue) {
+                continueTranslating = false;
+                showStatus(`翻译已暂停。成功: ${totalSuccess}, 失败: ${totalFail}`, 'info');
+                break;
+              }
+              // 如果继续，增加额外延迟
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+
+            // 批次间延迟，避免过载（1秒）
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+          } catch (error) {
+            console.error('批量翻译出错:', error);
+            const shouldContinue = confirm(
+              `❌ 翻译出错: ${error.message}\n\n是否继续尝试剩余词汇？`
+            );
+            if (!shouldContinue) {
+              continueTranslating = false;
+              showStatus(`翻译已中止。成功: ${totalSuccess}, 失败: ${totalFail}`, 'error');
+              break;
+            }
+            // 错误后增加延迟
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+        }
+
+        // 最终更新进度
+        progressBar.style.width = '100%';
+        progressPercentage.textContent = '100%';
+        progressText.textContent = '翻译完成！';
+
+        showStatus(
+          `🎉 全库翻译完成！\n成功: ${totalSuccess}, 失败: ${totalFail}, 总处理: ${totalProcessed}`,
+          totalSuccess > 0 ? 'success' : 'info'
+        );
+
+        // 刷新数据
+        await loadData();
+
+      } catch (error) {
+        console.error('全库翻译失败:', error);
+        showStatus('全库翻译失败: ' + error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        autoBtn.disabled = false;
+        btn.textContent = originalText;
+
+        // 3秒后隐藏进度条
+        setTimeout(() => {
+          progressDiv.style.display = 'none';
+          // 重置进度条
+          progressBar.style.width = '0%';
+          progressPercentage.textContent = '0%';
+          progressStats.textContent = '成功: 0 | 失败: 0 | 总计: 0';
+        }, 5000);
+      }
+    }
+
+    // 预翻译高频缺失词汇，减少线上实时翻译
+    async function prewarmTranslations() {
+      if (!confirm('预翻译高频缺失的词汇（默认200条），以减少线上实时翻译。继续吗？')) return;
+      const btn = document.getElementById('prewarm-btn');
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '预翻译中...';
+      try {
+        const res = await AdminAPI.post('/admin/translations/prewarm', { limit: 200, ...qualityWriteOptions(false, 'prewarm') });
+        renderQualityResult(res);
+        if (res && res.success) {
+          const { total, success, failed } = res.stats || {};
+          showStatus(`✅ 预翻译完成：总计 ${total}，成功 ${success}，失败 ${failed}`, failed > 0 ? 'info' : 'success');
+          await loadData();
+        } else {
+          showStatus('预翻译失败，请稍后重试', 'error');
+        }
+      } catch (err) {
+        showStatus('预翻译失败: ' + (err.message || err), 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    }
+
+    // 预翻译最热视频的字幕句子，减少查词时的实时翻译
+    async function prewarmTranscripts() {
+      if (!confirm('预翻译最热视频的字幕句子（默认 30 个视频，每个 200 句），以减少查词时的实时翻译。继续吗？')) return;
+      const btn = document.getElementById('prewarm-transcripts-btn');
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '字幕预翻译中...';
+      try {
+        const res = await AdminAPI.post('/admin/translations/prewarm-transcripts', { videoLimit: 30, segmentLimitPerVideo: 200 });
+        if (res && res.success) {
+          const { videos, totalSegments, success, failed } = res.stats || {};
+          showStatus(`✅ 字幕预翻译完成：视频 ${videos}，处理句子 ${totalSegments}，成功 ${success}，失败 ${failed}`, failed > 0 ? 'info' : 'success');
+        } else {
+          showStatus('字幕预翻译失败，请稍后重试', 'error');
+        }
+      } catch (err) {
+        showStatus('字幕预翻译失败: ' + (err.message || err), 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    }
+
+    function editTranslation(lemma, currentTranslation) {
+      document.getElementById('edit-lemma').value = lemma;
+      document.getElementById('edit-translation').value = currentTranslation;
+      document.getElementById('edit-modal').classList.add('show');
+    }
+
+    async function saveEdit(event) {
+      event.preventDefault();
+
+      const lemma = document.getElementById('edit-lemma').value;
+      const translation = document.getElementById('edit-translation').value;
+
+      try {
+        const result = await AdminAPI.post('/admin/translations/update', { lemma, translation, ...qualityWriteOptions(true) });
+        renderQualityResult(result);
+
+        if (result.success) {
+          showStatus(`✅ 更新成功！更新了 ${result.updated_count} 条记录`, 'success');
+          document.getElementById('edit-modal').classList.remove('show');
+          await loadData();
+        }
+      } catch (error) {
+        showStatus('更新失败: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteWord(lemma) {
+      if (!confirm(`⚠️ 确定要删除 "${lemma}" 吗？这将从所有用户的词库中删除该词！`)) return;
+
+      try {
+        const result = await AdminAPI.post('/admin/translations/delete', { lemma });
+
+        if (result.success) {
+          showStatus(`✅ 删除成功！删除了 ${result.deleted_count} 条记录`, 'success');
+          await loadData();
+        }
+      } catch (error) {
+        showStatus('删除失败: ' + error.message, 'error');
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function escapeJs(str) {
+      return String(str || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r/g, '\\r')
+        .replace(/\n/g, '\\n');
+    }
+
+    async function exportToCSV() {
+      try {
+        showStatus('正在导出CSV文件...', 'info');
+
+        const token = getToken();
+        const response = await fetch('/admin/translations/export', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => '');
+          throw new Error(`导出失败: ${response.status} ${response.statusText || ''} ${errText || ''}`.trim());
+        }
+
+        const csvContent = await response.text();
+        console.log('[Admin Export] CSV response length:', csvContent.length);
+        console.log('[Admin Export] first 200 chars:', csvContent.slice(0, 200));
+        const rowCount = Math.max(0, csvContent.trim().split(/\r?\n/).length - 1);
+        console.log('[Admin Export] parsed row count (excluding header):', rowCount);
+
+        // Create a blob and download link
+        const blob = new Blob([csvContent], { type: 'text/csv; charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `translations-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        showStatus(`✅ CSV文件已导出成功！共 ${rowCount} 条待修正词汇`, 'success');
+      } catch (error) {
+        console.error('导出CSV失败:', error);
+        showStatus('导出CSV失败: ' + error.message, 'error');
+      }
+    }
+
+    async function exportRichCSV(onlyMissing = false, limit = 200) {
+      try {
+        const token = getToken();
+        if (!token) {
+          showStatus('缺少授权，请重新登录后再试', 'error');
+          return;
+        }
+
+        const statusMsg = onlyMissing
+          ? `正在导出缺失翻译的高频词（最多${limit}个）...`
+          : `正在导出词汇+释义+例句（最多${limit}个词）...`;
+
+        showStatus(statusMsg, 'info');
+        console.log(`[Admin Export] start rich export (only_missing=${onlyMissing}, limit=${limit})`);
+
+        const url = `/admin/translations/export-csv?limit=${limit}&only_missing=${onlyMissing}`;
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => '');
+          throw new Error(`导出失败: ${response.status} ${response.statusText || ''} ${errText || ''}`.trim());
+        }
+
+        const csvContent = await response.text();
+        const rowCount = Math.max(0, csvContent.trim().split(/\r?\n/).length - 1);
+        console.log('[Admin Export] rich export row count (incl header):', rowCount + 1);
+
+        const blob = new Blob([csvContent], { type: 'text/csv; charset=utf-8' });
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `translations-rich-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+
+        showStatus(`✅ 已导出词汇+释义+例句，行数（含表头）${rowCount + 1}`, 'success');
+        console.log('[Admin Export] rich export done');
+      } catch (error) {
+        console.error('导出CSV失败:', error);
+        showStatus('导出CSV失败: ' + error.message, 'error');
+      }
+    }
+
+    async function exportAllWordsCSV() {
+      try {
+        const token = getToken();
+        if (!token) {
+          showStatus('缺少授权，请重新登录后再试', 'error');
+          return;
+        }
+
+        showStatus('正在导出全量词汇（音标+翻译）...', 'info');
+        const response = await fetch('/admin/translations/export-words-csv', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => '');
+          throw new Error(`导出失败: ${response.status} ${response.statusText || ''} ${errText || ''}`.trim());
+        }
+
+        const csvContent = await response.text();
+        const rowCount = Math.max(0, csvContent.trim().split(/\r?\n/).length - 1);
+
+        const blob = new Blob([csvContent], { type: 'text/csv; charset=utf-8' });
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `words-all-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+
+        showStatus(`✅ 已导出全量词汇，行数（含表头）${rowCount + 1}`, 'success');
+      } catch (error) {
+        console.error('导出全量词汇失败:', error);
+        showStatus('导出全量词汇失败: ' + error.message, 'error');
+      }
+    }
+
+    async function importFromCSV(file) {
+      if (!file) return;
+
+      if (!file.name.endsWith('.csv')) {
+        showStatus('请选择CSV文件', 'error');
+        return;
+      }
+
+      const confirmMsg = `确定要导入 "${file.name}" 吗？\n\n这将更新词汇表中的翻译。`;
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        showStatus('正在读取CSV文件...', 'info');
+
+        // Read the file
+        const csvData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = (e) => reject(new Error('文件读取失败'));
+          reader.readAsText(file, 'UTF-8');
+        });
+
+        showStatus('正在导入翻译...', 'info');
+
+        // Determine which endpoint to use based on CSV format
+        // Check if CSV has extended format (11 columns with type,word_or_sentence,etc.)
+        const firstLine = csvData.split('\n')[0];
+        const hasExtendedFormat = firstLine.includes('type,word_or_sentence,phonetic,en_text,zh_text');
+        const hasWordsFormat =
+          firstLine.includes('word,phonetic,zh') ||
+          firstLine.includes('word\tphonetic\tzh');
+
+        const endpoint = hasExtendedFormat
+          ? '/admin/translations/import-csv'  // Extended format with meanings/examples
+          : hasWordsFormat
+            ? '/admin/translations/import-words-csv' // Lightweight format: word,phonetic,zh
+            : '/admin/translations/import';      // Simple format: word,translation
+
+        console.log(`[Import CSV] Using endpoint: ${endpoint}, extended format: ${hasExtendedFormat}, words format: ${hasWordsFormat}`);
+
+        // Send to backend
+        const result = await AdminAPI.post(endpoint, {
+          csvData,
+          ...qualityWriteOptions(false, 'admin_import'),
+        });
+        renderQualityResult(result);
+
+        if (result.success) {
+          const { results } = result;
+          const successMsg = `✅ 导入完成！\n` +
+            `总计: ${results.total}\n` +
+            `成功: ${results.updated}\n` +
+            `失败: ${results.failed}`;
+
+          showStatus(successMsg, results.failed > 0 ? 'info' : 'success');
+
+          // Show detailed results if there are failures
+          if (results.failed > 0 && results.details) {
+            console.log('导入详情:', results.details);
+            const failedItems = results.details.filter(d => !d.success);
+            if (failedItems.length > 0) {
+              console.table(failedItems);
+              showStatus(
+                `${successMsg}\n\n失败的条目已输出到控制台，请按F12查看详情`,
+                'info'
+              );
+            }
+          }
+
+          // Refresh data
+          await loadData();
+        } else {
+          throw new Error(result.error || '导入失败');
+        }
+      } catch (error) {
+        console.error('导入CSV失败:', error);
+        showStatus('导入CSV失败: ' + error.message, 'error');
+      } finally {
+        // Reset file input
+        document.getElementById('csv-file-input').value = '';
+      }
+    }
+
+    async function importWordsPhoneticZhFromFile(file) {
+      if (!file) return;
+
+      const lowerName = String(file.name || '').toLowerCase();
+      if (!lowerName.endsWith('.csv') && !lowerName.endsWith('.tsv') && !lowerName.endsWith('.txt')) {
+        showStatus('请选择CSV/TSV/TXT文件', 'error');
+        return;
+      }
+
+      const confirmMsg =
+        `确定要导入 "${file.name}" 吗？\n\n` +
+        `格式要求：word,phonetic,zh（CSV或TSV均可）\n` +
+        `注意：只更新非空音标/翻译；非空会覆盖已有；空值保留原值。（表头可有可无）`;
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        showStatus('正在读取文件...', 'info');
+
+        const csvData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.onerror = () => reject(new Error('文件读取失败'));
+          reader.readAsText(file, 'UTF-8');
+        });
+
+        console.log('[Import Words CSV] file=', { name: file.name, size: file.size, type: file.type });
+
+        // Large files can be blocked by reverse proxy limits (no backend logs).
+        // Upload in batches to improve reliability.
+        const text = String(csvData || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+        const allLines = text
+          .split('\n')
+          .map(l => String(l || '').replace(/\u0000/g, ''))
+          .map(l => l.trimEnd())
+          .filter(l => l.trim().length > 0);
+
+        if (allLines.length < 1) throw new Error('文件为空');
+
+        const detectDelimiterLocal = (sampleLines) => {
+          let tabCount = 0;
+          let commaCount = 0;
+          for (const line of sampleLines) {
+            const s = String(line || '');
+            tabCount += (s.match(/\t/g) || []).length;
+            commaCount += (s.match(/,/g) || []).length;
+          }
+          if (tabCount > 0 && tabCount >= commaCount) return '\t';
+          return ',';
+        };
+
+        const delimiter = detectDelimiterLocal(allLines.slice(0, Math.min(allLines.length, 20)));
+        const firstFields = String(allLines[0] || '').split(delimiter).map(v => String(v || '').trim().toLowerCase());
+        const hasHeader = firstFields.includes('word') || firstFields.includes('lemma');
+        const headerLine = hasHeader ? allLines[0] : null;
+        const dataLines = hasHeader ? allLines.slice(1) : allLines.slice(0);
+
+        const CHUNK_LINES = 2000;
+        const totalChunks = Math.max(1, Math.ceil(dataLines.length / CHUNK_LINES));
+
+        const acc = {
+          total: dataLines.length,
+          processed: 0,
+          inserted: 0,
+          updated: 0,
+          updatedPhonetic: 0,
+          updatedZh: 0,
+          updatedWordCache: 0,
+          updatedUserVocab: 0,
+          skipped: 0,
+          failed: 0,
+          delimiter: delimiter === '\t' ? 'TSV' : 'CSV',
+        };
+        const allErrors = [];
+
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+          const start = chunkIndex * CHUNK_LINES;
+          const part = dataLines.slice(start, start + CHUNK_LINES);
+          if (!part.length) continue;
+
+          showStatus(`正在导入词汇(音标+翻译)... (${chunkIndex + 1}/${totalChunks})`, 'info');
+          const payload = hasHeader ? `${headerLine}\n${part.join('\n')}` : part.join('\n');
+
+          const result = await AdminAPI.post('/admin/translations/import-words-csv', {
+            csvData: payload,
+            overwriteExisting: true,
+            ...qualityWriteOptions(false, 'admin_import'),
+          });
+          renderQualityResult(result);
+          if (!result?.success) throw new Error(result?.error || '导入失败');
+
+          const r = result.results || {};
+          acc.processed += Number(r.processed || 0);
+          acc.inserted += Number(r.inserted || 0);
+          acc.updated += Number(r.updated || 0);
+          acc.updatedPhonetic += Number(r.updatedPhonetic || 0);
+          acc.updatedZh += Number(r.updatedZh || 0);
+          acc.updatedWordCache += Number(r.updatedWordCache || 0);
+          acc.updatedUserVocab += Number(r.updatedUserVocab || 0);
+          acc.skipped += Number(r.skipped || 0);
+          acc.failed += Number(r.failed || 0);
+
+          if (Array.isArray(result.errors) && result.errors.length) {
+            allErrors.push(...result.errors);
+          }
+        }
+
+        const msg =
+          `✅ 导入完成！\n` +
+          `总计: ${acc.total}\n` +
+          `处理: ${acc.processed}\n` +
+          `新增: ${acc.inserted}\n` +
+          `更新: ${acc.updated}\n` +
+          `更新音标: ${acc.updatedPhonetic}\n` +
+          `更新翻译: ${acc.updatedZh}\n` +
+          `跳过: ${acc.skipped}\n` +
+          `失败: ${acc.failed}\n` +
+          `格式: ${acc.delimiter}\n` +
+          `分片: ${totalChunks}`;
+
+        showStatus(msg, acc.failed > 0 ? 'info' : 'success');
+
+        if (allErrors.length) {
+          console.log('[Import Words CSV] errors:', allErrors.slice(0, 200));
+        }
+
+        await loadData();
+        if (typeof loadVocabList === 'function') {
+          await loadVocabList();
+        }
+      } catch (error) {
+        console.error('导入词汇CSV失败:', error);
+        showStatus('导入词汇CSV失败: ' + (error.message || error), 'error');
+      } finally {
+        const el = document.getElementById('words-csv-file-input');
+        if (el) el.value = '';
+      }
+    }
+
+    // 任意文本后台翻译并缓存（用于释义/例句）
+    async function translateCustomText() {
+      const textArea = document.getElementById('custom-text');
+      const statusEl = document.getElementById('custom-translate-status');
+      const text = (textArea?.value || '').trim();
+      if (!text) {
+        if (statusEl) statusEl.textContent = '请输入要翻译的文本';
+        return;
+      }
+      try {
+        if (statusEl) statusEl.textContent = '翻译中...';
+        const res = await AdminAPI.post('/admin/translations/translate-text', { text });
+        if (res && res.success) {
+          statusEl.textContent = `✅ 翻译成功，已缓存：${res.translation} ${res.fromCache ? '(缓存命中)' : ''}`;
+        } else {
+          statusEl.textContent = '翻译失败，请稍后重试';
+        }
+      } catch (err) {
+        statusEl.textContent = `翻译失败：${err.message || err}`;
+      }
+    }
+
+    // Event listeners
+    document.getElementById('auto-translate-btn').addEventListener('click', autoTranslateCurrentPage);
+    document.getElementById('translate-all-btn').addEventListener('click', translateAll);
+    document.getElementById('prewarm-btn').addEventListener('click', prewarmTranslations);
+    document.getElementById('prewarm-transcripts-btn').addEventListener('click', prewarmTranscripts);
+    document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
+    document.getElementById('export-rich-csv-btn').addEventListener('click', () => exportRichCSV(false, 200));
+    document.getElementById('export-missing-csv-btn').addEventListener('click', () => exportRichCSV(true, 500));
+    document.getElementById('export-all-words-csv-btn').addEventListener('click', exportAllWordsCSV);
+    document.getElementById('import-csv-btn').addEventListener('click', () => {
+      document.getElementById('csv-file-input').click();
+    });
+    document.getElementById('csv-file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        importFromCSV(file);
+      }
+    });
+    document.getElementById('import-words-csv-btn').addEventListener('click', () => {
+      document.getElementById('words-csv-file-input').click();
+    });
+    document.getElementById('words-csv-file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        importWordsPhoneticZhFromFile(file);
+      }
+    });
+    document.getElementById('refresh-btn').addEventListener('click', loadData);
+    document.getElementById('prev-page').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadData();
+      }
+    });
+    document.getElementById('next-page').addEventListener('click', () => {
+      currentPage++;
+      loadData();
+    });
+    document.getElementById('custom-translate-btn').addEventListener('click', translateCustomText);
+    document.getElementById('edit-form').addEventListener('submit', saveEdit);
+    document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+      document.getElementById('edit-modal').classList.remove('show');
+    });
+
+    // ========== 词汇管理功能 ==========
+    let vocabPage = 1;
+    const vocabPageSize = 50;
+    let vocabSearchQuery = '';
+    let vocabFilterPhonetic = ''; // '', 'has', 'missing'
+    let vocabFilterZh = '';       // '', 'has', 'missing'
+    let vocabFilterStatus = '';   // '', 'blacklisted', 'all'
+
+    async function loadVocabList() {
+      const tbody = document.getElementById('vocab-tbody');
+      try {
+        const offset = (vocabPage - 1) * vocabPageSize;
+        const params = new URLSearchParams({
+          limit: vocabPageSize,
+          offset: offset
+        });
+        if (vocabSearchQuery) {
+          params.set('search', vocabSearchQuery);
+        }
+        if (vocabFilterPhonetic) {
+          params.set('filter_phonetic', vocabFilterPhonetic);
+        }
+        if (vocabFilterZh) {
+          params.set('filter_zh', vocabFilterZh);
+        }
+        // 黑名单状态筛选
+        if (vocabFilterStatus === 'blacklisted') {
+          params.set('only_blacklisted', '1');
+        } else if (vocabFilterStatus === 'all') {
+          params.set('include_blacklisted', '1');
+        }
+
+        const data = await AdminAPI.get(`/admin/words?${params.toString()}`);
+
+        document.getElementById('vocab-total-count').textContent = data.totalCount || 0;
+        document.getElementById('vocab-current-page').textContent = vocabPage;
+        document.getElementById('vocab-prev-page').disabled = vocabPage === 1;
+        document.getElementById('vocab-next-page').disabled = offset + vocabPageSize >= (data.totalCount || 0);
+
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#6c757d;">没有找到词汇</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.items.map(item => {
+          const zh = item.definitions?.zh || '';
+          const phoneticDisplay = item.phonetic ? `/${escapeHtml(item.phonetic)}/` : '-';
+          const pos = item.part_of_speech || '-';
+          const createdAt = item.created_at ? formatDate(item.created_at) : '-';
+          const freqRank = item.frequency_rank || 0;
+          const isBlacklisted = item.is_blacklisted === true;
+
+          // Format frequency rank with color coding (lower rank = more common)
+          let freqDisplay = '';
+          if (freqRank > 0 && freqRank <= 3000) {
+            // High frequency (top 3000 words) - green
+            freqDisplay = `<span style="color:#28a745; font-weight:600;" title="高频词 (前3000)">${freqRank.toLocaleString()}</span>`;
+          } else if (freqRank > 3000 && freqRank <= 8000) {
+            // Medium frequency - blue
+            freqDisplay = `<span style="color:#007bff; font-weight:500;" title="中频词 (3000-8000)">${freqRank.toLocaleString()}</span>`;
+          } else if (freqRank > 8000) {
+            // Low frequency - gray
+            freqDisplay = `<span style="color:#6c757d;" title="低频词 (8000+)">${freqRank.toLocaleString()}</span>`;
+          } else {
+            freqDisplay = '<span style="color:#ccc;" title="未知词频">-</span>';
+          }
+
+          // Escape for JavaScript string (escape single quotes and backslashes)
+          const escapeJs = (str) => String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+          // 黑名单状态显示
+          const statusBadge = isBlacklisted
+            ? '<span style="background:#dc3545; color:white; padding:2px 6px; border-radius:4px; font-size:0.75rem;">黑名单</span>'
+            : '';
+
+          // 根据黑名单状态显示不同的操作按钮
+          const actionButtons = isBlacklisted
+            ? `<button class="btn btn-sm btn-success" onclick="recoverBlacklistedWord(${item.id}, '${escapeJs(item.word)}')">
+                 ♻️ 恢复
+               </button>`
+            : `<button class="btn btn-sm btn-secondary" onclick="openEditVocab(${item.id}, '${escapeJs(item.word)}', '${escapeJs(item.phonetic || '')}', '${escapeJs(zh)}', '${escapeJs(pos)}')">
+                 ✏️ 编辑
+               </button>
+               <button class="btn btn-sm btn-danger" onclick="deleteVocabWord(${item.id}, '${escapeJs(item.word)}')">
+                 🗑️ 删除
+               </button>`;
+
+          return `
+            <tr style="${isBlacklisted ? 'background:#fff5f5;' : ''}">
+              <td>${item.id} ${statusBadge}</td>
+              <td class="word-lemma"><strong>${escapeHtml(item.word)}</strong></td>
+              <td style="text-align:center;">${freqDisplay}</td>
+              <td style="color:#6c757d; font-family:monospace;">${phoneticDisplay}</td>
+              <td>${zh ? escapeHtml(zh) : '<span style="color:#dc3545">[无]</span>'}</td>
+              <td>${escapeHtml(pos)}</td>
+              <td>${createdAt}</td>
+              <td class="word-actions">
+                ${actionButtons}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (error) {
+        console.error('加载词汇列表失败:', error);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:#dc3545;">加载失败: ${escapeHtml(error.message)}</td></tr>`;
+      }
+    }
+
+    function openAddVocabModal() {
+      document.getElementById('add-vocab-word').value = '';
+      document.getElementById('add-vocab-phonetic').value = '';
+      document.getElementById('add-vocab-zh').value = '';
+      document.getElementById('add-vocab-pos').value = '';
+      document.getElementById('add-vocab-modal').classList.add('show');
+    }
+
+    async function submitAddVocab(event) {
+      event.preventDefault();
+      const word = document.getElementById('add-vocab-word').value.trim();
+      const phonetic = document.getElementById('add-vocab-phonetic').value.trim();
+      const zh = document.getElementById('add-vocab-zh').value.trim();
+      const pos = document.getElementById('add-vocab-pos').value.trim();
+
+      if (!word) {
+        showStatus('词汇不能为空', 'error');
+        return;
+      }
+
+      try {
+        const result = await AdminAPI.post('/admin/words/add', { word, phonetic, zh, part_of_speech: pos, ...qualityWriteOptions(true) });
+        renderQualityResult(result);
+        if (result.success) {
+          showStatus(`✅ 添加成功: "${word}"`, 'success');
+          document.getElementById('add-vocab-modal').classList.remove('show');
+          await loadVocabList();
+        } else {
+          showStatus('添加失败: ' + (result.error || '未知错误'), 'error');
+        }
+      } catch (error) {
+        showStatus('添加失败: ' + error.message, 'error');
+      }
+    }
+
+    function openEditVocab(id, word, phonetic, zh, pos) {
+      document.getElementById('edit-vocab-id').value = id;
+      document.getElementById('edit-vocab-word').value = word;
+      document.getElementById('edit-vocab-phonetic').value = phonetic;
+      document.getElementById('edit-vocab-zh').value = zh;
+      document.getElementById('edit-vocab-pos').value = pos;
+      document.getElementById('edit-vocab-modal').classList.add('show');
+    }
+
+    async function submitEditVocab(event) {
+      event.preventDefault();
+      const id = document.getElementById('edit-vocab-id').value;
+      const phonetic = document.getElementById('edit-vocab-phonetic').value.trim();
+      const zh = document.getElementById('edit-vocab-zh').value.trim();
+      const pos = document.getElementById('edit-vocab-pos').value.trim();
+
+      try {
+        const result = await AdminAPI.post('/admin/words/update', { id: parseInt(id), phonetic, zh, part_of_speech: pos, ...qualityWriteOptions(true) });
+        renderQualityResult(result);
+        if (result.success) {
+          showStatus('✅ 更新成功', 'success');
+          document.getElementById('edit-vocab-modal').classList.remove('show');
+          await loadVocabList();
+        } else {
+          showStatus('更新失败: ' + (result.error || '未知错误'), 'error');
+        }
+      } catch (error) {
+        showStatus('更新失败: ' + error.message, 'error');
+      }
+    }
+
+    async function deleteVocabWord(id, word) {
+      if (!confirm(`⚠️ 确定要删除词汇 "${word}" (ID: ${id}) 吗？\n\n这会同时删除所有用户对该词的学习记录，并将该词加入黑名单！`)) {
+        return;
+      }
+
+      try {
+        const result = await AdminAPI.post('/admin/words/delete', { id: parseInt(id) });
+        if (result.success) {
+          showStatus(`✅ 删除成功: "${word}" (已加入黑名单)`, 'success');
+          await loadVocabList();
+        } else {
+          showStatus('删除失败: ' + (result.error || '未知错误'), 'error');
+        }
+      } catch (error) {
+        showStatus('删除失败: ' + error.message, 'error');
+      }
+    }
+
+    // 从黑名单恢复词汇
+    async function recoverBlacklistedWord(id, word) {
+      if (!confirm(`确定要将 "${word}" 从黑名单中恢复吗？\n\n恢复后该词可以被重新导入到用户词汇中。`)) {
+        return;
+      }
+
+      try {
+        // 使用 admin 端点（不需要特殊的运营 Token）
+        const result = await AdminAPI.post('/admin/words/unblacklist', { ids: [parseInt(id)] });
+
+        if (result.success) {
+          showStatus(`✅ 恢复成功: "${word}" 已从黑名单移除`, 'success');
+          await loadVocabList();
+          // 刷新统计
+          await loadData();
+        } else {
+          showStatus('恢复失败: ' + (result.error || '未知错误'), 'error');
+        }
+      } catch (error) {
+        showStatus('恢复失败: ' + error.message, 'error');
+      }
+    }
+
+    // 导出筛选结果
+    async function exportFilteredVocab() {
+      try {
+        const token = getToken();
+        if (!token) {
+          showStatus('缺少授权，请重新登录后再试', 'error');
+          return;
+        }
+
+        showStatus('正在导出筛选结果...', 'info');
+
+        const params = new URLSearchParams();
+        if (vocabSearchQuery) {
+          params.set('search', vocabSearchQuery);
+        }
+        if (vocabFilterPhonetic) {
+          params.set('filter_phonetic', vocabFilterPhonetic);
+        }
+        if (vocabFilterZh) {
+          params.set('filter_zh', vocabFilterZh);
+        }
+
+        const response = await fetch(`/admin/words/export?${params.toString()}`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => '');
+          throw new Error(`导出失败: ${response.status} ${response.statusText || ''} ${errText || ''}`.trim());
+        }
+
+        const csvContent = await response.text();
+        const rowCount = Math.max(0, csvContent.trim().split(/\r?\n/).length - 1);
+
+        const blob = new Blob([csvContent], { type: 'text/csv; charset=utf-8' });
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+
+        // 生成文件名，包含筛选条件
+        let filename = 'words-filtered';
+        if (vocabSearchQuery) filename += `-search_${vocabSearchQuery}`;
+        if (vocabFilterPhonetic) filename += `-phonetic_${vocabFilterPhonetic}`;
+        if (vocabFilterZh) filename += `-zh_${vocabFilterZh}`;
+        filename += `-${new Date().toISOString().split('T')[0]}.csv`;
+
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+
+        showStatus(`✅ 已导出筛选结果，共 ${rowCount} 条词汇`, 'success');
+      } catch (error) {
+        console.error('导出筛选结果失败:', error);
+        showStatus('导出筛选结果失败: ' + error.message, 'error');
+      }
+    }
+
+    // 词汇管理事件监听
+    document.getElementById('vocab-search-btn').addEventListener('click', () => {
+      vocabSearchQuery = document.getElementById('vocab-search-input').value.trim();
+      vocabPage = 1;
+      loadVocabList();
+    });
+    document.getElementById('vocab-search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        vocabSearchQuery = e.target.value.trim();
+        vocabPage = 1;
+        loadVocabList();
+      }
+    });
+    document.getElementById('vocab-add-btn').addEventListener('click', openAddVocabModal);
+    document.getElementById('vocab-refresh-btn').addEventListener('click', () => {
+      vocabSearchQuery = '';
+      vocabFilterPhonetic = '';
+      vocabFilterZh = '';
+      document.getElementById('vocab-search-input').value = '';
+      document.getElementById('vocab-filter-phonetic').value = '';
+      document.getElementById('vocab-filter-zh').value = '';
+      vocabPage = 1;
+      loadVocabList();
+    });
+
+    // 筛选事件监听
+    document.getElementById('vocab-filter-btn').addEventListener('click', () => {
+      vocabFilterPhonetic = document.getElementById('vocab-filter-phonetic').value;
+      vocabFilterZh = document.getElementById('vocab-filter-zh').value;
+      vocabFilterStatus = document.getElementById('vocab-filter-status').value;
+      vocabPage = 1;
+      loadVocabList();
+    });
+    document.getElementById('vocab-clear-filter-btn').addEventListener('click', () => {
+      vocabFilterPhonetic = '';
+      vocabFilterZh = '';
+      vocabFilterStatus = '';
+      document.getElementById('vocab-filter-phonetic').value = '';
+      document.getElementById('vocab-filter-zh').value = '';
+      document.getElementById('vocab-filter-status').value = '';
+      vocabPage = 1;
+      loadVocabList();
+    });
+    document.getElementById('vocab-export-filtered-btn').addEventListener('click', exportFilteredVocab);
+    document.getElementById('vocab-clean-low-btn').addEventListener('click', openLowQualityModal);
+    document.getElementById('vocab-prev-page').addEventListener('click', () => {
+      if (vocabPage > 1) {
+        vocabPage--;
+        loadVocabList();
+      }
+    });
+    document.getElementById('vocab-next-page').addEventListener('click', () => {
+      vocabPage++;
+      loadVocabList();
+    });
+    document.getElementById('add-vocab-form').addEventListener('submit', submitAddVocab);
+    document.getElementById('cancel-add-vocab-btn').addEventListener('click', () => {
+      document.getElementById('add-vocab-modal').classList.remove('show');
+    });
+    document.getElementById('edit-vocab-form').addEventListener('submit', submitEditVocab);
+    document.getElementById('cancel-edit-vocab-btn').addEventListener('click', () => {
+      document.getElementById('edit-vocab-modal').classList.remove('show');
+    });
+
+    // ========== 低质量清洗 ==========
+    let lowQualityItems = [];
+    let lowQualitySelected = new Set();
+
+    function renderLowQualityList() {
+      const tbody = document.getElementById('lowq-tbody');
+      if (!tbody) return;
+      const totalEl = document.getElementById('lowq-total');
+      const selEl = document.getElementById('lowq-selected');
+      if (totalEl) totalEl.textContent = String(lowQualityItems.length || 0);
+      if (selEl) selEl.textContent = String(lowQualitySelected.size || 0);
+
+      if (!lowQualityItems.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:#6c757d;">暂无候选</td></tr>';
+        return;
+      }
+
+      const reasonLabel = (reasons) => {
+        const map = {
+          empty: '空',
+          too_long: '过长',
+          invalid_chars: '特殊字符',
+          has_digits: '含数字',
+          single_letter: '单字母',
+          repeated_chars: '重复字符',
+          no_vowels: '缺少元音',
+        };
+        return (Array.isArray(reasons) ? reasons : [])
+          .map(r => map[r] || r)
+          .slice(0, 4)
+          .join(' / ') || '-';
+      };
+
+      tbody.innerHTML = lowQualityItems.map(item => {
+        const checked = lowQualitySelected.has(Number(item.id)) ? 'checked' : '';
+        const learned = Number(item.learned_by_count || 0);
+        const lookup = Number(item.lookup_count || 0);
+        return `
+          <tr>
+            <td style="text-align:center;">
+              <input type="checkbox" data-lowq-id="${item.id}" ${checked}>
+            </td>
+            <td>${item.id}</td>
+            <td><span class="word-lemma">${escapeHtml(item.word || '')}</span></td>
+            <td style="color:#6c757d; font-size:0.9rem;">${escapeHtml(reasonLabel(item.quality_reasons))}</td>
+            <td style="text-align:center;">${learned}</td>
+            <td style="text-align:center;">${lookup}</td>
+            <td class="word-actions">
+              <button class="btn btn-sm btn-danger" onclick="deleteVocabWord(${item.id}, '${escapeJs(item.word || '')}')">删除</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Wire checkbox changes
+      tbody.querySelectorAll('input[type="checkbox"][data-lowq-id]').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const id = Number(e.target.getAttribute('data-lowq-id'));
+          if (!Number.isFinite(id)) return;
+          if (e.target.checked) lowQualitySelected.add(id);
+          else lowQualitySelected.delete(id);
+          const selEl2 = document.getElementById('lowq-selected');
+          if (selEl2) selEl2.textContent = String(lowQualitySelected.size || 0);
+        });
+      });
+    }
+
+    async function refreshLowQualityCandidates() {
+      const tbody = document.getElementById('lowq-tbody');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:#6c757d;">加载中...</td></tr>';
+      lowQualitySelected = new Set();
+      const onlyUnused = document.getElementById('lowq-only-unused')?.checked !== false;
+      try {
+        const params = new URLSearchParams({ limit: '200', offset: '0', only_unused: onlyUnused ? '1' : '0' });
+        const data = await AdminAPI.get(`/admin/words/low-quality?${params.toString()}`);
+        lowQualityItems = Array.isArray(data.items) ? data.items : [];
+        renderLowQualityList();
+      } catch (e) {
+        console.error('加载低质量候选失败:', e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#dc3545;">加载失败：${escapeHtml(e.message || String(e))}</td></tr>`;
+      }
+    }
+
+    async function openLowQualityModal() {
+      document.getElementById('low-quality-modal').classList.add('show');
+      await refreshLowQualityCandidates();
+    }
+
+    function closeLowQualityModal() {
+      document.getElementById('low-quality-modal').classList.remove('show');
+    }
+
+    function selectAllLowQualityOnPage() {
+      lowQualityItems.forEach(it => { if (it && it.id) lowQualitySelected.add(Number(it.id)); });
+      renderLowQualityList();
+    }
+
+    async function deleteSelectedLowQuality() {
+      const ids = Array.from(lowQualitySelected).map(Number).filter(n => Number.isFinite(n));
+      if (!ids.length) {
+        showStatus('请先勾选要删除的词汇', 'info');
+        return;
+      }
+      const hasLearned = lowQualityItems.some(it => ids.includes(Number(it.id)) && Number(it.learned_by_count || 0) > 0);
+      const warn = hasLearned ? '\n\n⚠️ 注意：选中项里包含“有人学习”的词，删除会影响这些用户。' : '';
+      if (!confirm(`确定要删除选中的 ${ids.length} 个词吗？${warn}`)) return;
+
+      try {
+        const result = await AdminAPI.post('/admin/words/batch-delete', { ids });
+        showStatus(`✅ 已删除 ${result.deleted || 0} 个词（同步删除 user_vocabulary：${result.userVocabDeleted || 0} 条）`, 'success');
+        await refreshLowQualityCandidates();
+        await loadVocabList();
+      } catch (e) {
+        console.error('批量删除失败:', e);
+        showStatus('批量删除失败: ' + (e.message || e), 'error');
+      }
+    }
+
+    // Modal buttons
+    document.getElementById('lowq-close-btn').addEventListener('click', closeLowQualityModal);
+    document.getElementById('lowq-refresh-btn').addEventListener('click', refreshLowQualityCandidates);
+    document.getElementById('lowq-select-all-btn').addEventListener('click', selectAllLowQualityOnPage);
+    document.getElementById('lowq-delete-btn').addEventListener('click', deleteSelectedLowQuality);
+    document.getElementById('lowq-only-unused').addEventListener('change', refreshLowQualityCandidates);
+
+    // ========== 黑名单管理功能 ==========
+    let blacklistPage = 1;
+    const blacklistPageSize = 50;
+    let blacklistItems = [];
+    let blacklistSelected = new Set();
+    let blacklistSearchQuery = '';
+    let blacklistTotalCount = 0;
+
+    async function loadBlacklistData() {
+      const tbody = document.getElementById('blacklist-tbody');
+      if (!tbody) return;
+
+      try {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#6c757d;">加载中...</td></tr>';
+
+        const offset = (blacklistPage - 1) * blacklistPageSize;
+        const params = new URLSearchParams({
+          limit: blacklistPageSize,
+          offset: offset,
+          only_blacklisted: '1'  // 只获取黑名单词汇
+        });
+        if (blacklistSearchQuery) {
+          params.set('search', blacklistSearchQuery);
+        }
+
+        // 使用 /admin/words 端点（与词汇管理相同）
+        const data = await AdminAPI.get(`/admin/words?${params.toString()}`);
+        console.log('[Blacklist] API response:', data);
+
+        blacklistItems = data.items || [];
+        blacklistTotalCount = data.totalCount || 0;
+
+        // Update stats
+        document.getElementById('blacklist-total').textContent = blacklistTotalCount;
+        document.getElementById('blacklist-selected').textContent = blacklistSelected.size;
+        document.getElementById('blacklist-current-page').textContent = blacklistPage;
+        document.getElementById('blacklist-prev-page').disabled = blacklistPage === 1;
+        document.getElementById('blacklist-next-page').disabled = offset + blacklistPageSize >= blacklistTotalCount;
+
+        if (blacklistItems.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#28a745;">✅ 黑名单为空</td></tr>';
+          return;
+        }
+
+        renderBlacklistTable();
+      } catch (error) {
+        console.error('加载黑名单失败:', error);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:#dc3545;">加载失败: ${escapeHtml(error.message)}</td></tr>`;
+      }
+    }
+
+    function renderBlacklistTable() {
+      const tbody = document.getElementById('blacklist-tbody');
+      if (!tbody || !blacklistItems.length) return;
+
+      document.getElementById('blacklist-selected').textContent = blacklistSelected.size;
+
+      tbody.innerHTML = blacklistItems.map(item => {
+        const checked = blacklistSelected.has(Number(item.id)) ? 'checked' : '';
+        // 兼容两种 API 返回格式
+        const zh = item.definitions?.zh || item.translation_zh || '';
+        const phonetic = item.phonetic ? `/${escapeHtml(item.phonetic)}/` : '-';
+        // 使用 blacklisted_at 或 updated_at 作为时间
+        const blacklistedAt = item.blacklisted_at ? formatDate(item.blacklisted_at) : (item.updated_at ? formatDate(item.updated_at) : '-');
+        const reason = item.blacklist_reason || '运营清理';
+
+        // Escape for JavaScript string
+        const wordEscaped = String(item.word || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+        return `
+          <tr>
+            <td style="text-align:center;">
+              <input type="checkbox" data-blacklist-id="${item.id}" ${checked}>
+            </td>
+            <td>${item.id}</td>
+            <td class="word-lemma"><strong>${escapeHtml(item.word)}</strong></td>
+            <td style="color:#6c757d; font-family:monospace;">${phonetic}</td>
+            <td>${zh ? escapeHtml(zh) : '<span style="color:#999">[无]</span>'}</td>
+            <td style="color:#6c757d; font-size:0.9rem;">${blacklistedAt}</td>
+            <td style="color:#6c757d; font-size:0.85rem;">${escapeHtml(reason)}</td>
+            <td class="word-actions">
+              <button class="btn btn-sm btn-success" onclick="recoverSingleBlacklistWord(${item.id}, '${wordEscaped}')">
+                ♻️ 恢复
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Wire checkbox changes
+      tbody.querySelectorAll('input[type="checkbox"][data-blacklist-id]').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const id = Number(e.target.getAttribute('data-blacklist-id'));
+          if (!Number.isFinite(id)) return;
+          if (e.target.checked) blacklistSelected.add(id);
+          else blacklistSelected.delete(id);
+          document.getElementById('blacklist-selected').textContent = blacklistSelected.size;
+        });
+      });
+    }
+
+    function openBlacklistModal() {
+      document.getElementById('blacklist-modal').classList.add('show');
+      blacklistPage = 1;
+      blacklistSelected = new Set();
+      blacklistSearchQuery = '';
+      document.getElementById('blacklist-search-input').value = '';
+      loadBlacklistData();
+    }
+
+    function closeBlacklistModal() {
+      document.getElementById('blacklist-modal').classList.remove('show');
+    }
+
+    function selectAllBlacklistOnPage() {
+      blacklistItems.forEach(item => {
+        if (item && item.id) blacklistSelected.add(Number(item.id));
+      });
+      renderBlacklistTable();
+    }
+
+    async function recoverSingleBlacklistWord(id, word) {
+      if (!confirm(`确定要将 "${word}" 从黑名单中恢复吗？`)) return;
+
+      try {
+        // 使用 admin 端点（不需要特殊的运营 Token）
+        const result = await AdminAPI.post('/admin/words/unblacklist', { ids: [parseInt(id)] });
+
+        if (result.success) {
+          showStatus(`✅ 恢复成功: "${word}" 已从黑名单移除`, 'success');
+          blacklistSelected.delete(Number(id));
+          await loadBlacklistData();
+          // 刷新统计
+          await loadData();
+        } else {
+          showStatus('恢复失败: ' + (result.error || '未知错误'), 'error');
+        }
+      } catch (error) {
+        showStatus('恢复失败: ' + error.message, 'error');
+      }
+    }
+
+    async function recoverSelectedBlacklistWords() {
+      const ids = Array.from(blacklistSelected).map(Number).filter(n => Number.isFinite(n));
+      if (!ids.length) {
+        showStatus('请先勾选要恢复的词汇', 'info');
+        return;
+      }
+
+      if (!confirm(`确定要恢复选中的 ${ids.length} 个词汇吗？\n\n恢复后这些词可以被重新导入到用户词汇中。`)) return;
+
+      try {
+        // 使用 admin 端点（不需要特殊的运营 Token）
+        const result = await AdminAPI.post('/admin/words/unblacklist', { ids });
+
+        if (result.success) {
+          showStatus(`✅ 批量恢复成功: 已恢复 ${result.recovered || ids.length} 个词汇`, 'success');
+          blacklistSelected = new Set();
+          await loadBlacklistData();
+          // 刷新统计
+          await loadData();
+        } else {
+          showStatus('批量恢复失败: ' + (result.error || '未知错误'), 'error');
+        }
+      } catch (error) {
+        showStatus('批量恢复失败: ' + error.message, 'error');
+      }
+    }
+
+    // 黑名单卡片点击事件
+    document.getElementById('blacklist-card').addEventListener('click', openBlacklistModal);
+    document.getElementById('blacklist-card').addEventListener('mouseenter', function() {
+      this.style.transform = 'scale(1.02)';
+      this.style.boxShadow = '0 4px 12px rgba(220, 53, 69, 0.2)';
+    });
+    document.getElementById('blacklist-card').addEventListener('mouseleave', function() {
+      this.style.transform = 'scale(1)';
+      this.style.boxShadow = 'none';
+    });
+
+    // 黑名单模态框事件监听
+    document.getElementById('blacklist-close-btn').addEventListener('click', closeBlacklistModal);
+    document.getElementById('blacklist-refresh-btn').addEventListener('click', () => {
+      blacklistPage = 1;
+      blacklistSelected = new Set();
+      loadBlacklistData();
+    });
+    document.getElementById('blacklist-search-btn').addEventListener('click', () => {
+      blacklistSearchQuery = document.getElementById('blacklist-search-input').value.trim();
+      blacklistPage = 1;
+      blacklistSelected = new Set();
+      loadBlacklistData();
+    });
+    document.getElementById('blacklist-search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        blacklistSearchQuery = e.target.value.trim();
+        blacklistPage = 1;
+        blacklistSelected = new Set();
+        loadBlacklistData();
+      }
+    });
+    document.getElementById('blacklist-select-all-btn').addEventListener('click', selectAllBlacklistOnPage);
+    document.getElementById('blacklist-recover-btn').addEventListener('click', recoverSelectedBlacklistWords);
+    document.getElementById('blacklist-prev-page').addEventListener('click', () => {
+      if (blacklistPage > 1) {
+        blacklistPage--;
+        loadBlacklistData();
+      }
+    });
+    document.getElementById('blacklist-next-page').addEventListener('click', () => {
+      blacklistPage++;
+      loadBlacklistData();
+    });
+
+    // Initial load
+    loadData();
+    loadVocabList();
+  </script>
+</body>
+</html>
