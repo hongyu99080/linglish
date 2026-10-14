@@ -16,6 +16,8 @@ const FEEDBACK_UPLOAD_DIR = path.join(__dirname, '../uploads/feedback');
 const CHAT_UPLOAD_DIR = path.join(__dirname, '../uploads/chat');
 const { getPublicSiteUrl } = require('../utils/public-site-url');
 const PUBLIC_SITE_URL = getPublicSiteUrl();
+const { getSupportEmail } = require('../utils/support-email');
+const SUPPORT_EMAIL = getSupportEmail();
 const INDEXABLE_FRONTEND_PAGES = new Set([
   'landing.html',
   'pricing.html',
@@ -183,7 +185,9 @@ async function serveStatic(res, filePath, req, options = {}) {
 
     const contentType = getContentType(filePath);
     const htmlBody = contentType.startsWith('text/html')
-      ? Buffer.from((await fsp.readFile(filePath, 'utf8')).replace(/https:\/\/(?:www\.)?example\.com/g, () => PUBLIC_SITE_URL))
+      ? Buffer.from((await fsp.readFile(filePath, 'utf8'))
+        .replace(/https:\/\/(?:www\.)?example\.com/g, () => PUBLIC_SITE_URL)
+        .replace(/(?:hello|support)@example\.com/g, () => SUPPORT_EMAIL))
       : null;
     const fileSize = htmlBody ? htmlBody.length : stat.size;
 

@@ -372,7 +372,7 @@
   <script src="./js/video-reader/today-recommendation-session.js?v=1"></script>
   <script src="./js/video-recommendation-client.js?v=20260925"></script>
   <script src="./js/video-reader/sentence-segments.js?v=20260727"></script>
-  <script src="./js/video-reader/reader-layout-state.js?v=20260730"></script>
+  <script src="./js/video-reader/reader-layout-state.js?v=20261014"></script>
   <script src="./js/video-reader/video-selection-guard.js?v=20260803"></script>
   <script src="./js/video-reader/first-lesson-focus.js?v=20260822"></script>
   <script src="./js/video-reader/first-lesson-progress.js?v=20260822"></script>
@@ -7781,7 +7781,7 @@
 
         item.innerHTML = `
             <div class="video-thumb-wrap">
-              <img src="${thumbUrl}" class="video-thumb" alt="thumb" onerror="this.onerror=null; this.src='${placeholderThumb}'">
+              <img src="${esc(thumbUrl)}" class="video-thumb" alt="thumb" loading="lazy">
               ${previewHtml}
             </div>
             <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
@@ -7802,6 +7802,12 @@
               ${actionButtons}
             </div>
           `;
+
+        const thumbnailImage = item.querySelector('.video-thumb');
+        if (thumbnailImage) {
+          thumbnailImage.dataset.vbFallback = placeholderThumb;
+          thumbnailImage.onerror = () => vbOnThumbError(thumbnailImage);
+        }
 
         // Handle video selection
         item.addEventListener('click', (e) => {
@@ -9742,12 +9748,17 @@
       }
 
       try {
-        const savedFocus = localStorage.getItem('linglish_focus_mode') === 'true';
+        const savedPreference = localStorage.getItem('linglish_focus_mode');
         const firstLessonFocus = firstLessonSession.isActive();
+        const startFocused = window.LinglishReaderLayoutState.shouldStartFocused({
+          savedPreference,
+          hasVideo: Boolean(new URLSearchParams(window.location.search).get('videoId')),
+          firstLesson: firstLessonFocus,
+        });
         if (firstLessonFocus) {
           setFocusMode(true, { persist: false });
           if (shellEl) shellEl.classList.add('sidebar-collapsed');
-        } else if (savedFocus) setFocusMode(true);
+        } else if (startFocused) setFocusMode(true, { persist: false });
       } catch (_) { }
 
       // Back to video list button

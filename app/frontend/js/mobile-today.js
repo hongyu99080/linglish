@@ -1442,7 +1442,7 @@
     const profileController = getPronunciationProfileController(token);
     const [resolvedVideo, profileRes] = await Promise.all([
       resolveTodayVideo(token, modeKey, { preferRecommended: true }).catch(() => null).then((video) => {
-        updateLearningEntryLinks(video);
+        wireActions(modeKey, video, null);
         return video;
       }),
       profileController ? profileController.load(userInfo).catch(() => null) : Promise.resolve(null),

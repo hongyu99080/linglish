@@ -1,3 +1,4 @@
+const { getSupportEmail } = require('../utils/support-email');
 /**
  * SEO Routes - Server-Side Rendered pages for search engine indexing
  *
@@ -829,7 +830,7 @@ Word definitions are at ${BASE_URL}/learn/word/[word]. Each page includes:
 ## Contact
 
 Website: ${BASE_URL}/
-Support: hello@example.com
+Support: ${getSupportEmail()}
 `;
   sendText(res, text);
 }
@@ -849,7 +850,7 @@ function handleAiPlugin(res) {
       url: `${BASE_URL}/.well-known/openapi.json`,
     },
     logo_url: `${BASE_URL}/favicon.ico`,
-    contact_email: 'hello@example.com',
+    contact_email: getSupportEmail(),
     legal_info_url: `${BASE_URL}/`,
   };
   sendText(res, JSON.stringify(plugin, null, 2), 'application/json; charset=utf-8');

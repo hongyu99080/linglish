@@ -17,7 +17,7 @@
   <!-- Preload critical resources -->
   <link rel="preload" href="./mobile-styles.css?v=2" as="style">
   <link rel="preload" href="./js/auth-manager.js?v=1" as="script">
-  <link rel="preload" href="./js/mobile-today.js?v=20261013" as="script">
+  <link rel="preload" href="./js/mobile-today.js?v=20261014" as="script">
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap"
     as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript>
@@ -202,6 +202,15 @@
     .learning-entry-text strong { font-size: 20px; line-height: 1.2; }
     .learning-entry-text small { color: var(--text-sub); font-size: 13px; line-height: 1.4; }
     .learning-entry-arrow { color: var(--text-sub); font-size: 24px; }
+    .learning-library-links { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 14px 0 0; }
+    .learning-library-links a { display: inline-flex; align-items: center; min-height: 40px; color: var(--primary-shadow); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+    .learning-details { margin: 18px 20px; border: 1px solid var(--border-color); border-radius: var(--r-md); background: var(--surface-card); }
+    .learning-details summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; font-size: 15px; font-weight: 700; cursor: pointer; list-style: none; }
+    .learning-details summary::-webkit-details-marker { display: none; }
+    .learning-details summary::after { content: '展开'; color: var(--text-sub); font-size: 13px; font-weight: 500; }
+    .learning-details[open] summary::after { content: '收起'; }
+    .learning-details-content { border-top: 1px solid var(--border-color); }
+    .mission-kicker { margin-bottom: 5px; color: var(--primary-shadow); font-size: 12px; font-weight: 700; }
 
     /* ==================== Header / Daily Stats ==================== */
     .today-hero {
@@ -1556,8 +1565,62 @@
         <span class="learning-entry-arrow" aria-hidden="true">›</span>
       </a>
     </nav>
+    <p class="learning-library-links"><a href="./mobile-explore.html">浏览精选视频 · 无需导入</a><a href="./video-upload.html">导入自己的内容</a></p>
   </section>
 
+  <section id="first-lesson-resume" hidden aria-label="继续上次跟读"></section>
+
+  <!-- 主任务卡片 -->
+  <section class="today-mission animate-entry delay-2">
+    <div class="mission-card">
+      <a href="#" class="mission-thumbnail-link" id="mission-thumbnail-link">
+        <div class="mission-thumbnail" id="mission-thumbnail-container">
+          <img id="mission-thumbnail" style="display:none;" alt="视频封面" loading="lazy" decoding="async">
+          <span>🎬</span>
+          <div class="play-overlay">
+            <div class="play-btn">▶</div>
+          </div>
+        </div>
+      </a>
+      <div class="mission-content">
+        <div class="mission-kicker">推荐视频</div>
+        <h2 class="mission-title" id="mission-title">今日视频</h2>
+
+        <div class="mission-meta" id="mission-meta">
+          <span class="meta-badge">
+            <span class="meta-badge-icon">⏱️</span>
+            <span id="meta-duration">1:30</span>
+          </span>
+          <span class="meta-badge">
+            <span class="meta-badge-icon">🏷️</span>
+            <span id="meta-theme">日常</span>
+          </span>
+        </div>
+
+        <div class="mission-progress">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
+          </div>
+          <div class="progress-text" id="progress-text">第1步：先看视频</div>
+        </div>
+
+        <div class="mission-cta">
+          <a href="#" class="cta-btn cta-primary scale-click" id="btn-primary">
+            <span class="cta-icon">▶️</span>
+            <span class="cta-text">开始今日视频</span>
+          </a>
+          <a href="#" class="cta-btn cta-secondary scale-click" id="btn-secondary">
+            <span class="cta-icon">📝</span>
+            <span class="cta-text">复习单词</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <details class="learning-details">
+    <summary>学习进度与建议</summary>
+    <div class="learning-details-content">
   <!-- Hero Section -->
   <section class="today-hero animate-entry">
     <div class="hero-card">
@@ -1611,7 +1674,7 @@
   </section>
 
   <section class="prescription animate-entry delay-1">
-    <section id="first-lesson-resume" hidden aria-label="继续上次跟读"></section>
+
     <div class="prescription-card">
       <div class="prescription-top">
         <div>
@@ -1677,53 +1740,6 @@
   <section class="pronunciation-profile-shell animate-entry delay-2" id="pronunciation-profile-section" hidden>
     <div id="pronunciation-profile-mount">
       <div class="empty loading" data-pronunciation-profile-loading="true">正在加载发音观察...</div>
-    </div>
-  </section>
-
-  <!-- 主任务卡片 -->
-  <section class="today-mission animate-entry delay-2">
-    <div class="mission-card">
-      <a href="#" class="mission-thumbnail-link" id="mission-thumbnail-link">
-        <div class="mission-thumbnail" id="mission-thumbnail-container">
-          <img id="mission-thumbnail" style="display:none;" alt="视频封面" loading="lazy" decoding="async">
-          <span>🎬</span>
-          <div class="play-overlay">
-            <div class="play-btn">▶</div>
-          </div>
-        </div>
-      </a>
-      <div class="mission-content">
-        <h2 class="mission-title" id="mission-title">今日视频</h2>
-
-        <div class="mission-meta" id="mission-meta">
-          <span class="meta-badge">
-            <span class="meta-badge-icon">⏱️</span>
-            <span id="meta-duration">1:30</span>
-          </span>
-          <span class="meta-badge">
-            <span class="meta-badge-icon">🏷️</span>
-            <span id="meta-theme">日常</span>
-          </span>
-        </div>
-
-        <div class="mission-progress">
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="progress-bar-fill" style="width: 0%"></div>
-          </div>
-          <div class="progress-text" id="progress-text">第1步：先看视频</div>
-        </div>
-
-        <div class="mission-cta">
-          <a href="#" class="cta-btn cta-primary scale-click" id="btn-primary">
-            <span class="cta-icon">▶️</span>
-            <span class="cta-text">开始今日视频</span>
-          </a>
-          <a href="#" class="cta-btn cta-secondary scale-click" id="btn-secondary">
-            <span class="cta-icon">📝</span>
-            <span class="cta-text">复习单词</span>
-          </a>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -1855,6 +1871,9 @@
     </div>
   </section>
 
+    </div>
+  </details>
+
   <!-- 庆祝动画 -->
   <div class="celebration-overlay" id="celebration-overlay">
     <div class="celebration-content">
@@ -1903,7 +1922,7 @@
   <script src="./js/video-reader/first-lesson-goal.js?v=20260922"></script>
   <link rel="stylesheet" href="./styles/first-lesson-goal.css?v=20260922">
   <script src="./js/video-recommendation-client.js?v=20260925"></script>
-  <script src="./js/mobile-today.js?v=20261013"></script>
+  <script src="./js/mobile-today.js?v=20261014"></script>
 
   <script>
     // 快捷操作折叠

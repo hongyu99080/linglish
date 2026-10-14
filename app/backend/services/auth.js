@@ -1,3 +1,4 @@
+const { getSupportEmail } = require('../utils/support-email');
 const crypto = require('crypto');
 const dataStore = require('../data-store');
 const { getEntitlement } = require('./entitlements');
@@ -303,7 +304,7 @@ async function requestPasswordReset(payload = {}, metadata = {}) {
     ok: true,
     expires_in_minutes: PASSWORD_RESET_TTL_MINUTES,
     delivery_configured: emailService.isEmailDeliveryConfigured(),
-    support_email: process.env.SUPPORT_EMAIL || 'hello@example.com',
+    support_email: getSupportEmail(),
   };
 
   let user = null;
@@ -426,7 +427,7 @@ async function requestEmailVerification(userId, metadata = {}) {
     ok: true,
     expires_in_hours: EMAIL_VERIFICATION_TTL_HOURS,
     delivery_configured: emailService.isEmailDeliveryConfigured(),
-    support_email: process.env.SUPPORT_EMAIL || 'hello@example.com',
+    support_email: getSupportEmail(),
   };
 
   const user = await dataStore.findUserById(userId);

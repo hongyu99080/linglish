@@ -3800,7 +3800,7 @@
       <div style="padding: 20px; border-bottom: 1px solid #e0e0e0;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <h2 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;">
-            🎭 <span data-i18n="practice.title">选择练习视频</span>
+            🎬 <span id="video-select-title">选择学习视频</span>
           </h2>
           <div style="display:flex; gap:0.5rem; align-items:center;">
             <!-- Translation Toggle (Desktop) -->
@@ -3932,7 +3932,7 @@
             </div>
           </div>
         </div>
-        <p style="margin: 0; color: #666; font-size: 14px;" data-i18n="practice.select_desc">选择一个视频进行角色扮演练习</p>
+        <p style="margin: 0; color: #666; font-size: 14px;">精选视频可直接学习，点一个就开始。</p>
       </div>
       <div id="video-list-container" style="flex: 1; overflow-y: auto; padding: 16px;">
         <div style="text-align: center; padding: 40px; color: #999;">
@@ -4815,6 +4815,15 @@
       }
 
       let currentPracticeMode = getInitialPracticeMode(); // shadowing or dialogue
+
+      function buildPracticeVideoHref(videoId) {
+        const previous = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams({ videoId: String(videoId), mode: currentPracticeMode });
+        for (const key of ['from', 'quick', 'lines', 'level', 'desktop']) {
+          if (previous.has(key)) params.set(key, previous.get(key));
+        }
+        return `?${params.toString()}`;
+      }
       let globalRecorder = null;
       let globalRecordingChunks = [];
       let globalRecordingBlob = null;
@@ -5166,13 +5175,16 @@
         return getWaveformPeak(samples) >= 0.005;
       }
 
-      async function fetchOriginalWaveformFromServer(videoId, startSec, endSec, points = 240) {
+      async function fetchOriginalWaveformFromServer(videoId, startSec, endSec, points = 240, timeoutMs = 2000) {
         if (!videoId) return null;
         if (!waveformSegmentationConfig.enabled) return null;
         const key = `${videoId}:${Number(startSec || 0).toFixed(2)}:${Number(endSec || 0).toFixed(2)}:${Number(points || 240)}`;
         if (waveformOriginalCache.has(key)) {
           return waveformOriginalCache.get(key);
         }
+        if (typeof AbortController === 'undefined') return null;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
         try {
           const params = new URLSearchParams();
           params.set('start', String(startSec || 0));
@@ -5180,7 +5192,8 @@
           params.set('points', String(points || 240));
           const token = getAuthToken();
           const res = await fetch(`${API_BASE}/video-resources/${encodeURIComponent(String(videoId))}/waveform?${params.toString()}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            signal: controller.signal
           });
           if (!res.ok) return null;
           const data = await res.json();
@@ -5190,6 +5203,8 @@
           return arr;
         } catch (_) {
           return null;
+        } finally {
+          clearTimeout(timeoutId);
         }
       }
 
@@ -5260,11 +5275,14 @@
         candidates.sort((a, b) => b.duration - a.duration);
         const picked = new Map();
         const limit = Math.min(maxSplitsPerVideo, candidates.length);
+        const deadline = Date.now() + 2000;
 
         for (let i = 0; i < limit; i += 1) {
+          const remainingMs = deadline - Date.now();
+          if (remainingMs <= 0) break;
           const item = candidates[i];
           const points = Math.max(180, Math.min(360, Math.round(item.duration * 60)));
-          const samples = await fetchOriginalWaveformFromServer(videoId, item.start, item.end, points);
+          const samples = await fetchOriginalWaveformFromServer(videoId, item.start, item.end, points, remainingMs);
           if (!isWaveformUsable(samples)) continue;
           const splits = getWaveformSilenceSplits(samples, item.start, item.end);
           if (!splits.length) continue;
@@ -5543,6 +5561,7 @@
 
       // Switch practice mode
       function switchPracticeMode(mode) {
+        if (currentPracticeMode === 'shadowing' && mode !== 'shadowing') pauseAutoShadowing();
         currentPracticeMode = mode;
         document.title = `${mode === 'shadowing' ? '跟读练习' : '对话练习'} - Linglish`;
         const modeTitle = document.querySelector('.mode-title');
@@ -6421,6 +6440,8 @@
           console.log('[Shadowing] Triggering synchronous play for user gesture');
           const playOverlay = document.getElementById('play-overlay');
           const currentSentence = shadowingSentences[shadowingCurrentIndex];
+          const needsSeek = currentSentence && Math.abs(videoPlayer.currentTime - (currentSentence.startTime || 0)) > 0.05;
+          const positionGuard = currentSentence ? createShadowingPlaybackGuard(currentSentence, Boolean(needsSeek)) : null;
 
           // 先 seek 到正确位置，再 play - 都在同步上下文中
           if (currentSentence) {
@@ -6437,6 +6458,7 @@
           try {
             // 同步调用 play()，解锁视频播放
             await videoPlayer.play();
+            if (positionGuard !== shadowingPlaybackGuard) return;
             console.log('[Shadowing] Sync play succeeded, paused:', videoPlayer.paused);
             if (playOverlay) playOverlay.style.display = 'none';
 
@@ -6455,7 +6477,7 @@
               if (shadowingProgressTimer) clearInterval(shadowingProgressTimer);
               shadowingProgressTimer = setInterval(() => {
                 const currentTime = videoPlayer.currentTime;
-                if (currentTime >= shadowingTargetEndTime && !shadowingSentenceEnded) {
+                if (canFinishShadowingPlayback(currentTime)) {
                   console.log('[Shadowing] Reached target time!', currentTime, '>=', shadowingTargetEndTime);
                   videoPlayer.pause();
                   onSentenceEnded();
@@ -6466,6 +6488,7 @@
             updateShadowingDisplay();
             return; // 成功播放，直接返回
           } catch (err) {
+            if (positionGuard !== shadowingPlaybackGuard) return;
             console.warn('[Shadowing] Sync play failed:', err);
             // 如果失败，继续使用 fallback 逻辑
           }
@@ -6623,13 +6646,18 @@
           // Wait for YouTube player to be ready
           const waitForPlayerReady = () => {
             return new Promise((resolve) => {
+              const deadline = Date.now() + 8000;
               const checkReady = () => {
+                if (positionGuard !== shadowingPlaybackGuard || Date.now() >= deadline) {
+                  resolve(false);
+                  return;
+                }
                 if (youtubePlayer && youtubePlayer.getPlayerState && !youtubePlayerInitializing) {
                   const state = youtubePlayer.getPlayerState();
                   // Player is ready if it's not uninitialized
                   if (state !== undefined && state !== null) {
                     console.log('[Shadowing] YouTube player ready, state:', state);
-                    resolve();
+                    resolve(true);
                   } else {
                     setTimeout(checkReady, 50);
                   }
@@ -6642,7 +6670,13 @@
           };
 
           // Wait for player to be ready
-          await waitForPlayerReady();
+          if (!await waitForPlayerReady()) {
+            if (positionGuard === shadowingPlaybackGuard) {
+              pauseAutoShadowing();
+              updateShadowingStatus('视频暂未就绪，请点击开始重试', '⚠️');
+            }
+            return;
+          }
 
           // For YouTube: ensure volume is not muted and at good level
           try {
@@ -6698,6 +6732,7 @@
 
             // Step 3: Verify playing state and retry if needed
             setTimeout(() => {
+              if (positionGuard !== shadowingPlaybackGuard || shadowingSentenceEnded) return;
               try {
                 const state = youtubePlayer.getPlayerState ? youtubePlayer.getPlayerState() : -1;
                 console.log('[Shadowing] Player state check (300ms):', state);
@@ -6713,6 +6748,7 @@
 
             // Step 4: Final retry
             setTimeout(() => {
+              if (positionGuard !== shadowingPlaybackGuard || shadowingSentenceEnded) return;
               try {
                 const state = youtubePlayer.getPlayerState ? youtubePlayer.getPlayerState() : -1;
                 if (state !== 1 && state !== 3) {
@@ -6746,6 +6782,8 @@
               }
             }
 
+            if (forceSeek || videoPlayer.currentTime >= currentSentence.endTime) shouldSeek = true;
+            if (!shouldSeek) positionGuard.allowCurrentPosition();
             if (shouldSeek) {
               videoPlayer.currentTime = targetStart;
             }
@@ -6770,6 +6808,7 @@
               try {
                 console.log('[Shadowing] Attempting to play video...');
                 await videoPlayer.play();
+                if (positionGuard !== shadowingPlaybackGuard) return;
                 console.log('[Shadowing] play() resolved, paused:', videoPlayer.paused);
 
                 // 验证视频确实在播放
@@ -6789,6 +6828,7 @@
 
             // 第一次尝试：正常播放
             let played = await tryPlay();
+            if (positionGuard !== shadowingPlaybackGuard) return;
 
             // 第二次尝试：静音播放
             if (!played) {
@@ -6797,6 +6837,7 @@
               videoPlayer.muted = true;
               try {
                 await videoPlayer.play();
+                if (positionGuard !== shadowingPlaybackGuard) return;
                 if (!videoPlayer.paused) {
                   console.log('[Shadowing] Muted play succeeded');
                   if (playOverlay) playOverlay.style.display = 'none';
@@ -6810,12 +6851,13 @@
             }
 
             // 🔧 如果播放成功，启动轮询检测句子结束
+            if (positionGuard !== shadowingPlaybackGuard) return;
             if (played) {
               console.log('[Shadowing] Play succeeded, starting polling for end time:', shadowingTargetEndTime);
               if (shadowingProgressTimer) clearInterval(shadowingProgressTimer);
               shadowingProgressTimer = setInterval(() => {
                 const currentTime = videoPlayer.currentTime;
-                if (currentTime >= shadowingTargetEndTime && !shadowingSentenceEnded) {
+                if (canFinishShadowingPlayback(currentTime)) {
                   console.log('[Shadowing] Reached target time!', currentTime, '>=', shadowingTargetEndTime);
                   videoPlayer.pause();
                   onSentenceEnded();
@@ -6830,8 +6872,10 @@
               if (playOverlay) {
                 playOverlay.style.display = 'flex';
                 playOverlay.onclick = async () => {
+                  if (positionGuard !== shadowingPlaybackGuard) return;
                   try {
                     await videoPlayer.play();
+                    if (positionGuard !== shadowingPlaybackGuard) return;
                     if (!videoPlayer.paused) {
                       playOverlay.style.display = 'none';
                       updateShadowingStatus('正在播放...', '▶️');
@@ -6840,7 +6884,7 @@
                       if (shadowingProgressTimer) clearInterval(shadowingProgressTimer);
                       shadowingProgressTimer = setInterval(() => {
                         const currentTime = videoPlayer.currentTime;
-                        if (currentTime >= shadowingTargetEndTime && !shadowingSentenceEnded) {
+                        if (canFinishShadowingPlayback(currentTime)) {
                           console.log('[Shadowing] Reached target time!', currentTime, '>=', shadowingTargetEndTime);
                           videoPlayer.pause();
                           onSentenceEnded();
@@ -6971,7 +7015,7 @@
             const currentTime = videoPlayer.currentTime;
 
             // 🔧 使用动态计算的目标结束时间
-            if (currentTime >= shadowingTargetEndTime) {
+            if (canFinishShadowingPlayback(currentTime)) {
               // Pause video when sentence ends
               videoPlayer.pause();
               videoPlayer.removeEventListener('timeupdate', shadowingAutoPauseListener);
@@ -7004,7 +7048,7 @@
 
             const currentTime = youtubePlayer.getCurrentTime();
             // 🔧 使用动态计算的目标结束时间
-            if (currentTime >= shadowingTargetEndTime) {
+            if (canFinishShadowingPlayback(currentTime)) {
               // Pause YouTube player
               youtubePlayer.pauseVideo();
               clearInterval(shadowingYouTubePauseInterval);
@@ -15116,61 +15160,66 @@
         }
       }
 
-      function showVideoSelectModal(videoList) {
-        return new Promise((resolve) => {
-          const modal = document.getElementById('video-select-modal');
-          const container = document.getElementById('video-list-container');
-          const t = (key) => typeof i18n !== 'undefined' ? i18n.t(key) : key;
+      async function showVideoSelectModal(videoList) {
+        const modal = document.getElementById('video-select-modal');
+        if (modal) modal.style.display = 'flex';
+        const title = document.getElementById('video-select-title');
+        if (title) title.textContent = currentPracticeMode === 'shadowing' ? '选择跟读视频' : '选择对话视频';
+        const container = document.getElementById('video-list-container');
+        const t = (key) => typeof i18n !== 'undefined' ? i18n.t(key) : key;
 
-          if (!videoList || videoList.length === 0) {
-            container.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: #999;">
-              <div style="font-size: 48px; margin-bottom: 16px;">📹</div>
-              <div style="font-size: 16px; margin-bottom: 8px;">${t('practice.no_videos')}</div>
-              <div style="font-size: 14px;"><a href="./video-upload.html" style="color: #667eea;">${t('practice.go_upload')}</a></div>
-            </div>
-          `;
-            return;
-          }
+        if (!videoList || videoList.length === 0) {
+          container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #999;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📹</div>
+            <div style="font-size: 16px; margin-bottom: 8px;">${t('practice.no_videos')}</div>
+            <div style="font-size: 14px;"><a href="./video-upload.html" style="color: #667eea;">${t('practice.go_upload')}</a></div>
+          </div>
+        `;
+          return;
+        }
 
-          container.innerHTML = videoList.map(video => {
-            const title = video.title || video.original_filename || `视频 ${video.id}`;
-            const duration = Math.floor(video.duration_sec / 60);
-            const hasTranscript = video.transcript && video.transcript.length > 10;
+        container.innerHTML = videoList.map(video => {
+          const title = escapeHtml(video.title || video.original_filename || `视频 ${video.id}`);
+          const seconds = Math.max(0, Math.floor(Number(video.duration_sec) || 0));
+          const duration = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+          const hasTranscript = video.has_subtitles || video.has_transcript || Number(video.total_segments) > 0 || (video.transcript && video.transcript.length > 10);
+          const rawThumbnail = String(video.thumbnail_url || video.thumbnail || '');
+          const thumbnail = /^(https?:\/\/|\/(?!\/)|\.\/)/.test(rawThumbnail) ? escapeHtml(rawThumbnail) : '';
 
-            return `
-            <div class="video-select-item" data-video-id="${video.id}" style="
-              padding: 16px;
-              border: 2px solid #e0e0e0;
-              border-radius: 12px;
-              margin-bottom: 12px;
-              cursor: pointer;
-              transition: all 0.2s;
-              background: white;
-            " onmouseover="this.style.borderColor='#667eea'; this.style.background='#f5f7ff';" onmouseout="this.style.borderColor='#e0e0e0'; this.style.background='white';">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="font-size: 32px;">🎬</div>
-                <div style="flex: 1;">
-                  <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">${title}</div>
-                  <div style="font-size: 13px; color: #666; display: flex; gap: 12px;">
-                    <span>⏱️ ${duration} ${t('practice.duration')}</span>
-                    <span>${hasTranscript ? '✅ ' + t('practice.transcribed') : '⏳ ' + t('practice.not_transcribed')}</span>
-                  </div>
+          return `
+          <button type="button" class="video-select-item" data-video-id="${escapeHtml(String(video.id))}" style="
+            width: 100%; text-align: left; font-family: inherit;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+          ">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width:72px; height:54px; flex-shrink:0; border-radius:8px; overflow:hidden; background:#e0f2fe; display:grid; place-items:center; font-size:26px;">${thumbnail ? `<img src="${thumbnail}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover">` : '🎬'}</div>
+              <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px;">${title}</div>
+                <div style="font-size: 13px; color: #666; display: flex; gap: 12px;">
+                  <span>⏱️ ${duration}</span>
+                  <span>${hasTranscript ? '有字幕' : '字幕准备中'}</span>
                 </div>
-                <div style="color: #667eea; font-size: 20px;">→</div>
               </div>
+              <div style="color: #0f766e; font-size: 20px;" aria-hidden="true">›</div>
             </div>
-          `;
-          }).join('');
+          </button>
+        `;
+        }).join('');
 
-          // 添加点击事件
-          container.querySelectorAll('.video-select-item').forEach(item => {
-            item.addEventListener('click', () => {
-              const videoId = item.dataset.videoId;
-              modal.style.display = 'none';
-              // 重新加载页面带上videoId
-              window.location.href = `?videoId=${videoId}`;
-            });
+        // 添加点击事件
+        container.querySelectorAll('.video-select-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const videoId = item.dataset.videoId;
+            modal.style.display = 'none';
+            // 重新加载页面带上videoId
+            window.location.href = buildPracticeVideoHref(videoId);
           });
         });
       }

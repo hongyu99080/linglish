@@ -31,7 +31,15 @@
     };
   }
 
+  function shouldStartFocused({ savedPreference, hasVideo, firstLesson = false }) {
+    if (firstLesson) return true;
+    if (savedPreference === 'true') return true;
+    if (savedPreference === 'false') return false;
+    return !!hasVideo;
+  }
+
   return {
     toggleVideoLibrary,
+    shouldStartFocused,
   };
 });
