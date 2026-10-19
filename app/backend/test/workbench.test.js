@@ -123,7 +123,7 @@ test('create/update/list/delete workbench document with injected query', async (
   assert.equal(created.document.role, 'teacher');
   assert.equal(created.document.templateId, 'homework');
   assert.match(created.document.openUrl, /workbench\.html\?id=/);
-  assert.ok(created.document.shareToken);
+  assert.equal(created.document.shareToken, null);
 
   const updated = await updateDocument(created.document.id, {
     title: 'Cafe dialogue v2',

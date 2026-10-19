@@ -1,26 +1,40 @@
 const http = require('http');
 const https = require('https');
-const { execFileSync } = require('child_process');
+const dns = require('dns');
+const net = require('net');
 const { URL } = require('url');
-const { HttpsProxyAgent } = require('https-proxy-agent');
 
 const PRIVATE_HOSTS = new Set(['localhost', 'localhost.localdomain', '0.0.0.0', '::', '::1']);
 
 function isPrivateHostname(hostname) {
   const host = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
-  if (!host || PRIVATE_HOSTS.has(host) || host.endsWith('.local') || host.endsWith('.internal')) return true;
-  if (host.startsWith('fe80:') || host.startsWith('fc') || host.startsWith('fd')) return true;
-  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!ipv4) return false;
-  const parts = ipv4.slice(1).map(Number);
-  if (parts.some((n) => n > 255)) return true;
-  const [a, b] = parts;
-  if (a === 10 || a === 127 || a === 0) return true;
-  if (a === 169 && b === 254) return true;
-  if (a === 172 && b >= 16 && b <= 31) return true;
-  if (a === 192 && b === 168) return true;
-  if (a === 100 && b >= 64 && b <= 127) return true;
-  return false;
+  if (!host || PRIVATE_HOSTS.has(host) || host.endsWith('.localhost')
+      || host.endsWith('.local') || host.endsWith('.internal')) return true;
+  const family = net.isIP(host);
+  if (family === 4) {
+    const [a, b, c] = host.split('.').map(Number);
+    return a === 0 || a === 10 || a === 127 || a >= 224
+      || (a === 100 && b >= 64 && b <= 127)
+      || (a === 169 && b === 254)
+      || (a === 172 && b >= 16 && b <= 31)
+      || (a === 192 && b === 168)
+      || (a === 192 && b === 0 && (c === 0 || c === 2))
+      || (a === 192 && b === 88 && c === 99)
+      || (a === 198 && (b === 18 || b === 19))
+      || (a === 198 && b === 51 && c === 100)
+      || (a === 203 && b === 0 && c === 113);
+  }
+  if (family === 6) {
+    // Only global unicast is eligible. This excludes IPv4-mapped and NAT64
+    // addresses as well as loopback, link-local, unique-local and multicast.
+    const first = Number.parseInt(host.split(':')[0] || '0', 16);
+    const second = Number.parseInt(host.split(':')[1] || '0', 16);
+    return first < 0x2000 || first > 0x3fff
+      || (first === 0x2001 && (second <= 0x1ff || second === 0xdb8))
+      || first === 0x2002
+      || (first === 0x3fff && second <= 0x0fff);
+  }
+  return host.includes(':') || /^[\d.]+$/.test(host);
 }
 
 function assertPublicHttpUrl(raw) {
@@ -33,6 +47,7 @@ function assertPublicHttpUrl(raw) {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new Error('只支持 http 或 https 链接');
   }
+  if (url.username || url.password) throw new Error('链接不能包含凭据');
   if (isPrivateHostname(url.hostname)) {
     throw new Error('不能访问内网地址');
   }
@@ -225,113 +240,117 @@ function normalizeProxyServer(value) {
   return server;
 }
 
-function readWindowsProxy() {
-  if (process.platform !== 'win32') return '';
-  try {
-    const buf = execFileSync(
-      'reg',
-      ['query', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings'],
-      { timeout: 3000 }
-    );
-    let out = buf.toString('utf8');
-    if (out.includes('\u0000')) out = buf.toString('utf16le');
-    const enabled = /ProxyEnable\s+REG_DWORD\s+0x([0-9a-f]+)/i.exec(out);
-    if (!enabled || Number.parseInt(enabled[1], 16) !== 1) return '';
-    const server = /ProxyServer\s+REG_SZ\s+(\S+)/i.exec(out);
-    return server ? normalizeProxyServer(server[1]) : '';
-  } catch (_) {
-    return '';
-  }
-}
-
-let cachedProxy = null;
-let cachedAgent = null;
-
-function outboundAgent() {
-  const fromEnv = process.env.HTTPS_PROXY || process.env.https_proxy
-    || process.env.ALL_PROXY || process.env.all_proxy
-    || process.env.HTTP_PROXY || process.env.http_proxy
-    || '';
-  const proxy = normalizeProxyServer(fromEnv) || readWindowsProxy();
-  if (!proxy) return undefined;
-  if (cachedProxy !== proxy) {
-    cachedProxy = proxy;
-    cachedAgent = new HttpsProxyAgent(proxy);
-  }
-  return cachedAgent;
-}
-
-function fetchText(rawUrl, options = {}) {
-  const maxBytes = options.maxBytes || 2000000;
-  const timeoutMs = options.timeoutMs || 20000;
+async function fetchText(rawUrl, options = {}) {
+  const maxBytes = Math.min(options.maxBytes || 2000000, 4000000);
+  const timeoutMs = Math.min(options.timeoutMs || 20000, 20000);
   const redirects = options.redirects == null ? 3 : options.redirects;
-  const agent = options.agent === undefined ? outboundAgent() : (options.agent || undefined);
+  const deadline = options.deadline || Date.now() + timeoutMs;
   const url = assertPublicHttpUrl(rawUrl);
+  const hostname = url.hostname.replace(/^\[|\]$/g, '');
+  let records;
+  if (net.isIP(hostname)) {
+    records = [{ address: hostname, family: net.isIP(hostname) }];
+  } else {
+    let dnsTimer;
+    try {
+      records = await Promise.race([
+        dns.promises.lookup(hostname, { all: true, verbatim: true }),
+        new Promise((_, reject) => {
+          dnsTimer = setTimeout(() => reject(new Error('请求超时')), Math.max(1, deadline - Date.now()));
+        }),
+      ]);
+    } catch (error) {
+      if (error.message === '请求超时') throw error;
+      throw new Error('网络请求失败');
+    } finally {
+      clearTimeout(dnsTimer);
+    }
+  }
+  if (!records.length || records.some(record => !net.isIP(record.address) || isPrivateHostname(record.address))) {
+    throw new Error('不能访问内网地址');
+  }
+  const address = records.find(record => record.family === 4) || records[0];
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) throw new Error('请求超时');
   return new Promise((resolve, reject) => {
     let settled = false;
+    let totalTimer;
     const finish = (handler, value) => {
       if (settled) return;
       settled = true;
+      clearTimeout(totalTimer);
       handler(value);
     };
     const lib = url.protocol === 'https:' ? https : http;
     const req = lib.get(url, {
-      agent,
+      // A proxy can resolve the destination independently and bypass the DNS
+      // check. Connect directly, using only the already-validated address.
+      agent: false,
+      family: address.family,
+      autoSelectFamily: false,
+      lookup(_host, lookupOptions, callback) {
+        if (lookupOptions && lookupOptions.all) {
+          callback(null, [address]);
+        } else {
+          callback(null, address.address, address.family);
+        }
+      },
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         Accept: '*/*',
       },
-      timeout: timeoutMs,
+      timeout: remaining,
     }, (res) => {
       const status = res.statusCode || 0;
       if ([301, 302, 303, 307, 308].includes(status) && res.headers.location) {
-        res.resume();
+        res.destroy();
         if (redirects <= 0) {
           finish(reject, new Error('重定向过多'));
           return;
         }
-        const next = new URL(res.headers.location, url).toString();
-        finish(resolve, fetchText(next, { maxBytes, timeoutMs, redirects: redirects - 1, agent }));
+        let next;
+        try {
+          next = new URL(res.headers.location, url).toString();
+        } catch (_) {
+          finish(reject, new Error('链接无效'));
+          return;
+        }
+        finish(resolve, fetchText(next, { maxBytes, timeoutMs, redirects: redirects - 1, deadline }));
         return;
       }
       if (status < 200 || status >= 300) {
-        res.resume();
+        res.destroy();
         finish(reject, new Error(`拉取失败 (${status})`));
         return;
       }
       const chunks = [];
       let size = 0;
+      if (Number(res.headers['content-length']) > maxBytes) {
+        finish(reject, new Error('内容过大'));
+        req.destroy();
+        return;
+      }
       res.on('data', (chunk) => {
+        if (settled) return;
         size += chunk.length;
         if (size > maxBytes) {
-          req.destroy();
           finish(reject, new Error('内容过大'));
+          req.destroy();
           return;
         }
         chunks.push(chunk);
       });
       res.on('end', () => finish(resolve, Buffer.concat(chunks).toString('utf8')));
+      res.on('error', () => finish(reject, new Error('网络请求失败')));
+      res.on('aborted', () => finish(reject, new Error('网络请求失败')));
     });
-    const fail = (error) => {
-      if (settled) return;
-      if (agent && !options.directFallback) {
-        settled = true;
-        resolve(fetchText(rawUrl, {
-          maxBytes,
-          timeoutMs,
-          redirects,
-          agent: false,
-          directFallback: true,
-        }));
-        return;
-      }
-      finish(reject, error);
-    };
-    req.on('error', () => fail(new Error('网络请求失败')));
-    req.on('timeout', () => {
+    req.on('error', () => finish(reject, new Error('网络请求失败')));
+    const timeout = () => {
+      finish(reject, new Error('请求超时'));
       req.destroy();
-      fail(new Error('请求超时'));
-    });
+    };
+    req.on('timeout', timeout);
+    totalTimer = setTimeout(timeout, remaining);
   });
 }
 
@@ -393,6 +412,7 @@ module.exports = {
   parseVtt,
   parseItunesResults,
   extractChannelId,
+  fetchText,
   loadYouTubeChannel,
   searchPodcasts,
   loadPodcastFeed,

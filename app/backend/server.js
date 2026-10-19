@@ -322,7 +322,7 @@ async function handleRequest(req, res) {
     if (await registerTagRoutes(pathname, req, res, url)) return;
     if (await registerDocumentRoutes(pathname, req, res)) return;
     if (await registerWorkbenchRoutes(pathname, req, res)) return;
-    if (pathname.startsWith('/pdf/') || pathname === '/ocr/extract') {
+    if (pathname === '/ocr/extract') {
       const { registerPdfRoutes } = require('./routes/pdf');
       if (await registerPdfRoutes(pathname, req, res, url)) return;
     }

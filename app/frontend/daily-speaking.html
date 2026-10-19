@@ -776,6 +776,7 @@
       .now-en { font-size: 22px; line-height: 32px; }
     }
   </style>
+  <script src="./js/auth-manager.js?v=20261019"></script>
   <script src="./js/nav-back.js?v=1"></script>
 </head>
 <body>
@@ -886,7 +887,7 @@
   </main>
   <div class="gloss-pop" id="gloss-pop" hidden></div>
   <script src="./js/icons.js?v=1"></script>
-  <script src="./js/workbench/import-bridge.js?v=1"></script>
+  <script src="./js/workbench/import-bridge.js?v=20261019"></script>
   <script src="./js/tts-voice.js?v=1"></script>
   <script src="./data/core-850.js?v=1"></script>
   <script>
@@ -1754,14 +1755,7 @@
     const AUX_WORD = new Set(['am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'can', 'could', 'will', 'would', 'should', 'may', 'might', 'must']);
 
     function readToken() {
-      const keys = ['linglish_token', 'authToken'];
-      for (const key of keys) {
-        try {
-          const value = localStorage.getItem(key) || sessionStorage.getItem(key);
-          if (value && value !== 'null' && value !== 'undefined') return value;
-        } catch (_) {}
-      }
-      return '';
+      return window.AuthManager ? window.AuthManager.getToken() || '' : '';
     }
 
     function savedAccent() {
@@ -3471,14 +3465,7 @@
     }
 
     function readAuthToken() {
-      const keys = ['linglish_token', 'authToken'];
-      for (const key of keys) {
-        try {
-          const value = localStorage.getItem(key) || sessionStorage.getItem(key);
-          if (value && value !== 'null' && value !== 'undefined') return value;
-        } catch (_) {}
-      }
-      return '';
+      return window.AuthManager ? window.AuthManager.getToken() || '' : '';
     }
 
     function englishEnough(line) {

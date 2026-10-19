@@ -383,7 +383,11 @@ async function registerStaticRoutes(pathname, req, res, url) {
   // GET /static/*
   if ((req.method === 'GET' || req.method === 'HEAD') && pathname.startsWith('/static/')) {
     const relPath = pathname.replace(/^\/static\//, '');
-    const target = path.join(STATIC_DIR, relPath);
+    const target = path.resolve(STATIC_DIR, relPath);
+    if (!target.startsWith(`${STATIC_DIR}${path.sep}`)) return sendError(res, 404, 'Not Found');
+    // Protected media must use its authenticated route, never an alternate static URL.
+    const topDirectory = path.relative(STATIC_DIR, target).split(path.sep)[0];
+    if (['videos', 'recordings'].includes(topDirectory)) return sendError(res, 404, 'Not Found');
     const served = await serveStatic(res, target, req);
     if (!served) {
       return sendError(res, 404, 'Not Found');
@@ -616,8 +620,9 @@ async function registerStaticRoutes(pathname, req, res, url) {
     return true;
   }
 
-  // GET /note-images/* (public class-note pictures for parent links)
-  if (pathname.startsWith('/note-images/') && req.method === 'GET') {
+  // Uploaded class-note images are private and use the same owner checks as their article.
+  if (pathname.startsWith('/note-images/') && (req.method === 'GET' || req.method === 'HEAD')) {
+    res.setHeader('Cache-Control', 'private, no-store');
     const raw = pathname.replace(/^\/note-images\//, '');
     let filename = raw;
     try { filename = decodeURIComponent(raw); } catch (_) { filename = ''; }
@@ -625,17 +630,26 @@ async function registerStaticRoutes(pathname, req, res, url) {
       return sendError(res, 404, 'Not Found');
     }
     const ext = path.extname(filename).toLowerCase();
-    if (!['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) {
-      return sendError(res, 404, 'Not Found');
+    if (!['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) return sendError(res, 404, 'Not Found');
+    try {
+      const access = await authorizeMediaRequest(req, url, async () => false);
+      if (!access.mode) return sendError(res, access.deniedShare ? 403 : 401, 'Unauthorized');
+      const articles = await dataStore.getArticles(access.user);
+      if (!articles.some(article => article.note_image_path === `/note-images/${filename}`)) {
+        return sendError(res, 404, 'Not Found');
+      }
+      const filePath = path.join(__dirname, '../note-images', filename);
+      const served = await serveStatic(res, filePath, req, { cacheControl: 'private, no-store' });
+      if (!served) return sendError(res, 404, 'Not Found');
+      return true;
+    } catch (err) {
+      const status = err?.status === 503 ? 503 : 401;
+      return sendError(res, status, status === 503 ? 'Service unavailable' : 'Unauthorized');
     }
-    const filePath = path.join(__dirname, '../note-images', filename);
-    const served = await serveStatic(res, filePath, req, { cacheControl: 'public, max-age=86400' });
-    if (!served) return sendError(res, 404, 'Not Found');
-    return true;
   }
 
   // GET /pdfs/* (PDF file serving)
-  if (pathname.startsWith('/pdfs/') && req.method === 'GET') {
+  if (pathname.startsWith('/pdfs/') && (req.method === 'GET' || req.method === 'HEAD')) {
     res.setHeader('Cache-Control', 'private, no-store');
     try {
       const access = await authorizeMediaRequest(req, url, async () => false);
@@ -647,7 +661,7 @@ async function registerStaticRoutes(pathname, req, res, url) {
       }
 
       // Verify PDF exists in database (security check)
-      const articles = await dataStore.getArticles();
+      const articles = await dataStore.getArticles(access.user);
       const pdfExists = articles.some(article =>
         article.pdf_path && article.pdf_path === `/pdfs/${filename}`
       );
@@ -675,7 +689,8 @@ async function registerStaticRoutes(pathname, req, res, url) {
   if (req.method === 'GET' || req.method === 'HEAD') {
     // Normalize to prevent absolute path from escaping FRONTEND_DIR
     const rel = pathname === '/' ? 'landing.html' : pathname.replace(/^\/+/, '');
-    const filePath = path.join(FRONTEND_DIR, rel);
+    const filePath = path.resolve(FRONTEND_DIR, rel);
+    if (!filePath.startsWith(`${FRONTEND_DIR}${path.sep}`)) return sendError(res, 404, 'Not Found');
     if (rel.toLowerCase().endsWith('.html') && !INDEXABLE_FRONTEND_PAGES.has(rel)) {
       res.setHeader('X-Robots-Tag', 'noindex, follow');
     }

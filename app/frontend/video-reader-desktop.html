@@ -5,10 +5,10 @@
   <script src="./js/video-reader/device-router.js?v=1"></script>
   <script>window.VideoReaderDeviceRouter && window.VideoReaderDeviceRouter.redirectIfNeeded(window);</script>
   <script src="/env.js"></script>
-  <script src="./js/auth-manager.js?v=2"></script>
+  <script src="./js/auth-manager.js?v=20261019"></script>
 <script src="./js/nav-back.js?v=1"></script>
   <script src="./js/tts-voice.js?v=1"></script>
-  <script src="./js/workbench/import-bridge.js?v=1"></script>
+  <script src="./js/workbench/import-bridge.js?v=20261019"></script>
   <script src="./js/visitor-context.js?v=1"></script>
   <script src="./js/storage-helper.js"></script>
   <script>
@@ -372,19 +372,19 @@
   <link rel="stylesheet" href="./styles/icons.css?v=1">
   <script src="./js/icons.js?v=1"></script>
   <link rel="stylesheet" href="./styles.css?v=1" />
-  <script src="./i18n.js?v=20261015d"></script>
+  <script src="./i18n.js?v=20261019"></script>
   <script src="./global-ui.js?v=20250108"></script>
   <script src="./guest-check.js?v=1"></script>
   <script src="./auth-helpers.js?v=1"></script>
   <script src="./feedback.js?v=1"></script>
   <script src="./js/app/lazy-loader.js?v=1"></script>
   <script src="./video-tag-system.js?v=20251223"></script>
-  <script src="./js/video-reader/library-filter.js?v=1"></script>
-  <script src="./js/video-reader/video-metadata-editor.js?v=1"></script>
+  <script src="./js/video-reader/library-filter.js?v=20261019"></script>
+  <script src="./js/video-reader/video-metadata-editor.js?v=20261019"></script>
   <script src="./js/video-reader/video-browser-scope-sync.js?v=1"></script>
   <script src="./js/video-reader/today-recommendation-session.js?v=1"></script>
   <script src="./js/video-recommendation-client.js?v=20260925"></script>
-  <script src="./js/video-reader/sentence-segments.js?v=20261016"></script>
+  <script src="./js/video-reader/sentence-segments.js?v=20261019"></script>
   <script src="./js/video-reader/reader-layout-state.js?v=20261014"></script>
   <script src="./js/video-reader/video-selection-guard.js?v=20260803"></script>
   <script src="./js/video-reader/first-lesson-focus.js?v=20260822"></script>
@@ -1031,6 +1031,18 @@
 
     .shell.sidebar-collapsed {
       grid-template-columns: 0px 1fr 380px;
+    }
+
+    .shell.vocab-view {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .shell.vocab-view .sidebar {
+      display: none !important;
+    }
+
+    .shell.vocab-view .transcript {
+      display: none !important;
     }
 
     body.focus-mode .shell {
@@ -8130,7 +8142,7 @@
       if (!vocabEmbedFrame) return;
       const level = resolveVocabLevel();
       const v = resolveVocabVersion();
-      const params = new URLSearchParams({ level, v });
+      const params = new URLSearchParams({ embed: '1', level, v });
       if (videoId) params.set('videoId', String(videoId));
       if (sentence) params.set('sentence', '1');
       const next = `./video-vocabulary-desktop.html?${params.toString()}`;
@@ -8839,6 +8851,8 @@
     let vocabFocusSentence = false;
     function setHashView(hash, opts) {
       const isVocab = hash === '#vocabulary';
+      const shell = document.querySelector('.shell');
+      if (shell) shell.classList.toggle('vocab-view', isVocab);
       if (opts && Object.prototype.hasOwnProperty.call(opts, 'videoId')) {
         vocabFocusVideoId = opts.videoId || null;
         vocabFocusSentence = !!opts.sentence;
@@ -11796,8 +11810,10 @@
           try {
             playable = await setProtectedMediaSource(playerEl, url, isCurrentSelection);
           } catch (_) {
+            if (!isCurrentSelection()) return;
             try {
               if (window.LinglishMediaSession) await window.LinglishMediaSession.clear();
+              if (!isCurrentSelection()) return;
               playable = await setProtectedMediaSource(playerEl, url, isCurrentSelection);
             } catch (err) {
               playable = null;

@@ -23,6 +23,8 @@
     try {
       global.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (_) {
+      if (typeof global.alert === 'function') global.alert('暂时无法保存选中的内容，请允许浏览器存储后重试。');
+      return false;
       /* ignore quota */
     }
 
@@ -32,8 +34,7 @@
     if (payload.source) query.set('from', payload.source);
     const url = `./workbench.html?${query.toString()}`;
 
-    if (options.sameTab) global.location.assign(url);
-    else global.open(url, '_blank', 'noopener');
+    global.location.assign(url);
     return true;
   }
 
