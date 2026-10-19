@@ -222,11 +222,11 @@ test('both readers guard source assignment and follow-up effects with the curren
   assert.match(desktop, /authorizeElementSource\([\s\S]{0,220}\bisCurrent,\s*\n/);
   assert.match(
     desktop,
-    /await setProtectedMediaSource\(playerEl,\s*localUrl,\s*isCurrentSelection\)[\s\S]{0,160}!isCurrentSelection\(\)[\s\S]{0,800}loadVideoDetails/,
+    /await setProtectedMediaSource\(playerEl,\s*localUrl,\s*isCurrentSelection\)[\s\S]{0,160}!isCurrentSelection\(\)[\s\S]{0,800}loadCurrentTranscript/,
   );
   assert.match(
     desktop,
-    /await setProtectedMediaSource\(playerEl,\s*url,\s*isCurrentSelection\)[\s\S]{0,160}!isCurrentSelection\(\)[\s\S]{0,1800}loadVideoDetails/,
+    /await setProtectedMediaSource\(playerEl,\s*url,\s*isCurrentSelection\)[\s\S]{0,160}!isCurrentSelection\(\)[\s\S]{0,1800}loadCurrentTranscript/,
   );
   assert.match(
     desktop,

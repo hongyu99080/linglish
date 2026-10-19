@@ -343,6 +343,19 @@ async function registerContentRoutes(pathname, req, res) {
   // Parse URL for query parameters
   const url = new URL(req.url, `http://${req.headers.host}`);
 
+  // GET /articles/:id
+  const articleMatch = pathname.match(/^\/articles\/(\d+)$/);
+  if (articleMatch && req.method === 'GET') {
+    try {
+      const article = await dataStore.getArticleById(Number(articleMatch[1]));
+      if (!article) return sendError(res, 404, '找不到这篇内容');
+      return sendJson(res, 200, article);
+    } catch (err) {
+      const status = mapErrorToStatus(err);
+      return sendError(res, status, err.message);
+    }
+  }
+
   // GET /articles
   if (pathname === '/articles' && req.method === 'GET') {
     try {

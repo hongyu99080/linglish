@@ -1,11 +1,21 @@
-const VERSION = 'v1.0.6-20260822001';
+const VERSION = 'v1.0.7-20261018001';
 const CORE_CACHE = `core-${VERSION}`;
 const RUNTIME_CACHE = `rt-${VERSION}`;
 const LEGACY_PROTECTED_MEDIA_CACHES = [
   'rt-v1.0.4-20260224001',
   'rt-v1.0.5-20260822001',
+  'rt-v1.0.6-20260822001',
 ];
 const PROTECTED_PATH_PREFIXES = ['/pdfs/', '/videos/', '/recordings/'];
+const NETWORK_ONLY_PREFIXES = [
+  '/articles',
+  '/media',
+  '/class-notes',
+  '/api',
+  '/auth',
+  '/users',
+  '/documents',
+];
 
 const CORE_ASSETS = [
   './mobile-power.html',
@@ -56,7 +66,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Never cache admin/API routes (they change frequently and must be real-time)
-  if (url.pathname.startsWith('/admin/')) {
+  if (
+    url.pathname.startsWith('/admin/')
+    || NETWORK_ONLY_PREFIXES.some((prefix) => (
+      url.pathname === prefix || url.pathname.startsWith(`${prefix}/`)
+    ))
+  ) {
     event.respondWith(fetch(req));
     return;
   }

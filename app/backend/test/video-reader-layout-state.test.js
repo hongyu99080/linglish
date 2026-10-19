@@ -40,6 +40,18 @@ test('video library button still toggles the sidebar outside focus mode', () => 
   );
 });
 
+test('vocabulary view hides the left column and drops the embedded title bar', () => {
+  const html = fs.readFileSync(pagePath, 'utf8');
+  const vocab = fs.readFileSync(path.join(frontend, 'video-vocabulary-desktop.html'), 'utf8');
+
+  assert.match(html, /classList\.toggle\('vocab-view', isVocab\)/);
+  assert.match(html, /\.shell\.vocab-view \.sidebar\s*\{[^}]*display:\s*none/);
+  assert.match(html, /\.shell\.vocab-view\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(html, /video-vocabulary-desktop\.html\?embed=1/);
+  assert.doesNotMatch(vocab, /class="topbar"/);
+  assert.match(vocab, /html\.vocab-embedded \.page-nav/);
+});
+
 test('desktop reader wires the hamburger button to the shared layout transition', () => {
   const html = fs.readFileSync(pagePath, 'utf8');
 

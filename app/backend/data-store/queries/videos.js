@@ -458,18 +458,20 @@ async function listVideoResourcesByUploaderLite(userId) {
 async function getDifficultyStats() {
   await init();
   if (dbUnavailable()) {
-    return { beginner: 0, intermediate: 0, advanced: 0, unset: 0 };
+    return { a1: 0, a2: 0, b1: 0, b2: 0, c1: 0, c2: 0, unset: 0 };
   }
   const { rows } = await pool.query(
     `SELECT difficulty_level, COUNT(*)::int AS count
      FROM video_resources
      GROUP BY difficulty_level`
   );
-  const stats = { beginner: 0, intermediate: 0, advanced: 0, unset: 0 };
+  const legacy = { beginner: 'a1', intermediate: 'b1', advanced: 'c1' };
+  const stats = { a1: 0, a2: 0, b1: 0, b2: 0, c1: 0, c2: 0, unset: 0 };
   for (const row of rows) {
-    const key = row.difficulty_level || 'unset';
+    const raw = String(row.difficulty_level || '').trim().toLowerCase();
+    const key = legacy[raw] || raw;
     if (Object.prototype.hasOwnProperty.call(stats, key)) {
-      stats[key] = row.count;
+      stats[key] += row.count;
     } else {
       stats.unset += row.count;
     }

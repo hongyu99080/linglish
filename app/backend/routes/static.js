@@ -28,7 +28,21 @@ const CLEAN_PUBLIC_PAGES = new Map([
   ['/interview', 'interview.html'],
   ['/workplace', 'workplace.html'],
   ['/shadowing', 'shadowing.html'],
+  ['/workbench', 'workbench.html'],
+  ['/teacher', 'workbench.html'],
 ]);
+
+function safePdfFilename(pathname) {
+  const raw = String(pathname || '').replace(/^\/pdfs\//, '');
+  let filename = raw;
+  try {
+    filename = decodeURIComponent(raw);
+  } catch (_) {
+    return null;
+  }
+  if (!filename || filename !== path.basename(filename) || filename.includes('\0')) return null;
+  return filename;
+}
 
 /**
  * Get MIME type for a file based on extension
@@ -345,6 +359,7 @@ async function registerStaticRoutes(pathname, req, res, url) {
       icpText: (process.env.FRONTEND_ICP_TEXT || '').trim(),
       enableNetworkUpload: process.env.FRONTEND_ENABLE_NETWORK_UPLOAD !== 'false',
       enableGoogleOAuth: process.env.FRONTEND_ENABLE_GOOGLE_OAUTH !== 'false',
+      enableWechatOAuth: process.env.FRONTEND_ENABLE_WECHAT_OAUTH === 'true',
       waveformSegmentationEnabled: envBool('FRONTEND_WAVEFORM_SEGMENTATION_ENABLED'),
       waveformSegmentationMinDurationSec: envNumber('FRONTEND_WAVEFORM_SEGMENTATION_MIN_DURATION_SEC'),
       waveformSegmentationMinWords: envNumber('FRONTEND_WAVEFORM_SEGMENTATION_MIN_WORDS'),
@@ -390,6 +405,7 @@ async function registerStaticRoutes(pathname, req, res, url) {
     ['/interview.html', '/interview'],
     ['/workplace.html', '/workplace'],
     ['/shadowing.html', '/shadowing'],
+    ['/workbench.html', '/workbench'],
   ]);
   if ((req.method === 'GET' || req.method === 'HEAD') && legacyRedirects.has(pathname)) {
     const query = url.search || '';
@@ -600,6 +616,24 @@ async function registerStaticRoutes(pathname, req, res, url) {
     return true;
   }
 
+  // GET /note-images/* (public class-note pictures for parent links)
+  if (pathname.startsWith('/note-images/') && req.method === 'GET') {
+    const raw = pathname.replace(/^\/note-images\//, '');
+    let filename = raw;
+    try { filename = decodeURIComponent(raw); } catch (_) { filename = ''; }
+    if (!/^note-[a-z0-9.-]+$/i.test(filename) || filename !== path.basename(filename)) {
+      return sendError(res, 404, 'Not Found');
+    }
+    const ext = path.extname(filename).toLowerCase();
+    if (!['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) {
+      return sendError(res, 404, 'Not Found');
+    }
+    const filePath = path.join(__dirname, '../note-images', filename);
+    const served = await serveStatic(res, filePath, req, { cacheControl: 'public, max-age=86400' });
+    if (!served) return sendError(res, 404, 'Not Found');
+    return true;
+  }
+
   // GET /pdfs/* (PDF file serving)
   if (pathname.startsWith('/pdfs/') && req.method === 'GET') {
     res.setHeader('Cache-Control', 'private, no-store');
@@ -607,7 +641,10 @@ async function registerStaticRoutes(pathname, req, res, url) {
       const access = await authorizeMediaRequest(req, url, async () => false);
       if (!access.mode) return sendError(res, access.deniedShare ? 403 : 401, 'Unauthorized');
 
-      const filename = pathname.replace('/pdfs/', '');
+      const filename = safePdfFilename(pathname);
+      if (!filename) {
+        return sendError(res, 403, 'Access denied - PDF not in database');
+      }
 
       // Verify PDF exists in database (security check)
       const articles = await dataStore.getArticles();

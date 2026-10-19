@@ -1,0 +1,161 @@
+const zlib = require('zlib');
+
+function buildReadingSubtitles(text) {
+  const normalized = String(text || '')
+    .replace(/\r/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/[^\S\n]+/g, ' ')
+    .trim();
+  if (!normalized) return [];
+
+  const cues = [];
+  const blocks = normalized.split(/\n+/);
+  for (const block of blocks) {
+    const sentences = block.match(/[^.!?]+[.!?]+(?:["']+)?|[^.!?]+$/g) || [block];
+    for (const sentence of sentences) {
+      const line = sentence.replace(/\s+/g, ' ').trim();
+      if (!isEnglishCue(line)) continue;
+      cues.push(line);
+    }
+  }
+  return cues;
+}
+
+function isEnglishCue(line) {
+  const words = String(line || '').match(/[A-Za-z][A-Za-z']*/g) || [];
+  if (words.join('').length < 6) return false;
+  const lowered = words.map(word => word.toLowerCase());
+  const filler = new Set(['of', 'page', 'pages']);
+  if (lowered.every(word => filler.has(word))) return false;
+  return true;
+}
+
+function subtitleContent(cues) {
+  return cues.join('\n');
+}
+
+function readZipEntries(buffer) {
+  const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+  let eocd = -1;
+  const min = Math.max(0, buf.length - 22 - 65535);
+  for (let i = buf.length - 22; i >= min; i -= 1) {
+    if (buf.readUInt32LE(i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) {
+    throw new Error('不是有效的压缩文档');
+  }
+
+  const count = buf.readUInt16LE(eocd + 10);
+  let offset = buf.readUInt32LE(eocd + 16);
+  const files = new Map();
+  for (let index = 0; index < count; index += 1) {
+    if (offset + 46 > buf.length || buf.readUInt32LE(offset) !== 0x02014b50) break;
+    const method = buf.readUInt16LE(offset + 10);
+    const compSize = buf.readUInt32LE(offset + 20);
+    const nameLen = buf.readUInt16LE(offset + 28);
+    const extraLen = buf.readUInt16LE(offset + 30);
+    const commentLen = buf.readUInt16LE(offset + 32);
+    const localOffset = buf.readUInt32LE(offset + 42);
+    const name = buf.slice(offset + 46, offset + 46 + nameLen).toString('utf8');
+    offset += 46 + nameLen + extraLen + commentLen;
+
+    if (localOffset + 30 > buf.length) continue;
+    const localNameLen = buf.readUInt16LE(localOffset + 26);
+    const localExtraLen = buf.readUInt16LE(localOffset + 28);
+    const dataStart = localOffset + 30 + localNameLen + localExtraLen;
+    const compressed = buf.slice(dataStart, dataStart + compSize);
+    let data = null;
+    if (method === 0) data = compressed;
+    else if (method === 8) data = zlib.inflateRawSync(compressed);
+    if (data) files.set(name.replace(/\\/g, '/'), data);
+  }
+  return files;
+}
+
+function decodeXmlText(value) {
+  return String(value || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'");
+}
+
+function extractDocxText(buffer) {
+  const files = readZipEntries(buffer);
+  const xml = files.get('word/document.xml');
+  if (!xml) throw new Error('这份 Word 里没有可读取的正文');
+  return decodeXmlText(xml.toString('utf8'))
+    .replace(/<w:tab\/>/g, ' ')
+    .replace(/<w:br\/>/g, '\n')
+    .replace(/<\/w:p>/g, '\n')
+    .replace(/<[^>]+>/g, '');
+}
+
+function extractEpubText(buffer) {
+  const files = readZipEntries(buffer);
+  const parts = [];
+  for (const [name, data] of files) {
+    if (!/\.(xhtml|html|htm)$/i.test(name)) continue;
+    const text = decodeXmlText(data.toString('utf8'))
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ');
+    if (text.trim()) parts.push(text);
+  }
+  if (!parts.length) throw new Error('这本电子书里没有可读取的正文');
+  return parts.join('\n');
+}
+
+function storeZip(files) {
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const [name, text] of files) {
+    const nameBuf = Buffer.from(name);
+    const data = Buffer.from(text);
+    const local = Buffer.alloc(30 + nameBuf.length);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(0, 8);
+    local.writeUInt32LE(data.length, 18);
+    local.writeUInt32LE(data.length, 22);
+    local.writeUInt16LE(nameBuf.length, 26);
+    nameBuf.copy(local, 30);
+    locals.push(local, data);
+
+    const central = Buffer.alloc(46 + nameBuf.length);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(0, 10);
+    central.writeUInt32LE(data.length, 20);
+    central.writeUInt32LE(data.length, 24);
+    central.writeUInt16LE(nameBuf.length, 28);
+    central.writeUInt32LE(offset, 42);
+    nameBuf.copy(central, 46);
+    centrals.push(central);
+    offset += local.length + data.length;
+  }
+  const centralBuf = Buffer.concat(centrals);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(files.length, 8);
+  eocd.writeUInt16LE(files.length, 10);
+  eocd.writeUInt32LE(centralBuf.length, 12);
+  eocd.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, centralBuf, eocd]);
+}
+
+module.exports = {
+  buildReadingSubtitles,
+  subtitleContent,
+  isEnglishCue,
+  readZipEntries,
+  extractDocxText,
+  extractEpubText,
+  storeZip,
+};

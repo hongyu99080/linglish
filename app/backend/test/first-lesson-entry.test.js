@@ -124,7 +124,7 @@ test('first lesson destinations carry the sole focus flag while normal video lin
   assert.doesNotMatch(today.match(/function videoHref\(video\)[\s\S]*?\n    \}/)?.[0] || '', /focus=/);
 });
 
-test('anonymous entry reuses the visitor, coalesces double clicks, preselects a video, and navigates once', async () => {
+test('anonymous entry asks for an account instead of creating a guest', async () => {
   const entry = require(modulePath);
   const { environment, requests, destinations, localStorage } = createEnvironment();
   const controller = entry.createFirstLessonEntry(environment);
@@ -134,17 +134,13 @@ test('anonymous entry reuses the visitor, coalesces double clicks, preselects a 
     controller.start({ source: 'landing_first_lesson', level: 'A1' }),
   ]);
 
-  const guestRequests = requests.filter((request) => request.url === '/auth/guest');
-  assert.equal(guestRequests.length, 1);
-  assert.deepEqual(JSON.parse(guestRequests[0].options.body), { visitor_id: 'llv_existingvisitor12' });
+  assert.equal(requests.filter((request) => request.url === '/auth/guest').length, 0);
   assert.equal(localStorage.getItem('linglish_visitor_id'), null, 'shared visitor identity must not be replaced');
-  assert.equal(localStorage.getItem('linglish_token'), 'guest-token-1');
-  assert.deepEqual(destinations, [
-    './video-reader-desktop.html?from=landing_first_lesson&focus=first_lesson&level=A1&videoId=374',
-  ]);
+  assert.equal(localStorage.getItem('linglish_token'), null);
+  assert.deepEqual(destinations, ['./index-desktop.html?auth=register']);
 });
 
-test('an expired stored account token is replaced with a guest token before video selection', async () => {
+test('an expired stored account token asks for login instead of a guest token', async () => {
   const entry = require(modulePath);
   const { environment, requests, destinations, getToken } = createEnvironment({
     token: 'expired-token',
@@ -154,14 +150,13 @@ test('an expired stored account token is replaced with a guest token before vide
 
   await controller.start({ source: 'landing_first_lesson' });
 
-  assert.equal(requests.filter((request) => request.url === '/auth/guest').length, 1);
-  assert.equal(getToken(), 'guest-token-1');
-  const videoRequest = requests.find((request) => request.url === '/video-resources?lite=1');
-  assert.equal(videoRequest.options.headers.Authorization, 'Bearer guest-token-1');
-  assert.equal(destinations.length, 1);
+  assert.equal(requests.filter((request) => request.url === '/auth/guest').length, 0);
+  assert.equal(requests.filter((request) => request.url === '/video-resources?lite=1').length, 0);
+  assert.equal(getToken(), null);
+  assert.deepEqual(destinations, ['./index-desktop.html?auth=register']);
 });
 
-test('a 401 during preselection is recoverable by replacing the stale token once', async () => {
+test('a 401 during preselection asks for login instead of creating a guest', async () => {
   const entry = require(modulePath);
   const { environment, requests, destinations, getToken } = createEnvironment({
     token: 'apparently-valid-token',
@@ -171,10 +166,10 @@ test('a 401 during preselection is recoverable by replacing the stale token once
 
   await controller.start({ source: 'landing_first_lesson' });
 
-  assert.equal(requests.filter((request) => request.url === '/video-resources?lite=1').length, 2);
-  assert.equal(requests.filter((request) => request.url === '/auth/guest').length, 1);
-  assert.equal(getToken(), 'guest-token-1');
-  assert.equal(destinations.length, 1);
+  assert.equal(requests.filter((request) => request.url === '/video-resources?lite=1').length, 1);
+  assert.equal(requests.filter((request) => request.url === '/auth/guest').length, 0);
+  assert.equal(getToken(), null);
+  assert.deepEqual(destinations, ['./index-desktop.html?auth=register']);
 });
 
 test('a preferred video still validates a locally valid token and server-side playability', async () => {
@@ -206,14 +201,10 @@ test('a server-revoked preferred-video token is cleared once and retried with on
   });
 
   assert.equal(getClearCount(), 1);
-  assert.equal(requests.filter((request) => request.url === '/auth/guest').length, 1);
-  assert.equal(requests.filter((request) => request.url === '/auth/profile').length, 2);
-  assert.deepEqual(
-    JSON.parse(requests.find((request) => request.url === '/auth/guest').options.body),
-    { visitor_id: 'llv_existingvisitor12' },
-  );
-  assert.equal(getToken(), 'guest-token-1');
-  assert.equal(destinations.length, 1);
+  assert.equal(requests.filter((request) => request.url === '/auth/guest').length, 0);
+  assert.equal(requests.filter((request) => request.url === '/auth/profile').length, 1);
+  assert.equal(getToken(), null);
+  assert.deepEqual(destinations, ['./index-desktop.html?auth=register']);
 });
 
 test('a missing preferred video falls back to a separately validated playable video', async () => {
@@ -262,7 +253,7 @@ test('failed or unplayable preferred videos never navigate unless a playable fal
 
 test('an empty video result stays on the entry page and leaves a retryable trigger', async () => {
   const entry = require(modulePath);
-  const { environment, destinations } = createEnvironment({ videoPayload: { items: [] } });
+  const { environment, destinations } = createEnvironment({ token: 'valid-token', videoPayload: { items: [] } });
   const trigger = {
     textContent: '开始首课',
     dataset: {},
@@ -282,6 +273,30 @@ test('an empty video result stays on the entry page and leaves a retryable trigg
   assert.match(trigger.textContent, /重试/);
 });
 
+test('a quiet landing failure keeps the original button label', async () => {
+  const entry = require(modulePath);
+  const { environment, destinations } = createEnvironment({ token: 'valid-token', videoPayload: { items: [] } });
+  const trigger = {
+    textContent: '免注册练 3 句',
+    dataset: {},
+    attributes: new Map(),
+    setAttribute(name, value) { this.attributes.set(name, value); },
+    removeAttribute(name) { this.attributes.delete(name); },
+  };
+
+  await assert.rejects(
+    () => entry.createFirstLessonEntry(environment).start({
+      source: 'landing_first_lesson',
+      trigger,
+      quietFailure: true,
+    }),
+    /FIRST_LESSON_VIDEO_UNAVAILABLE/,
+  );
+
+  assert.deepEqual(destinations, []);
+  assert.equal(trigger.textContent, '免注册练 3 句');
+});
+
 test('Landing uses the shared first lesson entry for both product CTAs and preserves login routing', () => {
   const html = fs.readFileSync(landingPath, 'utf8');
 
@@ -289,7 +304,12 @@ test('Landing uses the shared first lesson entry for both product CTAs and prese
   assert.match(html, /<script src="\.\/js\/auth-manager\.js[^>]*><\/script>/);
   assert.match(html, /<script src="\.\/js\/first-lesson-entry\.js[^>]*><\/script>/);
   assert.match(html, /function startLandingFirstLesson\(event, source\)/);
+  assert.match(html, /quietFailure:\s*true/);
+  assert.match(html, /starter=1/);
   assert.match(html, /btn-start[\s\S]*?startLandingFirstLesson\(event, 'landing_first_lesson'\)/);
   assert.match(html, /btn-final[\s\S]*?startLandingFirstLesson\(event, 'landing_final_first_lesson'\)/);
   assert.match(html, /btn-login[\s\S]*?redirect\(true\)/);
+  assert.match(html, /id="account-chip"/);
+  assert.match(html, /退出登录/);
+  assert.match(html, /account-badge[\s\S]*?href="\.\/membership\.html"/);
 });
